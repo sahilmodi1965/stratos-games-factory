@@ -1,11 +1,14 @@
 #!/bin/bash
-# deploy-brain.sh — push the factory's brain into every game repo.
+# deploy-brain.sh — push the factory's brain + workflows into every game repo.
 #
 # - Arrow Puzzle: appends brain/arrow-puzzle-autobuilder.md to its CLAUDE.md
 #   (only the section between the STRATOS-AUTOBUILDER markers; idempotent).
 # - Bloxplode: writes brain/bloxplode-claude.md as CLAUDE.md (only if missing or
 #   if its existing CLAUDE.md is itself a previous Stratos-deployed copy).
-# - Both: deploys .github/ISSUE_TEMPLATE/build-request.md.
+# - Both: deploys .github/ISSUE_TEMPLATE/build-request.md and
+#   .github/workflows/* from templates/workflows-<game>/.
+# - Both: ensures all factory labels exist (build-request, building, done,
+#   ship-it, auto-merged).
 #
 # Idempotent. Safe to run repeatedly. Only commits/pushes when something
 # actually changed.
@@ -30,11 +33,25 @@ ISSUE_TEMPLATE="$FACTORY_DIR/templates/build-request.md"
 [[ -f "$BLOX_BRAIN" ]]     || die "missing $BLOX_BRAIN"
 [[ -f "$ISSUE_TEMPLATE" ]] || die "missing $ISSUE_TEMPLATE"
 
+ensure_label() {
+  local repo="$1" name="$2" color="$3" desc="$4"
+  gh label create "$name" --repo "$repo" --color "$color" --description "$desc" >/dev/null 2>&1 || true
+}
+
+ensure_all_labels() {
+  local repo="$1"
+  ensure_label "$repo" "build-request" "0e8a16" "Human-filed request for the daemon to build"
+  ensure_label "$repo" "building"      "fbca04" "Daemon is currently working on this"
+  ensure_label "$repo" "done"          "5319e7" "Daemon has opened a PR for this"
+  ensure_label "$repo" "ship-it"       "1f883d" "Ready for production release"
+  ensure_label "$repo" "auto-merged"   "8957e5" "PR was auto-merged after CI passed (safe-paths only)"
+}
+
 deploy_repo() {
   local repo="$1" local_dir="$2" branch="$3"
   local clone_path="$FACTORY_DIR/$local_dir"
 
-  say "Deploying brain to $repo"
+  say "Deploying brain + workflows to $repo"
 
   if [[ ! -d "$clone_path/.git" ]]; then
     say "  cloning $repo → $clone_path"
@@ -45,6 +62,8 @@ deploy_repo() {
   git fetch origin "$branch" >/dev/null 2>&1
   git checkout "$branch" >/dev/null 2>&1
   git reset --hard "origin/$branch" >/dev/null 2>&1
+
+  ensure_all_labels "$repo"
 
   local changed=0
 
@@ -57,6 +76,32 @@ deploy_repo() {
     ok "  updated .github/ISSUE_TEMPLATE/build-request.md"
   else
     ok "  issue template already current"
+  fi
+
+  # ---- Workflows
+  local workflow_dir="$FACTORY_DIR/templates/workflows-$local_dir"
+  # Lowercase fallback (e.g. Bloxplode-Beta → bloxplode is what we use)
+  case "$local_dir" in
+    arrow-puzzle-testing) workflow_dir="$FACTORY_DIR/templates/workflows-arrow-puzzle" ;;
+    Bloxplode-Beta)       workflow_dir="$FACTORY_DIR/templates/workflows-bloxplode" ;;
+  esac
+  if [[ -d "$workflow_dir" ]]; then
+    mkdir -p .github/workflows
+    local wf wf_name
+    for wf in "$workflow_dir"/*.yml; do
+      [[ -f "$wf" ]] || continue
+      wf_name="$(basename "$wf")"
+      if ! cmp -s "$wf" ".github/workflows/$wf_name" 2>/dev/null; then
+        cp "$wf" ".github/workflows/$wf_name"
+        git add ".github/workflows/$wf_name"
+        changed=1
+        ok "  updated .github/workflows/$wf_name"
+      else
+        ok "  workflow already current: $wf_name"
+      fi
+    done
+  else
+    warn "  no workflow templates for $local_dir at $workflow_dir"
   fi
 
   # ---- CLAUDE.md
@@ -137,7 +182,7 @@ EOF
 
   if (( changed )); then
     git -c user.email="factory@stratos.games" -c user.name="Stratos Games Factory" \
-      commit -m "chore(factory): deploy Stratos brain + issue template" >/dev/null
+      commit -m "chore(factory): deploy Stratos brain, workflows, and issue template" >/dev/null
     say "  pushing to $repo"
     git push origin "$branch" >/dev/null
     ok "  pushed"

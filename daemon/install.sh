@@ -73,6 +73,8 @@ for entry in "${GAME_REPOS[@]}"; do
   gh label create "build-request" --repo "$repo" --color "0e8a16" --description "Human-filed request for the daemon to build" >/dev/null 2>&1 || true
   gh label create "building"      --repo "$repo" --color "fbca04" --description "Daemon is currently working on this" >/dev/null 2>&1 || true
   gh label create "done"          --repo "$repo" --color "5319e7" --description "Daemon has opened a PR for this" >/dev/null 2>&1 || true
+  gh label create "ship-it"       --repo "$repo" --color "1f883d" --description "Ready for production release" >/dev/null 2>&1 || true
+  gh label create "auto-merged"   --repo "$repo" --color "8957e5" --description "PR was auto-merged after CI passed (safe-paths only)" >/dev/null 2>&1 || true
   ok "$repo labels ready"
 done
 echo

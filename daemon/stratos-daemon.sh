@@ -52,6 +52,48 @@ ensure_label() {
   gh label create "$name" --repo "$repo" --color "$color" --description "$desc" >/dev/null 2>&1 || true
 }
 
+# Check if an issue title is likely already addressed by recent (24h) commits.
+# Heuristic: extract significant words (length>=4) from the title, and check if
+# any single recent commit subject contains 3+ of them. Returns 0 if matched.
+recently_addressed() {
+  local title="$1"
+  local default_branch="$2"
+
+  local recent
+  recent=$(git log --since='24 hours ago' --pretty=format:'%s' "origin/$default_branch" 2>/dev/null)
+  [[ -z "$recent" ]] && return 1
+
+  local keywords
+  keywords=$(printf '%s\n' "$title" \
+    | tr 'A-Z' 'a-z' \
+    | tr -cs 'a-z0-9' '\n' \
+    | awk 'length($0) >= 4 && $0 !~ /^(build|fix|feat|chore|test|with|that|this|when|then|from|into|will|been|have|some|other|just|like|need|make|them|than|also|only|very|much|same|both|each|over|onto|onto|onto)$/' \
+    | sort -u)
+  [[ -z "$keywords" ]] && return 1
+
+  local total
+  total=$(printf '%s\n' "$keywords" | grep -c .)
+  [[ "$total" -lt 3 ]] && return 1
+
+  local subject subject_lc matches kw
+  while IFS= read -r subject; do
+    [[ -z "$subject" ]] && continue
+    subject_lc=$(printf '%s' "$subject" | tr 'A-Z' 'a-z')
+    matches=0
+    while IFS= read -r kw; do
+      [[ -z "$kw" ]] && continue
+      case "$subject_lc" in
+        *"$kw"*) matches=$((matches + 1)) ;;
+      esac
+    done <<< "$keywords"
+    if [[ "$matches" -ge 3 ]]; then
+      return 0
+    fi
+  done <<< "$recent"
+
+  return 1
+}
+
 # ---------------------------------------------------------------- preflight
 for tool in git gh jq claude curl; do
   if ! command -v "$tool" >/dev/null 2>&1; then
@@ -95,6 +137,8 @@ for entry in "${GAME_REPOS[@]}"; do
   ensure_label "$repo" "build-request" "0e8a16" "Human-filed request for the daemon to build"
   ensure_label "$repo" "building"      "fbca04" "Daemon is currently working on this"
   ensure_label "$repo" "done"          "5319e7" "Daemon has opened a PR for this"
+  ensure_label "$repo" "ship-it"       "1f883d" "Ready for production release"
+  ensure_label "$repo" "auto-merged"   "8957e5" "PR was auto-merged after CI passed (safe-paths only)"
 
   # Hard reset to origin so the daemon never carries local state
   git fetch origin "$default_branch" >> "$LOG_FILE" 2>&1 || { log "  ERROR: git fetch failed"; continue; }
@@ -129,6 +173,19 @@ for entry in "${GAME_REPOS[@]}"; do
     if (( body_lines > MAX_ISSUE_BODY_LINES )); then
       log "  issue #$num too large ($body_lines lines > $MAX_ISSUE_BODY_LINES), commenting and skipping"
       gh issue comment "$num" --repo "$repo" --body "🤖 **Stratos daemon**: this request is too large for an automated build (${body_lines} lines, cap is ${MAX_ISSUE_BODY_LINES}). Please split it into smaller issues, or work directly with a human reviewer." >/dev/null 2>&1 || true
+      total_skipped=$((total_skipped + 1))
+      continue
+    fi
+
+    # Refetch right before each issue so concurrent human pushes are visible.
+    git fetch origin "$default_branch" >> "$LOG_FILE" 2>&1 || true
+    git checkout "$default_branch" >> "$LOG_FILE" 2>&1 || true
+    git reset --hard "origin/$default_branch" >> "$LOG_FILE" 2>&1
+
+    # Check if recent commits already addressed this issue (concurrent direct push).
+    if recently_addressed "$title" "$default_branch"; then
+      log "  issue #$num looks already addressed by recent commits, closing"
+      gh issue close "$num" --repo "$repo" --comment "🤖 **Stratos daemon**: looks like this was already addressed in commits within the last 24 hours. Closing — please reopen with more specifics or file a new issue if it's still needed." >/dev/null 2>&1 || true
       total_skipped=$((total_skipped + 1))
       continue
     fi
@@ -245,6 +302,23 @@ A human can refine the issue and the daemon will retry on the next run." >/dev/n
     if [[ -n "$has_uncommitted" ]]; then
       git add -A >> "$LOG_FILE" 2>&1
       git commit -m "chore: trailing changes for #${num}" >> "$LOG_FILE" 2>&1 || true
+    fi
+
+    # Merge-conflict detection: refetch origin and try to rebase. If a human
+    # pushed to main while Claude was working, the rebase may conflict — in
+    # which case we abort, comment, and reopen for the next run.
+    git fetch origin "$default_branch" >> "$LOG_FILE" 2>&1 || true
+    if ! git rebase "origin/$default_branch" >> "$LOG_FILE" 2>&1; then
+      git rebase --abort >> "$LOG_FILE" 2>&1 || true
+      log "  merge conflict against latest origin/$default_branch for issue #$num"
+      gh issue edit "$num" --repo "$repo" --remove-label "building" >> "$LOG_FILE" 2>&1 || true
+      gh issue comment "$num" --repo "$repo" --body "🤖 **Stratos daemon**: build complete locally but a merge conflict was detected against \`$default_branch\` (likely a concurrent push). Will retry on the next run." >/dev/null 2>&1 || true
+      notify_telegram "⚠️  Stratos: merge conflict for ${game_name} issue #${num} (will retry next run)"
+      git checkout "$default_branch" >> "$LOG_FILE" 2>&1 || true
+      git branch -D "$branch" >> "$LOG_FILE" 2>&1 || true
+      total_skipped=$((total_skipped + 1))
+      rm -f "$claude_log"
+      continue
     fi
 
     log "  pushing branch $branch"

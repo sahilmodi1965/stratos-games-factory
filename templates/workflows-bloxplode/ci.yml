@@ -1,0 +1,53 @@
+name: CI
+# Bloxplode has no JS bundler — the game is plain HTML/JS/CSS in www/.
+# This workflow verifies that:
+#   1. www/index.html exists
+#   2. Every .js file in www/ parses cleanly via `node --check`
+# Deployed by the Stratos Games Factory — do not hand-edit.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify www/index.html exists
+        run: |
+          if [ ! -f www/index.html ]; then
+            echo "::error::www/index.html is missing"
+            exit 1
+          fi
+          echo "✓ www/index.html present"
+
+      - name: Syntax-check every .js file in www/
+        run: |
+          set -e
+          err=0
+          checked=0
+          while IFS= read -r f; do
+            checked=$((checked + 1))
+            if ! node --check "$f"; then
+              echo "::error file=$f::JavaScript syntax error"
+              err=1
+            fi
+          done < <(find www -type f -name '*.js')
+          echo "Checked $checked .js file(s)"
+          exit $err

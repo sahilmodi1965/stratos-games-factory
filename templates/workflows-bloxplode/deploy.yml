@@ -1,0 +1,39 @@
+name: Deploy main to GitHub Pages
+# Mirrors the latest www/ contents to the root of gh-pages.
+# Uses keep_files=true so PR preview directories under /pr/* are preserved.
+# Deployed by the Stratos Games Factory — do not hand-edit.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify www/ exists
+        run: |
+          if [ ! -d www ]; then
+            echo "::warning::www/ does not exist; skipping deploy"
+            exit 0
+          fi
+          ls -la www/ | head -20
+
+      - name: Mirror www/ to gh-pages root
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./www
+          keep_files: true
+          commit_message: "deploy: main → gh-pages (${{ github.sha }})"
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
