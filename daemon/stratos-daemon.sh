@@ -107,8 +107,9 @@ for entry in "${GAME_REPOS[@]}"; do
   log "  $issue_count open build-request issue(s)"
 
   processed_in_repo=0
+  i=-1
 
-  for i in $(seq 0 $((issue_count - 1))); do
+  while (( ++i < issue_count )); do
     if (( processed_in_repo >= MAX_ISSUES_PER_REPO_PER_RUN )); then
       log "  reached per-run cap ($MAX_ISSUES_PER_REPO_PER_RUN), deferring rest"
       break

@@ -78,7 +78,8 @@ if [[ -f "$LOG_FILE" ]]; then
   else
     echo "    last run:     $(yellow "no completed runs yet")"
   fi
-  err_count="$(grep -cE 'ERROR|FATAL' "$LOG_FILE" 2>/dev/null || echo 0)"
+  err_count="$(grep -cE 'ERROR|FATAL' "$LOG_FILE" 2>/dev/null; :)"
+  err_count="${err_count:-0}"
   if (( err_count > 0 )); then
     echo "    errors in log:$(red " $err_count")  (tail $LOG_FILE)"
   else
