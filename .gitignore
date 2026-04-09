@@ -7,6 +7,11 @@ build.log
 .daemon.lock
 .daemon-state/
 
+# Council runtime state (review.log accumulates per-run timestamps;
+# review-context.md is rebuilt at the start of every run)
+council/review.log
+council/review-context.md
+
 # OS / editor noise
 .DS_Store
 *.swp

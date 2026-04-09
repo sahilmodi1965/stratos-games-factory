@@ -85,14 +85,25 @@ bash "$FACTORY_DIR/scripts/deploy-brain.sh"
 echo
 
 # ---------------------------------------------------------------- 5. cron
-say "Installing hourly cron job"
-CRON_LINE="0 * * * * /bin/bash $FACTORY_DIR/daemon/stratos-daemon.sh >> $FACTORY_DIR/build.log 2>&1"
+say "Installing cron jobs (hourly daemon + weekly council review)"
+DAEMON_CRON="0 * * * * /bin/bash $FACTORY_DIR/daemon/stratos-daemon.sh >> $FACTORY_DIR/build.log 2>&1"
+COUNCIL_CRON="0 0 * * 0 /bin/bash $FACTORY_DIR/council/review.sh >> $FACTORY_DIR/council/review.log 2>&1"
 existing_cron="$(crontab -l 2>/dev/null || true)"
+new_cron="$existing_cron"
 if echo "$existing_cron" | grep -Fq "stratos-daemon.sh"; then
-  ok "cron entry already present"
+  ok "daemon cron already present"
 else
-  ( echo "$existing_cron"; echo "$CRON_LINE" ) | crontab -
-  ok "cron entry installed: $CRON_LINE"
+  new_cron="$(printf '%s\n%s\n' "$new_cron" "$DAEMON_CRON")"
+  ok "daemon cron installed: $DAEMON_CRON"
+fi
+if echo "$existing_cron" | grep -Fq "council/review.sh"; then
+  ok "council cron already present"
+else
+  new_cron="$(printf '%s\n%s\n' "$new_cron" "$COUNCIL_CRON")"
+  ok "council cron installed: $COUNCIL_CRON"
+fi
+if [[ "$new_cron" != "$existing_cron" ]]; then
+  printf '%s\n' "$new_cron" | crontab -
 fi
 echo
 

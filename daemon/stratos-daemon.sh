@@ -289,10 +289,33 @@ EOF
 
     log "  invoking claude (effort=max, timeout ${CLAUDE_TIMEOUT_SECONDS}s)"
 
-    # Build the claude command. If a system prompt file exists, append it.
+    # Build the claude command. The system prompt is the per-game template
+    # PLUS the factory council's living memory (COUNCIL.md). Council notes
+    # are appended below the immutable per-game rules so they stay sticky
+    # across every agent turn — see council/COUNCIL.md for what that document
+    # is and how it gets updated by the weekly review script.
     claude_args=("${CLAUDE_FLAGS[@]}")
+    sys_prompt_content=""
     if [[ -n "$sys_prompt_file" ]]; then
       sys_prompt_content="$(< "$sys_prompt_file")"
+    fi
+    council_file="$FACTORY_DIR/council/COUNCIL.md"
+    if [[ -f "$council_file" ]]; then
+      council_content="$(< "$council_file")"
+      if [[ -n "$sys_prompt_content" ]]; then
+        sys_prompt_content="${sys_prompt_content}
+
+================================================================================
+# Stratos Factory Council notes (living memory, updated weekly by review.sh)
+================================================================================
+
+${council_content}"
+      else
+        sys_prompt_content="$council_content"
+      fi
+      log "  council notes loaded ($(wc -l < "$council_file") lines)"
+    fi
+    if [[ -n "$sys_prompt_content" ]]; then
       claude_args+=(--append-system-prompt "$sys_prompt_content")
     fi
 
