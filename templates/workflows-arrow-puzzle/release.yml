@@ -97,13 +97,18 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
         run: |
+          notes_file=$(mktemp)
+          {
+            printf '%s\n\n' "$CHANGELOG"
+            printf 'Built and released by the Stratos Games Factory.\n'
+          } > "$notes_file"
           gh release create '${{ steps.version.outputs.version }}' \
             --repo "${{ github.repository }}" \
             --title 'Release ${{ steps.version.outputs.version }}' \
-            --notes "${{ steps.changelog.outputs.changelog }}
-
-Built and released by the Stratos Games Factory."
+            --notes-file "$notes_file"
+          rm -f "$notes_file"
 
       - name: Announce on recently closed issues
         env:

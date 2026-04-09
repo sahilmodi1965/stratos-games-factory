@@ -4,13 +4,21 @@
 # What it does:
 #   1. For every game in config.sh, sync the local clone to origin/main.
 #   2. Read open `build-request` issues via the gh CLI.
-#   3. For each, run `claude -p` with a structured prompt that forces it to
-#      read the game's CLAUDE.md and process the issue.
-#   4. If Claude made changes, push a branch and open a PR that closes the issue.
-#   5. If not, comment on the issue and leave it for a human.
+#   3. For each, run `claude --effort max -p` with a sticky system prompt
+#      that forces it to explore the codebase and validate before stopping.
+#   4. After Claude finishes, scrub forbidden paths (build output, native
+#      artifacts, etc.) so they can never sneak into a PR.
+#   5. Run `npm run validate` if present. Block the push on failure.
+#   6. Push branch + open PR + label issue done.
 #
 # Designed to be run by cron, hourly. Safe to run manually.
 # A lockfile prevents overlapping runs.
+
+# cron has a minimal PATH that does NOT include Homebrew, nvm, or ~/.local/bin.
+# Without this export, cron runs fail with "gh: command not found" before they
+# can do anything useful. Manual runs already have a full PATH so the export
+# is a no-op for them.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$HOME/.nvm/versions/node/v20.20.0/bin:$PATH"
 
 set -uo pipefail
 
@@ -117,9 +125,33 @@ total_skipped=0
 total_failed=0
 
 for entry in "${GAME_REPOS[@]}"; do
-  IFS='|' read -r repo local_dir kind default_branch build_cmd <<< "$entry"
+  IFS='|' read -r repo local_dir kind default_branch build_cmd forbidden_paths <<< "$entry"
   game_name="$local_dir"
+
+  # Optional one-shot filter for manual debug runs.
+  if [[ -n "${REPO_FILTER:-}" && "$repo" != "$REPO_FILTER" ]]; then
+    log "── skipping $repo (REPO_FILTER=$REPO_FILTER)"
+    continue
+  fi
+
   log "── processing $repo  (kind=$kind, branch=$default_branch)"
+  if [[ -n "$forbidden_paths" ]]; then
+    log "  forbidden paths: ${forbidden_paths//:/ }"
+  fi
+
+  # Resolve the system prompt file (template per game). The daemon will pass
+  # this to claude via --append-system-prompt so the rules stay sticky in the
+  # system prompt across every agent turn instead of being buried in the
+  # user message (which Claude can de-prioritize after many turns of work).
+  case "$local_dir" in
+    arrow-puzzle-testing) sys_prompt_file="$FACTORY_DIR/templates/system-prompt-arrow-puzzle.md" ;;
+    Bloxplode-Beta)       sys_prompt_file="$FACTORY_DIR/templates/system-prompt-bloxplode.md" ;;
+    *)                    sys_prompt_file="" ;;
+  esac
+  if [[ -n "$sys_prompt_file" && ! -f "$sys_prompt_file" ]]; then
+    log "  WARNING: system prompt file missing: $sys_prompt_file"
+    sys_prompt_file=""
+  fi
 
   clone_path="$FACTORY_DIR/$local_dir"
   if [[ ! -d "$clone_path/.git" ]]; then
@@ -147,6 +179,13 @@ for entry in "${GAME_REPOS[@]}"; do
   git clean -fdx -e node_modules >> "$LOG_FILE" 2>&1 || true
 
   issues_json="$(gh issue list --repo "$repo" --label "build-request" --state open --json number,title,body,labels --limit 50 2>/dev/null || echo '[]')"
+
+  # Optional one-shot filter for manual debug runs.
+  if [[ -n "${ISSUE_FILTER:-}" ]]; then
+    issues_json="$(echo "$issues_json" | jq --arg n "$ISSUE_FILTER" '[.[] | select(.number == ($n | tonumber))]')"
+    log "  ISSUE_FILTER=$ISSUE_FILTER active"
+  fi
+
   issue_count="$(echo "$issues_json" | jq 'length')"
   log "  $issue_count open build-request issue(s)"
 
@@ -204,23 +243,17 @@ for entry in "${GAME_REPOS[@]}"; do
       continue
     fi
 
-    # Build the prompt for Claude
+    # Build the (compact) user-message prompt. The hard rules + workflow
+    # discipline live in the system prompt file (sys_prompt_file). This
+    # message just gives Claude the issue context and a numbered to-do.
     prompt_file="$(mktemp -t stratos-prompt.XXXXXX)"
     cat > "$prompt_file" <<EOF
-You are working autonomously on the **${game_name}** repository as part of the
-Stratos Games Factory. The current working directory is the root of that repo.
-
-==============================================================================
-STEP 1 — Read the brain.
-
-Read the file \`CLAUDE.md\` in this repo's root. Follow EVERY rule and convention
-in it without deviation. If there is no CLAUDE.md, stop immediately and respond
-with "ERROR: no CLAUDE.md found, refusing to proceed".
-
-==============================================================================
-STEP 2 — Understand the request.
-
 You are processing GitHub Issue #${num} on ${repo}.
+
+Working directory: the root of the ${game_name} repo (already checked out for
+you on a fresh branch off origin/${default_branch}).
+
+# Issue
 
 Title: ${title}
 
@@ -229,51 +262,69 @@ Body:
 ${body}
 ---
 
-==============================================================================
-STEP 3 — Make the change.
+# What to do
 
-Make the smallest, most targeted change set that satisfies the issue. Rules:
-
-- ONE focused commit per logical change. Use conventional commits
-  ("fix:", "feat:", "chore:", "refactor:"). Every commit message MUST reference
-  "#${num}" so it auto-links.
-- Hard exclusions (do NOT touch):
-  * \`packages/*\` in Arrow Puzzle (cross-game shared kit; needs human review).
-  * \`android/*\` in Bloxplode (native build artifacts).
-  * \`prototypes/\` and \`docs/\` (built artifacts) in Arrow Puzzle.
-  * Anything the repo's CLAUDE.md flags as off-limits.
-- Do not refactor unrelated code. Do not add features beyond the issue scope.
-- Do not add docstrings, comments, or type annotations to code you didn't change.
-- If the issue is unclear, ambiguous, or you cannot fix it safely, do NOTHING
-  and explain why in your final response. Leaving the working tree clean is the
-  correct outcome in this case.
-
-==============================================================================
-STEP 4 — Verify the build.
-
-If this repo has a build step, run it as the final action and ensure it passes.
-For ${game_name}, the build command is: ${build_cmd:-<none>}
-If the build fails, fix or revert until it passes. Never leave a broken build.
-
-==============================================================================
-STEP 5 — Report.
-
-Output a one-paragraph summary of what you changed (or why you made no
-changes). Do not output anything else after that paragraph.
+1. Read CLAUDE.md and ARCHITECTURE.md (if present) end-to-end.
+2. Explore the relevant subsystem. Read at least 3 files in it before writing
+   anything. Trace at least one call path end-to-end.
+3. Decide whether the issue's premise actually fits the codebase. If the issue
+   asks for something the codebase fundamentally does not support (e.g. JSON
+   level files in a procedurally-generated game), satisfy the player-facing
+   intent in a way that fits the existing architecture — do NOT invent a
+   parallel system. If you can't find an interpretation that fits, refuse.
+4. Implement the smallest possible change that satisfies the issue. Use
+   conventional commits ("fix:", "feat:", "level:", "content:", etc.) and
+   reference "#${num}" in every commit message.
+5. Run \`${build_cmd:-npm run build}\` and ensure it exits 0. If it fails, fix
+   it and retry. As many iterations as you need.
+6. If \`package.json\` has a \`validate\` script, run \`npm run validate\` and
+   ensure it exits 0. Fix and retry on failure.
+7. Run \`git status\` and \`git diff --stat HEAD\`. Verify every changed file
+   is intentional. **CRITICAL**: never \`git add\` build output or any
+   forbidden path (see your system prompt). If something forbidden is in the
+   diff, reset it with \`git checkout HEAD -- <path>\`.
+8. End with a single-paragraph summary of what you changed (or why you
+   refused). Nothing else.
 EOF
 
-    log "  invoking claude (timeout ${CLAUDE_TIMEOUT_SECONDS}s)"
+    log "  invoking claude (effort=max, timeout ${CLAUDE_TIMEOUT_SECONDS}s)"
+
+    # Build the claude command. If a system prompt file exists, append it.
+    claude_args=("${CLAUDE_FLAGS[@]}")
+    if [[ -n "$sys_prompt_file" ]]; then
+      sys_prompt_content="$(< "$sys_prompt_file")"
+      claude_args+=(--append-system-prompt "$sys_prompt_content")
+    fi
+
     claude_log="$(mktemp -t stratos-claude.XXXXXX)"
     if command -v gtimeout >/dev/null 2>&1; then
-      gtimeout "$CLAUDE_TIMEOUT_SECONDS" claude "${CLAUDE_FLAGS[@]}" < "$prompt_file" > "$claude_log" 2>&1
+      gtimeout "$CLAUDE_TIMEOUT_SECONDS" claude "${claude_args[@]}" < "$prompt_file" > "$claude_log" 2>&1
     else
-      claude "${CLAUDE_FLAGS[@]}" < "$prompt_file" > "$claude_log" 2>&1
+      claude "${claude_args[@]}" < "$prompt_file" > "$claude_log" 2>&1
     fi
     claude_exit=$?
     log "  claude exited $claude_exit"
     cat "$claude_log" >> "$LOG_FILE"
     claude_summary="$(tail -40 "$claude_log")"
     rm -f "$prompt_file"
+
+    # ---------- post-Claude safety net: scrub forbidden paths ----------
+    # Even with strong system-prompt rules, Claude (or the build it ran) may
+    # leave forbidden paths in the working tree. Reset them to HEAD before
+    # we evaluate or commit anything.
+    if [[ -n "$forbidden_paths" ]]; then
+      IFS=':' read -ra forbid <<< "$forbidden_paths"
+      for fp in "${forbid[@]}"; do
+        [[ -z "$fp" ]] && continue
+        # Reset tracked paths
+        git checkout HEAD -- "$fp" >> "$LOG_FILE" 2>&1 || true
+        # Remove untracked files inside that path
+        if [[ -d "$fp" ]]; then
+          git clean -fdx -- "$fp" >> "$LOG_FILE" 2>&1 || true
+        fi
+      done
+      log "  scrubbed forbidden paths from working tree"
+    fi
 
     # Did anything change?
     has_uncommitted="$(git status --porcelain)"
@@ -298,10 +349,56 @@ A human can refine the issue and the daemon will retry on the next run." >/dev/n
       continue
     fi
 
-    # Sweep up any uncommitted residue Claude left behind
-    if [[ -n "$has_uncommitted" ]]; then
+    # Sweep up any uncommitted residue Claude left behind. The forbidden-paths
+    # scrub above already removed build output and other off-limits files, so
+    # this only catches Claude's own intentional edits that they forgot to
+    # commit.
+    if [[ -n "$(git status --porcelain)" ]]; then
       git add -A >> "$LOG_FILE" 2>&1
       git commit -m "chore: trailing changes for #${num}" >> "$LOG_FILE" 2>&1 || true
+    fi
+
+    # ---------- post-Claude validation gate ----------
+    # If the repo's package.json declares a `validate` script, run it. Failure
+    # blocks the push: the daemon comments on the issue and leaves it for the
+    # next run (so a fresh attempt can iterate).
+    validation_failed=0
+    if [[ -f package.json ]] && grep -q '"validate"' package.json 2>/dev/null; then
+      log "  running npm run validate"
+      validate_log="$(mktemp -t stratos-validate.XXXXXX)"
+      if ! npm run validate > "$validate_log" 2>&1; then
+        validation_failed=1
+        log "  ✗ npm run validate FAILED"
+        cat "$validate_log" >> "$LOG_FILE"
+      else
+        log "  ✓ npm run validate passed"
+      fi
+      validate_summary="$(tail -30 "$validate_log")"
+      rm -f "$validate_log"
+    else
+      validate_summary=""
+      log "  no validate script in package.json, skipping post-build validation"
+    fi
+
+    if (( validation_failed )); then
+      gh issue edit "$num" --repo "$repo" --remove-label "building" >> "$LOG_FILE" 2>&1 || true
+      gh issue comment "$num" --repo "$repo" --body "🤖 **Stratos daemon**: build attempt completed but \`npm run validate\` failed. Will retry on the next run.
+
+\`\`\`
+$validate_summary
+\`\`\`
+
+Last summary from Claude:
+
+\`\`\`
+$claude_summary
+\`\`\`" >/dev/null 2>&1 || true
+      notify_telegram "❌ Stratos: validation failed for ${game_name} issue #${num} (will retry)"
+      git checkout "$default_branch" >> "$LOG_FILE" 2>&1 || true
+      git branch -D "$branch" >> "$LOG_FILE" 2>&1 || true
+      total_failed=$((total_failed + 1))
+      rm -f "$claude_log"
+      continue
     fi
 
     # Merge-conflict detection: refetch origin and try to rebase. If a human

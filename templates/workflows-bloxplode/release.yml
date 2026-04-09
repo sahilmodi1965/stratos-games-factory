@@ -91,21 +91,26 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
         run: |
+          notes_file=$(mktemp)
+          {
+            printf '%s\n\n' "$CHANGELOG"
+            printf '%s\n' "⚠️  Native rebuild required: the Android APK is not built by this workflow."
+            printf '%s\n' "On Sahil's Mac, run:"
+            printf '%s\n' '```'
+            printf '%s\n' 'npx cap sync android'
+            printf '%s\n' 'npx cap open android'
+            printf '%s\n' '# then build & sign in Android Studio, upload to Play Store'
+            printf '%s\n' '```'
+            printf '\n'
+            printf 'Built and released by the Stratos Games Factory.\n'
+          } > "$notes_file"
           gh release create '${{ steps.version.outputs.version }}' \
             --repo "${{ github.repository }}" \
             --title 'Release ${{ steps.version.outputs.version }}' \
-            --notes "${{ steps.changelog.outputs.changelog }}
-
-⚠️  **Native rebuild required:** the Android APK is not built by this workflow.
-On Sahil's Mac, run:
-\`\`\`
-npx cap sync android
-npx cap open android
-# then build & sign in Android Studio, upload to Play Store
-\`\`\`
-
-Built and released by the Stratos Games Factory."
+            --notes-file "$notes_file"
+          rm -f "$notes_file"
 
       - name: Announce on recently closed issues
         env:

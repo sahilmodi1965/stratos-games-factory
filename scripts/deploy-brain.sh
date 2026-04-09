@@ -80,10 +80,15 @@ deploy_repo() {
 
   # ---- Workflows
   local workflow_dir="$FACTORY_DIR/templates/workflows-$local_dir"
-  # Lowercase fallback (e.g. Bloxplode-Beta → bloxplode is what we use)
+  local scripts_dir=""
   case "$local_dir" in
-    arrow-puzzle-testing) workflow_dir="$FACTORY_DIR/templates/workflows-arrow-puzzle" ;;
-    Bloxplode-Beta)       workflow_dir="$FACTORY_DIR/templates/workflows-bloxplode" ;;
+    arrow-puzzle-testing)
+      workflow_dir="$FACTORY_DIR/templates/workflows-arrow-puzzle"
+      scripts_dir="$FACTORY_DIR/templates/scripts-arrow-puzzle"
+      ;;
+    Bloxplode-Beta)
+      workflow_dir="$FACTORY_DIR/templates/workflows-bloxplode"
+      ;;
   esac
   if [[ -d "$workflow_dir" ]]; then
     mkdir -p .github/workflows
@@ -102,6 +107,42 @@ deploy_repo() {
     done
   else
     warn "  no workflow templates for $local_dir at $workflow_dir"
+  fi
+
+  # ---- Validator scripts (game-specific)
+  if [[ -n "$scripts_dir" && -d "$scripts_dir" ]]; then
+    mkdir -p scripts
+    local sf sf_name
+    for sf in "$scripts_dir"/*.js; do
+      [[ -f "$sf" ]] || continue
+      sf_name="$(basename "$sf")"
+      if ! cmp -s "$sf" "scripts/$sf_name" 2>/dev/null; then
+        cp "$sf" "scripts/$sf_name"
+        git add "scripts/$sf_name"
+        changed=1
+        ok "  updated scripts/$sf_name"
+      else
+        ok "  script already current: scripts/$sf_name"
+      fi
+    done
+
+    # Patch package.json to add `validate` script if missing.
+    if [[ -f package.json ]] && command -v node >/dev/null 2>&1; then
+      if ! grep -q '"validate"' package.json; then
+        node -e '
+          const fs = require("fs");
+          const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+          pkg.scripts = pkg.scripts || {};
+          pkg.scripts.validate = "node scripts/validate.js";
+          fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+        '
+        git add package.json
+        changed=1
+        ok "  added \"validate\" script to package.json"
+      else
+        ok "  package.json validate script already present"
+      fi
+    fi
   fi
 
   # ---- CLAUDE.md
