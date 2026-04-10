@@ -49,13 +49,17 @@ if ! command -v jq >/dev/null 2>&1; then
   die "jq not available"
 fi
 
-mapfile -t active_repos < <(jq -r '
+# bash 3.2 (macOS default) lacks `mapfile`, so build the array via while-read.
+active_repos=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && active_repos+=("$line")
+done < <(jq -r '
   .agents[]
   | select(.name == "content" and .status == "active")
   | .repos[]
 ' "$FACTORY_DIR/agents/registry.json" 2>/dev/null)
 
-if [[ ${#active_repos[@]} -eq 0 ]]; then
+if [[ ${#active_repos[@]:-0} -eq 0 ]]; then
   log "no active content-agent targets in registry, exiting"
   exit 0
 fi

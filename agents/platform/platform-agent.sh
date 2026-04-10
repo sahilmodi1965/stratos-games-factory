@@ -34,14 +34,17 @@ log "================ platform agent run starting ================"
 
 TARGET_SLUG="${1:-}"
 
-# Read active platform targets from the registry
-mapfile -t active_repos < <(jq -r '
+# bash 3.2 (macOS default) lacks `mapfile`, so build the array via while-read.
+active_repos=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && active_repos+=("$line")
+done < <(jq -r '
   .agents[]
   | select(.name == "platform" and .status == "active")
   | .repos[]
 ' "$FACTORY_DIR/agents/registry.json" 2>/dev/null)
 
-if [[ ${#active_repos[@]} -eq 0 ]]; then
+if [[ ${#active_repos[@]:-0} -eq 0 ]]; then
   log "no active platform targets, exiting"
   exit 0
 fi

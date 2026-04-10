@@ -1,62 +1,87 @@
 # Ripon's Guide to the Stratos Games Factory
 
-> A non-technical, step-by-step guide for play-testing Stratos games and shipping changes through the autonomous build factory.
+> A non-technical guide for play-testing Stratos games, reading the dashboard, testing PRs, and working with the agent swarm. You don't need to know any code.
 
-Hi Ripon! This is your guide to working with the Stratos Games Factory. You don't need to know how to code. Your job is to **play the games, find what's wrong or what could be better, file clear requests, and test what comes back**. The factory does the rest.
-
-The system is designed so a single play-tester can drive **3-4 full feedback-build-test cycles per day**, every day, indefinitely. That cadence is what makes the games actually get good.
+The factory now runs a **swarm of 6 active agents** that do most of the work for you. Your job is the part agents can't do: actually playing the game, judging whether it feels right, and making the human calls that decide what ships. This guide shows you how to do that with the new dashboards, the new PR template, and the agent swarm working alongside you.
 
 ---
 
 ## The big picture
 
 ```
-You play  →  You file Build Requests  →  Daemon builds (1h)  →  PR previews  →  Auto-merge or review  →  You test live  →  Repeat
+You play the game        Wednesday: content agent files level ideas
+       │                                  │
+       │                                  ▼
+       │            Tuesday: competitor agent files market-intel
+       │                                  │
+       │                                  ▼
+       │  Issues land in the build queue, 24/7
+       │                  │
+       ▼                  ▼
+File a build-request → Hourly daemon picks it up → Claude builds it →
+QA agent runs Playwright → 🟢 PR comment + screenshot →
+Auto-merge OR you review → Merged → Live URL → You re-test
 ```
 
-You don't write code. You don't run anything (mostly). You just play, observe, write clear requests, and test the results.
-
-You need:
-1. A computer or phone to play the games on.
-2. A GitHub account.
-3. Optionally, the $20/month Claude Pro subscription (claude.ai) to help structure feedback AND a $20/month Claude Code Pro plan if you want to push tiny fixes yourself.
+You don't need to think about the agents most of the time. They run on schedule and file issues. You just play, test, and judge.
 
 ---
 
-## Your daily rhythm — target: 3-4 iterations per day
+## The dashboard (top of every game repo's README)
+
+Open either game's repo on GitHub. The very first thing you'll see is a row of badges and a status table. Here's what each one means.
+
+**Arrow Puzzle**: https://github.com/mody-sahariar1/arrow-puzzle-testing
+**Bloxplode**: https://github.com/mody-sahariar1/Bloxplode-Beta
+
+### The badges, left to right
+
+| Badge | What it shows | Click it to... |
+|---|---|---|
+| 🟢 **Play** / **Web preview** | The live game URL | Open the game in your browser |
+| **release** | The latest version tag | See all releases and their changelogs |
+| **build requests** (green count) | How many things humans (and agents) are asking for | See the list of open requests |
+| **PRs** (purple count) | How many changes are waiting for review | See the list of open PRs |
+| **CI** (green/red) | Did the last build pass? | See CI history |
+| **QA** (green/red) | Did the last Playwright smoke test pass? | See QA history |
+| **last commit** | When the repo was last updated | See recent commits |
+
+If any badge is **red**, click it. That's the system telling you something needs attention.
+
+### The status table
+
+Below the badges, a small table gives you the live URL, a one-click link to file a new build request, and shortcuts to issues / PRs / actions. Use this as your starting point every day.
+
+---
+
+## Your daily rhythm
+
+Target: **3-4 iterations per day, every day**. The agents fill the build queue around you, but only you can do the play-testing.
 
 ### Morning iteration (1 of 3-4)
 
-1. **Open the live game URL on your phone.**
-   - Arrow Puzzle: https://mody-sahariar1.github.io/arrow-puzzle-testing/
-   - Bloxplode: https://mody-sahariar1.github.io/Bloxplode-Beta/ (or whatever Sahil shares)
-2. **Play 10-15 minutes.** Don't rush. Try to play normally, the way a real player would.
-3. **Note everything.** Bugs, awkward feels, missing polish, UI issues, timing problems, sound problems, level pacing.
-4. **Open GitHub Issues** on the relevant game's repo and use the **Build Request** template.
-5. **File 2-3 issues** — be specific, one thing per issue. (Details on how to write a great one below.)
-6. **Wait ~1 hour.** The hourly daemon will pick them up. You'll get notifications via:
-   - GitHub email/web notifications
-   - Telegram (if Sahil has set up the bot)
-7. **Click the preview URL** in the daemon's comment on each issue. Test the change on your phone.
-8. **Comment your verdict** on the PR: works / still wrong / partial / introduced a new issue.
+1. **Open the live game URL** on your phone (badge → Play).
+2. **Play 10-15 minutes.** Just play normally, the way a real player would.
+3. **Note everything weird**: bugs, awkward moments, anything that feels off, missing polish, audio issues, animation glitches.
+4. **Open the repo's Issues tab**, click "New issue", pick the **Build Request** template.
+5. **File 2-3 build requests**, one per concern. (One thing per issue. Don't bundle.)
+6. **Wait ~1 hour** for the hourly builder to pick them up.
 
 ### Midday iteration (2 of 3-4)
 
-Repeat steps 1-8 but focus on a different aspect of the game (e.g., morning was bug hunting → midday is level pacing or audio polish).
+Same as morning, but focus on a different layer (level pacing instead of bugs, or audio instead of UI). Also: **test any PR previews from this morning's batch** (every PR comments with a preview URL).
 
 ### Afternoon iteration (3 of 3-4)
 
-Repeat. By now several PRs may have auto-merged. Test them on the **live URL** (not the preview URL — the merged ones are now in production).
+Repeat. By now several PRs may have **auto-merged** (look for the `auto-merged` label). Test those on the LIVE URL (not the preview URL) — they're already shipped.
 
-### Evening iteration (4 of 3-4, optional)
+### Evening (optional)
 
-Quick fixes only. Anything tiny that bugged you during the day — open Claude Code, fix it yourself, push directly. No need to wait for the daemon.
+Quick fixes only. Anything tiny that bugged you today — open Claude Code, fix it, push directly. Or just file the issue and let the daemon handle it overnight.
 
 ### End of day
 
-- Review all open PRs. Add comments where the daemon's work was wrong or right.
-- Look at the day's `auto-merged` count — that's how many improvements shipped today.
-- If the game feels solid this week, talk to Sahil about adding the `ship-it` label to a tracking issue or PR. That triggers production release.
+Click the badges row on each game's README. If any badge is red, investigate. Look at the day's `auto-merged` count — that's how many improvements shipped today. Look at the open PRs queue — anything that's been waiting >24h needs your eyes.
 
 ---
 
@@ -64,79 +89,101 @@ Quick fixes only. Anything tiny that bugged you during the day — open Claude C
 
 This is the most important skill in the whole loop. The quality of the request determines the quality of the build.
 
-### Step 1: Go to the game's repo
-
-- Arrow Puzzle: https://github.com/mody-sahariar1/arrow-puzzle-testing
-- Bloxplode: https://github.com/mody-sahariar1/Bloxplode-Beta
-
-Click **Issues** → **New issue** → pick the **Build Request** template.
-
-### Step 2: Be SPECIFIC
-
-The single biggest mistake is being too vague. Compare:
-
-| ❌ Vague | ✅ Specific |
-|---|---|
-| "Arrows are broken" | "Level 12, third row from the top, the right arrow overlaps the blocker on Samsung A54 in landscape mode" |
-| "Combo feels off" | "When I clear a 4-row combo on level 7, the combo counter shows '×3' instead of '×4'" |
-| "Make the menu nicer" | "On the main menu, the 'Try Again' button is 32px tall — bump it to 60px so it's tappable on mobile" |
-| "Add levels" | "Add a level that teaches the diagonal-arrow mechanic — should feel like a tutorial moment, 6×6 grid, no blockers, 2-star easy" |
-
-**Always include device info** when reporting bugs:
-- Phone model (Samsung A54, iPhone 12, Pixel 7…)
-- OS version (Android 13, iOS 17…)
-- Browser (Chrome, Safari, Samsung Internet)
-- Orientation (portrait/landscape)
-
-**For features**, describe what the player should *experience*, not how to code it.
-
-**For levels**, describe the *feel* and *purpose*, not the exact grid coordinates. Let the daemon figure out the layout.
-
-**One issue per theme.** Don't mix bug reports with feature requests. Don't bundle 5 bugs into one issue. The daemon caps issues at 50 lines and works best with a single, focused ask.
-
-### Step 3: Submit
-
-Click **Submit new issue**. The label `build-request` is added automatically. You don't need to add it yourself.
+1. **Click the dashboard's "file a build request" link** (or Issues tab → New issue → Build Request template).
+2. **Be specific.** Compare:
+   - ❌ "Arrows are broken" → ✅ "Level 12, third row from the top, the right arrow overlaps the blocker on Samsung A54 in landscape"
+   - ❌ "Combo feels off" → ✅ "After clearing a 4-row combo on level 7, the counter shows ×3 instead of ×4"
+   - ❌ "Make it nicer" → ✅ "Bump the 'Try Again' button from 32px to 60px so it's tappable on phones"
+3. **Always include device info** when reporting bugs: phone model, OS version, browser, orientation.
+4. **For features**, describe what the player should *experience*, not how to code it.
+5. **For levels**, describe the *feel* (not the grid coordinates) — let the daemon figure out the layout.
+6. **One issue per theme.** Don't mix bug reports with feature requests.
+7. **Submit.** The `build-request` label is added automatically. Within an hour, the builder agent picks it up.
 
 ---
 
-## What the labels mean
+## How to test a PR
 
-| Label | Color | Meaning |
+When the builder agent finishes a build, it opens a PR. Every PR follows the **same template**, so testing is always the same checklist.
+
+### Step-by-step
+
+1. **Open the PR** (badge → Open PRs → click into the one you want to test).
+2. **Wait for the QA badge.** The QA agent runs automatically and posts:
+   - 🟢 **QA passed** = the smoke test ran cleanly. Safe to proceed.
+   - 🔴 **QA failed** = the page didn't load or crashed. Don't bother testing manually — it needs a fix first.
+3. **Look for the PR Preview comment.** A bot comments with a URL like `https://mody-sahariar1.github.io/<game>/pr/<num>/`. **Open it on your phone.**
+4. **Run the testing checklist** in the PR template:
+   - [ ] Game loads without errors (white screen = failure)
+   - [ ] Main menu appears and Play is clickable
+   - [ ] Start a game — does the new feature/fix work as described?
+   - [ ] Play 3 levels — no regressions on existing mechanics?
+   - [ ] Check on mobile (real phone, not just desktop responsive mode)
+5. **Comment your verdict** on the PR:
+   - ✅ "Works as expected, ready to merge"
+   - ⚠️ "Partial — fixes the rotation but the animation is now skipped"
+   - ❌ "Doesn't fix it, still happens on Samsung A54"
+   - 🆕 "Introduced a new issue — score now resets between rounds (filing as #N)"
+6. **If it's wrong**, file a NEW issue (not a comment) describing the new problem. The daemon only reads new issues.
+
+### Device checklist
+
+The PR template includes this — work through each on a real device when you can:
+- [ ] Chrome desktop
+- [ ] Safari iOS
+- [ ] Chrome Android
+- [ ] Samsung Internet
+
+---
+
+## What each agent does (in simple terms)
+
+The factory has 6 agents working alongside you. You don't need to manage any of them — they run on their own schedules and file GitHub issues that show up in the dashboard.
+
+| Agent | When it runs | What it does | Where its output appears |
+|---|---|---|---|
+| **builder** | Every hour | Picks up `build-request` issues and turns them into PRs | New PRs in the dashboard's Open PRs count |
+| **qa** | On every PR | Runs a Playwright smoke test, takes a screenshot, comments 🟢/🔴 | PR comments + screenshot artifacts |
+| **content** | Every Wednesday at midnight | Suggests 5 new level / content ideas per game and files them as build-requests | New issues in the build-requests count |
+| **competitor** | Every Tuesday at midnight | Searches for trending puzzle games and files 3 mechanic suggestions per game | New issues with the `market-intel` label |
+| **council** | Every Sunday at midnight | Reviews the week's factory activity and updates the factory's living memory | New issues with the `council` label on the factory repo |
+| **platform** | When Sahil flips `ship-it` | Builds the Android APK and files a `release-ready` issue | New issue with the `release-ready` label |
+
+There are also **3 planned agents** waiting on prerequisites:
+- **product** will pull Firebase player data and file data-backed improvement issues
+- **monetization** will analyze AdMob revenue and propose ad-placement changes
+- **ua** will generate store listings + ASO keywords on every release
+
+---
+
+## The weekly rhythm
+
+| Day | Agent activity | Your job |
 |---|---|---|
-| `build-request` | green | You filed a request. The daemon will pick it up next hour. |
-| `building` | yellow | Daemon is working on it RIGHT NOW. |
-| `done` | purple | Daemon finished and opened a PR. Look for a comment with the link. |
-| `auto-merged` | violet | The PR was small/safe and merged automatically. **Live now.** |
-| `ship-it` | green | Production release triggered. |
+| **Monday** | (when product + monetization are built: data analysis files data-backed issues) | Triage anything new from Sunday's council review |
+| **Tuesday** | Market scan — competitor agent files trend-driven suggestions | Read the `market-intel` issues, decide which deserve to become `build-request` |
+| **Wednesday** | New content — content agent files 5 level ideas per game | Read the new content-agent issues, leave a thumbs-up or refine before they hit the builder |
+| **Thursday-Saturday** | Builder + qa + auto-merge drain the queue | Test PRs, test merged builds on the live URL, file follow-up issues |
+| **Sunday** | Council reviews the week, updates COUNCIL.md, files architectural improvement issues | Read the council's findings — they often catch things the rest of the system missed |
+| **Hourly, every day** | Builder picks up build-requests | File more requests as you find more bugs |
+| **On every PR** | QA runs the smoke test | Wait for 🟢 before manual testing |
+| **On `ship-it`** | Platform agent rebuilds Android | Pick up the `release-ready` issue and submit to Play Store |
 
 ---
 
-## How to know when something shipped
+## The labels glossary
 
-Three states matter:
-
-1. **`auto-merged` label = live on the main URL.** Go test it now on the live site, not the preview URL. Auto-merge happens within minutes after CI passes for safe-path-only changes (CSS, JSON, content, levels — no JS/HTML).
-2. **Open PR (not auto-merged) = waiting for review.** A preview URL is available in the PR's comments — test it there. When Sahil merges, it ships.
-3. **`ship-it` label = production release tagged.** A new GitHub Release is created, the version is bumped, and (for Bloxplode) a new APK rebuild is scheduled on Sahil's Mac.
-
----
-
-## Testing PR previews
-
-Every PR gets its own preview URL automatically:
-
-- Arrow Puzzle: `https://mody-sahariar1.github.io/arrow-puzzle-testing/pr/<NUMBER>/`
-- Bloxplode: `https://mody-sahariar1.github.io/Bloxplode-Beta/pr/<NUMBER>/`
-
-The PR will have a comment from `github-actions[bot]` with the exact link. **Click it on your phone**, play through the change, and comment your verdict on the PR:
-
-- ✅ "Works as expected, ready to merge"
-- ⚠️ "Partial — fixes the rotation but the animation is now skipped"
-- ❌ "Doesn't fix it — still happens on Samsung A54"
-- 🆕 "Introduced a new issue — score now resets between rounds (filing as #N)"
-
-If the change is wrong, **file a NEW issue** describing the new problem. Don't comment on the PR or the original issue — the daemon only reads new issues with the `build-request` label.
+| Label | Meaning | Who creates it |
+|---|---|---|
+| `build-request` | Something to build (bug fix, feature, content) | You, or the content/competitor agents (after triage) |
+| `building` | Builder is working on it RIGHT NOW | Builder agent (auto-removed when done) |
+| `done` | Builder opened a PR | Builder agent |
+| `auto-merged` | PR was small/safe and merged automatically | Auto-merge workflow |
+| `market-intel` | Competitor agent suggestion (waiting for human triage) | Competitor agent |
+| `content-agent` | Content agent suggestion (also has `build-request`, goes straight to builder) | Content agent |
+| `release-ready` | Native build done, ready for store submission | Platform agent |
+| `council` | Architectural improvement suggestion | Council agent |
+| `ship-it` | Trigger a production release | You (apply this manually when the game is ready) |
 
 ---
 
@@ -144,70 +191,27 @@ If the change is wrong, **file a NEW issue** describing the new problem. Don't c
 
 You have a $20/month Claude Code Pro plan. Use it for:
 
-- Color tweaks ("make the combo counter red instead of orange")
-- Copy/text edits ("change 'Try again' to 'One more')
-- Adding levels (describe the feel, Claude writes the level JSON)
+- Quick polish: fix a color, adjust spacing, tweak text
+- Adding levels (describe the feel, Claude writes the JSON or extends the procedural config)
 - Tiny CSS fixes (button sizes, padding, spacing)
 - Adjusting numeric tuning (timer values, score multipliers)
 
-### How
-
 ```bash
-# One-time setup (Sahil will help)
-git clone https://github.com/mody-sahariar1/arrow-puzzle-testing.git
-cd arrow-puzzle-testing
-
-# Each time:
-git pull --rebase origin main          # ALWAYS pull first
+git pull --rebase origin main           # ALWAYS pull first
 claude                                  # opens interactive Claude Code
 # describe what you want — Claude reads CLAUDE.md and follows the rules
-git status                              # see what changed
-git add <files>
+git add <specific-files>                # NOT git add -A
 git commit -m "fix: bump 'Try Again' button to 60px #issue-num"
 git push origin main                    # push directly
 ```
 
-**Rules** (also in the repo's `CLAUDE.md` under "Direct contributor mode"):
+**Rules:**
 - Always `git pull --rebase` before starting.
 - Never delete `auto/*` branches manually.
-- Use conventional commits (`fix:`, `feat:`, `chore:`, `content:`, `level:`).
-- If CI fails after your push, fix it immediately or `git revert HEAD && git push`.
+- Use conventional commits and reference issue numbers.
+- If CI or QA fails after your push, fix it immediately or `git revert HEAD && git push`.
 
-For anything bigger than a small tweak, file a Build Request and let the daemon handle it.
-
----
-
-## Using Claude Chat to structure feedback
-
-You also have the $20/month Claude Pro subscription (claude.ai). Use it as a writing assistant for filing better Build Requests.
-
-**Prompt to start with:**
-
-> I'm play-testing a web game called Arrow Puzzle. I want you to help me write a clear Build Request for the Stratos Games Factory. The format has these sections: "What's wrong", "Where in the game", "How it should behave", "How to reproduce", "Anything else". I'll describe what I saw, and you'll turn it into a properly-formatted Build Request that's under 50 lines. Keep each section short. Always ask me for the device info if I haven't included it. Ready?
-
-Then describe what you saw in your own words. Claude turns it into a properly-formatted issue you can paste into GitHub.
-
-**Important:** Always read what Claude wrote *before* you submit. Claude can sometimes invent details you didn't actually see. You are the source of truth — Claude is just a writing helper.
-
----
-
-## After ship-it: distribution workflow
-
-When a release is tagged (someone added the `ship-it` label and the release workflow ran), your job shifts to distribution:
-
-1. **Pull latest main** in your local clone.
-2. **Web (Arrow Puzzle, Bloxplode web preview):** already live on GitHub Pages — just verify by hitting the URL.
-3. **Android (Bloxplode):**
-   ```bash
-   cd Bloxplode-Beta
-   git pull
-   npx cap sync android
-   npx cap open android
-   ```
-   Then in Android Studio: **Build → Generate Signed Bundle/APK**, sign with the keystore Sahil shared, upload the AAB to Google Play Console.
-4. **iOS (when iOS project is added):** similar — `npx cap sync ios`, open Xcode, archive, upload to App Store Connect.
-5. **Update store listing:** screenshots from the new build, what's-new text from the changelog in the GitHub Release.
-6. **Monitor for 48 hours:** crash reports in Crashlytics, store reviews, your own play-tests on the live build.
+For anything bigger than a small tweak, file a build-request and let the daemon handle it.
 
 ---
 
@@ -215,31 +219,32 @@ When a release is tagged (someone added the `ship-it` label and the release work
 
 | I want to... | Do this |
 |---|---|
-| Report a bug | Open an issue → Build Request template → fill all sections (with device info) → submit |
-| Suggest a tweak | Same as above, skip "How to reproduce" |
-| Add a level idea | Describe the feel and purpose, not the layout. Daemon writes the JSON. |
-| Check if my issue is being built | Look at the labels: green=waiting, yellow=building, purple=done |
-| See the fix | Click the preview URL in the daemon's PR comment |
-| Test the merged version | Open the live URL (not the preview) — auto-merged means live |
-| Report the fix didn't work | Open a NEW issue, reference the old one's number |
-| Make a tiny fix yourself | `git pull --rebase` → `claude` → fix → `git push` |
-| Trigger a production release | Talk to Sahil, add the `ship-it` label to a tracking issue/PR |
+| See if anything needs my attention | Look at the badges on the game repo README |
+| File a bug | Click "file a build request" on the dashboard |
+| Test a PR | Wait for 🟢 QA, click the preview URL in the bot's comment |
+| Test a merged change | Open the live URL (NOT the preview URL) |
+| Report a regression | File a NEW issue, reference the old one |
+| Make a tiny fix yourself | `git pull --rebase` → `claude` → fix → push |
+| Trigger a release | Add the `ship-it` label to a tracking issue |
+| See what the council found | Look at the factory repo's `council` labeled issues |
+| See trending market suggestions | Look at the game repo's `market-intel` labeled issues |
+| See content agent ideas waiting | Look at the game repo's `content-agent` labeled issues |
 
 ---
 
-## When to ping Sahil directly (not the daemon)
+## When to ping Sahil directly
 
-The daemon handles most things. But ping Sahil for:
+The agents handle most things. Ping Sahil for:
 
-- Issues stuck on `build-request` for >2 hours (daemon may be down).
-- Daemon keeps refusing the same issue (it's probably ambiguous or out-of-scope).
-- Repeated wrong-direction fixes (you and Sahil should talk it through).
-- Anything dangerous: data loss, broken sign-in, security, payment.
-- Native app issues (gestures, store listing, signing) — those need a human, not the daemon.
+- Issues stuck on `build-request` for >2 hours (builder may be down).
+- Daemon keeps refusing the same issue (probably ambiguous or out-of-scope).
+- A PR fails QA repeatedly with the same error.
+- Anything dangerous: data loss, broken sign-in, payment, security.
+- Native APK / store submission questions (those need a human, not an agent).
 - Whenever the game *feels* ready for `ship-it` — that's a judgment call you and Sahil make together.
 
 ---
 
-That's everything. The system is designed so every issue you file becomes a real change in the game, usually within the same hour. If you're filing 5-10 detailed issues a day and testing every PR that comes back, the games will get visibly better every single day.
+The system is built so every issue you file becomes a real change in the game, usually within the same hour. If you're filing 5-10 specific issues a day and testing every PR that comes back, the games will get visibly better every single day.
 
 — The Stratos Games Factory
