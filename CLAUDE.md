@@ -50,6 +50,18 @@ gh issue list --repo <owner/repo> --label content-agent --state all --limit 1 --
 
 # Recent competitor agent activity
 gh issue list --repo <owner/repo> --label market-intel --state all --limit 1 --json number,createdAt
+
+# Analytics data from Ripon (input for product agent)
+gh issue list --repo <owner/repo> --label analytics-data --state open --json number,title,createdAt
+
+# Recent product agent activity
+gh issue list --repo <owner/repo> --label product-data --state all --limit 1 --json number,createdAt
+
+# Recent monetization agent activity
+gh issue list --repo <owner/repo> --label monetization-data --state all --limit 1 --json number,createdAt
+
+# Recent UA agent activity
+gh issue list --repo <owner/repo> --label ua-assets --state all --limit 1 --json number,createdAt
 ```
 
 Also check when the council last ran:
@@ -61,8 +73,12 @@ git log --format='%aI %s' --grep='council:' -1
 - N build-request issues pending (list them with numbers and titles)
 - N auto/* PRs awaiting review
 - N stuck issues (labeled `building` but no PR)
+- N analytics-data issues from Ripon (unprocessed player data)
+- Last product-agent run: date
+- Last monetization-agent run: date
 - Last content-agent run: date
 - Last competitor-agent run: date
+- Last UA-agent run: date
 - Last council review: date
 - Recommended action plan (what agents to run, in what order)
 
@@ -71,9 +87,12 @@ git log --format='%aI %s' --grep='council:' -1
 Work in this order (highest priority first):
 
 1. **BUILDER** — always first. Process any open `build-request` issues not already labeled `building` or `done`.
-2. **CONTENT** — if no `content-agent` issues filed in the past 7 days, generate new content ideas.
-3. **COMPETITOR** — if no `market-intel` issues filed in the past 7 days, scan the market.
-4. **COUNCIL** — if no council review commit in the past 7 days, review the week.
+2. **PRODUCT** — if there are open `analytics-data` issues from Ripon, or no `product-data` issues filed in the past 7 days, analyze player data and file improvement issues.
+3. **MONETIZATION** — if no `monetization-data` issues filed in the past 7 days, review ad placement and file optimization issues.
+4. **CONTENT** — if no `content-agent` issues filed in the past 7 days, generate new content ideas.
+5. **COMPETITOR** — if no `market-intel` issues filed in the past 7 days, scan the market.
+6. **UA** — if a `ship-it` label was recently applied, or if no `ua-assets` issues filed in the past 30 days, generate store listing assets.
+7. **COUNCIL** — if no council review commit in the past 7 days, review the week.
 
 Skip any agent whose work is already fresh. If there's nothing to do, say so.
 
@@ -156,7 +175,71 @@ RULES:
 
 **If the subagent produced no changes:** comment on the issue with the subagent's explanation, remove `building` label, move on.
 
-### Step 4 — Content agent
+### Step 4 — Product agent
+
+Run inline (no subagent). Analyzes player behavior data and files data-backed improvement issues.
+
+**Data sources (in priority order):**
+1. **`analytics-data` issues from Ripon**: Check for open issues labeled `analytics-data` on each game repo. Ripon pastes screenshots, CSVs, or text summaries of Firebase Analytics / Play Console data into these issues. This is the primary input.
+2. **Firebase CLI** (if available): Run `firebase` commands to pull analytics directly. Check with `command -v firebase`. If not available, skip — rely on Ripon's data issues.
+3. **Game code analysis**: Read the game's level/difficulty config files to understand the progression curve and map analytics data to specific game elements.
+
+**For each game:**
+1. Read any open `analytics-data` issues: `gh issue list --repo <repo> --label analytics-data --state open --json number,title,body`
+2. Read the game's level/difficulty configuration files to understand the progression.
+3. Analyze the data for:
+   - **Drop-off points**: which levels have abnormally low completion rates
+   - **Session length patterns**: are sessions too short (boring) or too long (exhausting)
+   - **Retry spikes**: which levels cause excessive retries (frustration)
+   - **Feature engagement**: which mechanics get used vs ignored
+4. File up to 3 data-backed improvement issues per game:
+   ```bash
+   gh label create product-data --repo <repo> --color 1d76db --description "Data-backed improvement from product agent" 2>/dev/null || true
+   gh issue create --repo <repo> --label "build-request" --label "product-data" \
+     --title "[product] <specific data-backed suggestion>" \
+     --body "<body with raw stats, analysis, and concrete fix>"
+   ```
+5. Close processed `analytics-data` issues with a comment linking to the filed improvement issues.
+
+**Product rules:**
+- Every suggestion MUST cite specific data: "Level 8 has 70% drop-off vs 35% average" not "Level 8 seems hard"
+- Suggestions must be actionable by the builder agent (reference specific files, stay under 50-line body)
+- Title starts with `[product]`
+- If no analytics data is available (no `analytics-data` issues, no Firebase CLI), skip with a message suggesting Ripon file an `analytics-data` issue with current stats
+- Never invent data. If the numbers aren't there, say so.
+
+### Step 5 — Monetization agent
+
+Run inline (no subagent). Reviews ad placement configuration and files optimization issues.
+
+**For each game (currently Bloxplode only — skip games with no ad integration):**
+1. Read the game's codebase looking for ad integration code:
+   - AdMob config, ad unit IDs, placement triggers
+   - Interstitial frequency/timing logic
+   - Rewarded video placement and reward values
+   - Banner ad positioning
+2. Cross-reference with casual game monetization best practices:
+   - **Interstitials**: not more than once per 2-3 minutes of gameplay, never mid-action, always at natural break points (level complete, game over)
+   - **Rewarded video**: offered at moments of player need (extra life, hint, skip level), never forced
+   - **Banners**: bottom of screen only, never overlapping game UI, hidden during active gameplay
+   - **Session pacing**: first ad impression should come after 2+ minutes of engagement, never on first screen
+3. File up to 3 optimization issues per game:
+   ```bash
+   gh label create monetization-data --repo <repo> --color 0d7a3f --description "Ad optimization from monetization agent" 2>/dev/null || true
+   gh issue create --repo <repo> --label "build-request" --label "monetization-data" \
+     --title "[monetization] <specific optimization>" \
+     --body "<body with current config, best practice citation, and concrete change>"
+   ```
+
+**Monetization rules:**
+- Title starts with `[monetization]`
+- Never suggest changes that hurt player experience more than they help revenue
+- Reference specific files and line numbers where ad config lives
+- Stay under 50-line body
+- Do NOT touch `android/`, `capacitor.config.json`, or native ad SDK setup — only web-layer config
+- If no ad integration exists in a game, skip it and note "no ad integration found"
+
+### Step 6 — Content agent
 
 Run inline (no subagent). For each game in the portfolio:
 
@@ -179,7 +262,7 @@ Run inline (no subagent). For each game in the portfolio:
 - Do NOT duplicate any of the 20 recent issues
 - Good themes: difficulty variants, tutorial levels, pattern-based sets, visual themes, combo mechanics, timed modes
 
-### Step 5 — Competitor agent
+### Step 7 — Competitor agent
 
 Run inline (no subagent). Covers all games in one pass.
 
@@ -207,7 +290,50 @@ Run inline (no subagent). Covers all games in one pass.
 - If web searches return nothing credible, file zero issues and say so honestly.
 - These issues are triaged by humans, NOT auto-built.
 
-### Step 6 — Council review
+### Step 8 — UA agent (user acquisition)
+
+Run inline (no subagent). Generates store listing assets for app store submissions.
+
+**Triggered when:** a `ship-it` label was recently applied to a game, OR no `ua-assets` issue has been filed in the past 30 days, OR Sahil says "run UA prep".
+
+**For each game:**
+1. Read the game's current features, mechanics, and visual style from the codebase and CLAUDE.md.
+2. Read the latest release tag and changelog (if any): `git tag --list 'v*' --sort=-version:refname | head -1`
+3. Generate all of the following in a single issue:
+
+   **App Store / Play Store description** (5 variants):
+   - Each variant takes a different angle (gameplay-first, visual-first, challenge-first, casual-first, social-first)
+   - Short description (80 chars) + full description (4000 chars max) for each
+   - Written for the target audience (casual puzzle gamers)
+
+   **ASO keyword sets** (5 variants):
+   - Each set of 100 characters (iOS keyword field limit)
+   - Mix of high-volume broad terms and low-competition long-tail terms
+   - Include competitor game names where appropriate
+   - Note estimated search volume/difficulty if inferable
+
+   **Screenshot compositions** (suggestions, not images):
+   - One suggestion per App Store screenshot slot (up to 10)
+   - Each describes: what game state to capture, what caption text to overlay, what feature it highlights
+   - Ordered by impact (most compelling screenshot first)
+
+4. File as a single issue per game:
+   ```bash
+   gh label create ua-assets --repo <repo> --color e3b341 --description "Store listing assets from UA agent" 2>/dev/null || true
+   gh issue create --repo <repo> --label "ua-assets" \
+     --title "[ua] Store listing assets — <date>" \
+     --body "<all variants, keywords, and screenshot suggestions>"
+   ```
+
+**UA rules:**
+- Title starts with `[ua]`
+- All copy must be truthful — describe features that actually exist in the game
+- Never invent features the game doesn't have
+- Write for the casual mobile gamer audience
+- Include localization notes (flag terms that need translation attention)
+- These issues are for human review — Ripon/Sahil picks the best variants
+
+### Step 9 — Council review
 
 Run inline (no subagent). Review the factory's own performance.
 
@@ -226,12 +352,15 @@ Run inline (no subagent). Review the factory's own performance.
 5. Commit and push COUNCIL.md changes.
 6. If the week was uneventful, say so honestly — don't invent recommendations.
 
-### Step 7 — Report
+### Step 10 — Report
 
 After all agents complete, output a brief summary:
 - Builder: N issues processed, N PRs opened (list URLs)
+- Product: N data-backed issues filed, N analytics-data issues processed
+- Monetization: N optimization issues filed
 - Content: N ideas filed (list issue numbers)
 - Competitor: N market-intel issues filed
+- UA: N store listing issues filed
 - Council: N entries added, N archived
 - Anything that failed or was skipped, and why
 
@@ -279,9 +408,11 @@ After all agents complete, output a brief summary:
 ```
 
 Key facts:
-- **Sahil opens Claude Code, says "go"** — the swarm runs all agents in priority order.
+- **Sahil opens Claude Code, says "go"** — the swarm runs all 9 agents in priority order.
 - The **builder** spawns subagents (one per issue) for context isolation.
-- **Content, competitor, council** run inline — they file issues and update docs, not code.
+- **Product, monetization, content, competitor, UA, council** all run inline — they file issues, not code.
+- The **product agent** reads Ripon's `analytics-data` issues and turns raw stats into actionable `build-request` issues.
+- The **UA agent** generates store listing variants when a game approaches release.
 - **Auto-merge** ships safe-path-only PRs (CSS, JSON, content, levels, MD) instantly. Logic-touching PRs (.js/.ts/.html) wait for human review.
 - The **`ship-it` label** triggers production release on issues OR PRs.
 - **QA agent** runs as GitHub Actions (Playwright) on every PR — zero Claude tokens.

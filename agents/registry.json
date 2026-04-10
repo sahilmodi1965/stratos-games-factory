@@ -55,27 +55,27 @@
     },
     {
       "name": "product",
-      "dispatch": "swarm-planned",
+      "dispatch": "swarm-inline",
       "schedule": "on-demand",
-      "repos": ["mody-sahariar1/Bloxplode-Beta"],
-      "status": "planned",
-      "description": "Will pull Firebase Analytics + Crashlytics data and file data-backed improvement issues. Spec in agents/product/README.md."
+      "repos": ["mody-sahariar1/arrow-puzzle-testing", "mody-sahariar1/Bloxplode-Beta"],
+      "status": "active",
+      "description": "Analyzes player data from analytics-data issues (Ripon) or Firebase CLI. Files data-backed build-request issues with label product-data."
     },
     {
       "name": "monetization",
-      "dispatch": "swarm-planned",
+      "dispatch": "swarm-inline",
       "schedule": "on-demand",
       "repos": ["mody-sahariar1/Bloxplode-Beta"],
-      "status": "planned",
-      "description": "Will analyze AdMob revenue + ad impression data and file ad-placement optimization issues. Spec in agents/monetization/README.md."
+      "status": "active",
+      "description": "Reviews ad placement config in game code, cross-references with casual game best practices, files optimization issues with label monetization-data."
     },
     {
       "name": "ua",
-      "dispatch": "swarm-planned",
-      "schedule": "on-release",
-      "repos": ["all"],
-      "status": "planned",
-      "description": "Will generate localized store listings, screenshots, and ASO keyword suggestions on release. Spec in agents/ua/README.md."
+      "dispatch": "swarm-inline",
+      "schedule": "on-demand",
+      "repos": ["mody-sahariar1/arrow-puzzle-testing", "mody-sahariar1/Bloxplode-Beta"],
+      "status": "active",
+      "description": "Generates App Store/Play Store description variants, ASO keyword sets, and screenshot composition suggestions. Files ua-assets issues."
     }
   ]
 }

@@ -8,11 +8,11 @@
 [![Content](https://img.shields.io/badge/content-active-1f883d?style=flat-square)](agents/content/)
 [![Competitor](https://img.shields.io/badge/competitor-active-1f883d?style=flat-square)](agents/competitor/)
 [![Platform](https://img.shields.io/badge/platform-active-1f883d?style=flat-square)](agents/platform/)
-[![Product](https://img.shields.io/badge/product-planned-8957e5?style=flat-square)](agents/product/)
-[![Monetization](https://img.shields.io/badge/monetization-planned-8957e5?style=flat-square)](agents/monetization/)
-[![UA](https://img.shields.io/badge/ua-planned-8957e5?style=flat-square)](agents/ua/)
+[![Product](https://img.shields.io/badge/product-active-1f883d?style=flat-square)](agents/product/)
+[![Monetization](https://img.shields.io/badge/monetization-active-1f883d?style=flat-square)](agents/monetization/)
+[![UA](https://img.shields.io/badge/ua-active-1f883d?style=flat-square)](agents/ua/)
 
-An autonomous game studio that runs as a swarm of small agents. Sahil opens Claude Code, says **"go"**, and the swarm assesses pending work, builds issues, generates content ideas, scans the competition, and reviews the week — all from a single session. The factory currently runs **6 active agents** and has **3 more on the spec board**.
+An autonomous game studio that runs as a swarm of **9 active agents**. Sahil opens Claude Code, says **"go"**, and the swarm assesses pending work, builds issues, analyzes player data, optimizes monetization, generates content ideas, scans the competition, prepares store listings, and reviews the week — all from a single session.
 
 This repo is the **factory** — not a game. It operates on game repos.
 
@@ -39,14 +39,9 @@ The factory is a swarm. Every autonomous behavior is an agent registered in [`ag
 | [**content**](agents/content/) | swarm (inline) | filling the content pipeline | game CLAUDE.md + existing levels | `build-request` + `content-agent` issues |
 | [**competitor**](agents/competitor/) | swarm (inline) | market intelligence | trending-game web search | `market-intel` issues |
 | [**platform**](agents/platform/) | manual | native APK / IPA build | `main` + Capacitor projects | `release-ready` issues + release artifacts |
-
-### Planned agents (specs in their READMEs, scripts not built yet)
-
-| Agent | Dispatch | Will own | Spec |
-|---|---|---|---|
-| [**product**](agents/product/) | swarm (planned) | data-backed improvement issues from Firebase Analytics + Crashlytics | [`agents/product/README.md`](agents/product/README.md) |
-| [**monetization**](agents/monetization/) | swarm (planned) | AdMob revenue optimization issues | [`agents/monetization/README.md`](agents/monetization/README.md) |
-| [**ua**](agents/ua/) | swarm (planned) | localized store listings, ASO keywords, screenshot copy | [`agents/ua/README.md`](agents/ua/README.md) |
+| [**product**](agents/product/) | swarm (inline) | player data analysis | `analytics-data` issues + Firebase CLI + game config | `build-request` + `product-data` issues |
+| [**monetization**](agents/monetization/) | swarm (inline) | ad placement optimization | game ad integration code + best practices | `build-request` + `monetization-data` issues |
+| [**ua**](agents/ua/) | swarm (inline) | store listing assets | game features + release changelog | `ua-assets` issues |
 
 ## How the swarm works
 
@@ -101,11 +96,14 @@ claude
 
 Claude Code reads `CLAUDE.md`, assesses pending work across all games, and runs each agent in priority order:
 1. **Builder** — processes Ripon's build-request issues (highest priority)
-2. **Content** — generates content ideas if none filed in past 7 days
-3. **Competitor** — scans market trends if no intel filed in past 7 days
-4. **Council** — reviews the week if no review in past 7 days
+2. **Product** — analyzes player data from Ripon's `analytics-data` issues
+3. **Monetization** — reviews ad placement config and suggests optimizations
+4. **Content** — generates content ideas if none filed in past 7 days
+5. **Competitor** — scans market trends if no intel filed in past 7 days
+6. **UA** — generates store listing assets when approaching release
+7. **Council** — reviews the week if no review in past 7 days
 
-You can also run individual agents: "just run the builder", "run content agent only", etc.
+You can also run individual agents: "just run the builder", "run product analysis", "run UA prep", etc.
 
 ## Setup (one-time, on the host machine)
 
