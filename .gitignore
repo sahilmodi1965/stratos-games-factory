@@ -17,6 +17,10 @@ council/review-context.md
 *.swp
 .idea/
 .vscode/
+.claude/
+
+# Per-agent runtime logs (rebuilt on every run, no value in tracking)
+agents/*/*.log
 
 # Local secrets
 daemon/config.local.sh

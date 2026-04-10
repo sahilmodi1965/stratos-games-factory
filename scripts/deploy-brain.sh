@@ -30,10 +30,16 @@ die()  { printf "\033[1;31m✗\033[0m %s\n" "$*"; exit 1; }
 ARROW_CLAUDE="$FACTORY_DIR/templates/claude-arrow-puzzle.md"
 BLOX_CLAUDE="$FACTORY_DIR/templates/claude-bloxplode.md"
 ISSUE_TEMPLATE="$FACTORY_DIR/templates/build-request.md"
+PR_TEMPLATE="$FACTORY_DIR/templates/pull_request_template.md"
+ARROW_DASHBOARD="$FACTORY_DIR/templates/readme-dashboard-arrow-puzzle.md"
+BLOX_DASHBOARD="$FACTORY_DIR/templates/readme-dashboard-bloxplode.md"
 
-[[ -f "$ARROW_CLAUDE" ]]   || die "missing $ARROW_CLAUDE"
-[[ -f "$BLOX_CLAUDE" ]]    || die "missing $BLOX_CLAUDE"
-[[ -f "$ISSUE_TEMPLATE" ]] || die "missing $ISSUE_TEMPLATE"
+[[ -f "$ARROW_CLAUDE" ]]    || die "missing $ARROW_CLAUDE"
+[[ -f "$BLOX_CLAUDE" ]]     || die "missing $BLOX_CLAUDE"
+[[ -f "$ISSUE_TEMPLATE" ]]  || die "missing $ISSUE_TEMPLATE"
+[[ -f "$PR_TEMPLATE" ]]     || die "missing $PR_TEMPLATE"
+[[ -f "$ARROW_DASHBOARD" ]] || die "missing $ARROW_DASHBOARD"
+[[ -f "$BLOX_DASHBOARD" ]]  || die "missing $BLOX_DASHBOARD"
 
 ensure_label() {
   local repo="$1" name="$2" color="$3" desc="$4"
@@ -143,6 +149,134 @@ deploy_repo() {
         ok "  added \"validate\" script to package.json"
       else
         ok "  package.json validate script already present"
+      fi
+    fi
+  fi
+
+  # ---- QA agent assets (Playwright spec + config + tests/e2e/)
+  local qa_src_dir="$FACTORY_DIR/templates/qa-assets/"
+  case "$local_dir" in
+    arrow-puzzle-testing) qa_src_dir="${qa_src_dir}arrow-puzzle" ;;
+    Bloxplode-Beta)       qa_src_dir="${qa_src_dir}bloxplode" ;;
+    *)                    qa_src_dir="" ;;
+  esac
+  if [[ -n "$qa_src_dir" && -d "$qa_src_dir" ]]; then
+    mkdir -p tests/e2e
+    # playwright.config.js at repo root
+    if [[ -f "$qa_src_dir/playwright.config.js" ]]; then
+      if ! cmp -s "$qa_src_dir/playwright.config.js" playwright.config.js 2>/dev/null; then
+        cp "$qa_src_dir/playwright.config.js" playwright.config.js
+        git add playwright.config.js
+        changed=1
+        ok "  updated playwright.config.js"
+      else
+        ok "  playwright.config.js already current"
+      fi
+    fi
+    # tests/e2e/smoke.spec.js
+    if [[ -f "$qa_src_dir/tests/e2e/smoke.spec.js" ]]; then
+      if ! cmp -s "$qa_src_dir/tests/e2e/smoke.spec.js" tests/e2e/smoke.spec.js 2>/dev/null; then
+        cp "$qa_src_dir/tests/e2e/smoke.spec.js" tests/e2e/smoke.spec.js
+        git add tests/e2e/smoke.spec.js
+        changed=1
+        ok "  updated tests/e2e/smoke.spec.js"
+      else
+        ok "  tests/e2e/smoke.spec.js already current"
+      fi
+    fi
+    # Patch package.json: ensure @playwright/test (and http-server for bloxplode) are dev deps + a test:e2e script.
+    if [[ -f package.json ]] && command -v node >/dev/null 2>&1; then
+      local pkg_kind="vite"
+      [[ "$local_dir" == "Bloxplode-Beta" ]] && pkg_kind="static"
+      node -e '
+        const fs = require("fs");
+        const kind = process.argv[1];
+        const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+        let changed = false;
+        pkg.scripts = pkg.scripts || {};
+        if (pkg.scripts["test:e2e"] !== "playwright test") {
+          pkg.scripts["test:e2e"] = "playwright test";
+          changed = true;
+        }
+        pkg.devDependencies = pkg.devDependencies || {};
+        if (!pkg.devDependencies["@playwright/test"]) {
+          pkg.devDependencies["@playwright/test"] = "^1.49.0";
+          changed = true;
+        }
+        if (kind === "static" && !pkg.devDependencies["http-server"]) {
+          pkg.devDependencies["http-server"] = "^14.1.1";
+          changed = true;
+        }
+        if (changed) {
+          fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+          process.stdout.write("patched\n");
+        }
+      ' "$pkg_kind" > /tmp/pkg-patch-result 2>/dev/null
+      if [[ -s /tmp/pkg-patch-result ]]; then
+        git add package.json
+        changed=1
+        ok "  patched package.json (added @playwright/test + test:e2e)"
+      else
+        ok "  package.json playwright deps already present"
+      fi
+      rm -f /tmp/pkg-patch-result
+    fi
+  fi
+
+  # ---- PR template
+  if [[ -f "$PR_TEMPLATE" ]]; then
+    mkdir -p .github
+    if ! cmp -s "$PR_TEMPLATE" .github/pull_request_template.md 2>/dev/null; then
+      cp "$PR_TEMPLATE" .github/pull_request_template.md
+      git add .github/pull_request_template.md
+      changed=1
+      ok "  updated .github/pull_request_template.md"
+    else
+      ok "  PR template already current"
+    fi
+  fi
+
+  # ---- README dashboard injection (between STRATOS-DASHBOARD markers)
+  local dashboard_src=""
+  case "$local_dir" in
+    arrow-puzzle-testing) dashboard_src="$ARROW_DASHBOARD" ;;
+    Bloxplode-Beta)       dashboard_src="$BLOX_DASHBOARD" ;;
+  esac
+  if [[ -n "$dashboard_src" && -f "$dashboard_src" ]]; then
+    if [[ ! -f README.md ]]; then
+      cp "$dashboard_src" README.md
+      git add README.md
+      changed=1
+      ok "  created README.md from dashboard template"
+    else
+      # Strip any existing dashboard block, then prepend the new one.
+      local tmp
+      tmp="$(mktemp)"
+      awk '
+        BEGIN { skip = 0 }
+        /<!-- STRATOS-DASHBOARD:BEGIN -->/ { skip = 1; next }
+        /<!-- STRATOS-DASHBOARD:END -->/   { skip = 0; next }
+        skip == 0 { print }
+      ' README.md > "$tmp"
+      # Strip any leading blank lines from the stripped content
+      sed -i.bak '/./,$!d' "$tmp" 2>/dev/null || true
+      rm -f "${tmp}.bak"
+
+      local new_readme
+      new_readme="$(mktemp)"
+      cat "$dashboard_src" > "$new_readme"
+      printf '\n' >> "$new_readme"
+      cat "$tmp" >> "$new_readme"
+      rm -f "$tmp"
+
+      if ! cmp -s "$new_readme" README.md 2>/dev/null; then
+        mv "$new_readme" README.md
+        git add README.md
+        changed=1
+        ok "  injected dashboard block into README.md"
+      else
+        rm -f "$new_readme"
+        ok "  README.md dashboard block already current"
       fi
     fi
   fi

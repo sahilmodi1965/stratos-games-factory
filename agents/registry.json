@@ -1,0 +1,77 @@
+{
+  "$comment": "The authoritative list of Stratos Games Factory agents. Adding a new agent = create agents/<name>/, add it here, update install.sh if it needs a cron. Nothing else.",
+  "agents": [
+    {
+      "name": "builder",
+      "script": "daemon/stratos-daemon.sh",
+      "schedule": "hourly",
+      "repos": ["mody-sahariar1/arrow-puzzle-testing", "mody-sahariar1/Bloxplode-Beta"],
+      "status": "active",
+      "description": "Processes build-request issues, runs Claude Code with the game's CLAUDE.md as context, opens PRs."
+    },
+    {
+      "name": "council",
+      "script": "council/review.sh",
+      "schedule": "weekly-sunday",
+      "repos": ["all"],
+      "status": "active",
+      "description": "Reviews the week's factory activity, updates COUNCIL.md, files council-labeled issues for architectural improvements."
+    },
+    {
+      "name": "qa",
+      "script": "agents/qa/ (deployed as .github/workflows/qa-agent.yml in each game repo)",
+      "schedule": "every-pr",
+      "repos": ["mody-sahariar1/arrow-puzzle-testing", "mody-sahariar1/Bloxplode-Beta"],
+      "status": "active",
+      "description": "Playwright smoke tests on every PR: page loads, no console errors, game container present, screenshot artifact. Zero Claude tokens."
+    },
+    {
+      "name": "content",
+      "script": "agents/content/content-agent.sh",
+      "schedule": "weekly-wednesday",
+      "repos": ["mody-sahariar1/arrow-puzzle-testing", "mody-sahariar1/Bloxplode-Beta"],
+      "status": "active",
+      "description": "Generates 5 new content ideas per game and files them as build-request issues. Never writes code."
+    },
+    {
+      "name": "competitor",
+      "script": "agents/competitor/competitor-agent.sh",
+      "schedule": "weekly-tuesday",
+      "repos": ["mody-sahariar1/arrow-puzzle-testing", "mody-sahariar1/Bloxplode-Beta"],
+      "status": "active",
+      "description": "Scans trending puzzle/casual games via web search, files market-intel issues with 3 specific mechanic suggestions per game."
+    },
+    {
+      "name": "platform",
+      "script": "agents/platform/platform-agent.sh",
+      "schedule": "on-release",
+      "repos": ["mody-sahariar1/Bloxplode-Beta"],
+      "status": "active",
+      "description": "On ship-it release: npx cap sync, attempts gradle assembleRelease, files release-ready issue with APK/AAB links."
+    },
+    {
+      "name": "product",
+      "script": "agents/product/product-agent.sh",
+      "schedule": "weekly-monday",
+      "repos": ["mody-sahariar1/Bloxplode-Beta"],
+      "status": "planned",
+      "description": "Will pull Firebase Analytics + Crashlytics data and file data-backed improvement issues. Spec in agents/product/README.md."
+    },
+    {
+      "name": "monetization",
+      "script": "agents/monetization/monetization-agent.sh",
+      "schedule": "weekly-monday",
+      "repos": ["mody-sahariar1/Bloxplode-Beta"],
+      "status": "planned",
+      "description": "Will analyze AdMob revenue + ad impression data and file ad-placement optimization issues. Spec in agents/monetization/README.md."
+    },
+    {
+      "name": "ua",
+      "script": "agents/ua/ua-agent.sh",
+      "schedule": "on-release",
+      "repos": ["all"],
+      "status": "planned",
+      "description": "Will generate localized store listings, screenshots, and ASO keyword suggestions on release. Spec in agents/ua/README.md."
+    }
+  ]
+}
