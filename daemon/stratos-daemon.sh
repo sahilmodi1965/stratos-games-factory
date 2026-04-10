@@ -1,4 +1,9 @@
 #!/bin/bash
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ DEPRECATED — Swarm mode replaces cron-based execution.          │
+# │ See CLAUDE.md "Swarm mode" for the current operating model.     │
+# │ This script is preserved as documentation and legacy fallback.  │
+# └──────────────────────────────────────────────────────────────────┘
 # stratos-daemon.sh — the hourly Stratos Games Factory loop.
 source "/Users/sahilmodi/stratos-games-factory/daemon/config.local.sh"
 export HOME="/Users/sahilmodi"

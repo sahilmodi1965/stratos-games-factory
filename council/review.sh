@@ -1,4 +1,9 @@
 #!/bin/bash
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ DEPRECATED — Swarm mode replaces cron-based execution.          │
+# │ See CLAUDE.md "Swarm mode" for the current operating model.     │
+# │ This script is preserved as documentation and legacy fallback.  │
+# └──────────────────────────────────────────────────────────────────┘
 # review.sh — weekly self-audit for the Stratos Games Factory.
 #
 # Reads the past 7 days of build activity and asks Claude (acting as the

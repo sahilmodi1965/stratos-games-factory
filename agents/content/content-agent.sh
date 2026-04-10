@@ -1,4 +1,9 @@
 #!/bin/bash
+# ┌──────────────────────────────────────────────────────────────────┐
+# │ DEPRECATED — Swarm mode replaces cron-based execution.          │
+# │ See CLAUDE.md "Swarm mode" for the current operating model.     │
+# │ This script is preserved as documentation and legacy fallback.  │
+# └──────────────────────────────────────────────────────────────────┘
 # content-agent.sh — weekly content idea generator.
 #
 # Runs Wednesday 00:00 UTC via cron. For each active game in the registry:

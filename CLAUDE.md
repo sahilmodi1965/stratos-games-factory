@@ -1,6 +1,6 @@
 # CLAUDE.md — Stratos Games Factory
 
-The brain of the Stratos Games autonomous build factory. If you are an AI agent (Claude Code, a subagent, the daemon's `claude -p` session, etc.), this file is the source of truth for *how this repo operates*. Read it before doing anything.
+The brain of the Stratos Games autonomous build factory. If you are an AI agent (Claude Code, a subagent, etc.), this file is the source of truth for *how this repo operates*. Read it before doing anything.
 
 Humans should start at `README.md`, then come here.
 
@@ -12,9 +12,7 @@ The model:
 
 > **Humans test and document. Machines build. Humans review and ship.**
 
-A human (initially Ripon) plays a game, finds something to fix or improve, and files a GitHub Issue against the *game* repo with the `build-request` label. An hourly cron job on Sahil's MacBook (the **daemon**) wakes up, sees the issue, runs Claude Code against that game's repo with the issue body as the brief, opens a PR, and notifies us. Sahil reviews and merges.
-
-The daemon uses Sahil's Claude Code Max plan, so build cost is fixed.
+A human (Ripon) plays a game, finds something to fix or improve, and files a GitHub Issue against the *game* repo with the `build-request` label. Sahil opens Claude Code in this directory and says **"go"**. The swarm assesses what needs doing, builds every pending issue, generates content ideas, scans the competition, reviews the week — then reports what it did. Sahil reviews PRs and merges.
 
 ## Game portfolio
 
@@ -27,108 +25,271 @@ Currently operated on by the factory:
 
 Adding a new game is a one-shot: `bash scripts/add-game.sh owner/repo "description"`.
 
-## System architecture (the full pipeline)
+---
 
-The factory is the daemon PLUS a set of GitHub Actions workflows deployed into every game repo. They form a single end-to-end pipeline:
+## Swarm mode
+
+This is the primary way to operate the factory. When Sahil opens Claude Code in this directory and says **"go"**, **"run the swarm"**, **"what needs doing"**, or similar — you ARE the swarm. You do not invoke `claude -p`. You do not run shell scripts. You are the autonomous build factory.
+
+### Step 1 — Assess state
+
+Read `daemon/config.sh` to get the game list (`GAME_REPOS` array). For each game, run these `gh` commands to understand the full picture:
+
+```bash
+# Pending work (Ripon's requests)
+gh issue list --repo <owner/repo> --label build-request --state open --json number,title,body,labels
+
+# Stuck issues (labeled building but no PR yet)
+gh issue list --repo <owner/repo> --label building --state open --json number,title
+
+# Open auto/* PRs awaiting review
+gh pr list --repo <owner/repo> --state open --json number,title,headRefName,labels
+
+# Recent content agent activity (last filed issue)
+gh issue list --repo <owner/repo> --label content-agent --state all --limit 1 --json number,createdAt
+
+# Recent competitor agent activity
+gh issue list --repo <owner/repo> --label market-intel --state all --limit 1 --json number,createdAt
+```
+
+Also check when the council last ran:
+```bash
+git log --format='%aI %s' --grep='council:' -1
+```
+
+**Report the full state to Sahil before proceeding:**
+- N build-request issues pending (list them with numbers and titles)
+- N auto/* PRs awaiting review
+- N stuck issues (labeled `building` but no PR)
+- Last content-agent run: date
+- Last competitor-agent run: date
+- Last council review: date
+- Recommended action plan (what agents to run, in what order)
+
+### Step 2 — Prioritize
+
+Work in this order (highest priority first):
+
+1. **BUILDER** — always first. Process any open `build-request` issues not already labeled `building` or `done`.
+2. **CONTENT** — if no `content-agent` issues filed in the past 7 days, generate new content ideas.
+3. **COMPETITOR** — if no `market-intel` issues filed in the past 7 days, scan the market.
+4. **COUNCIL** — if no council review commit in the past 7 days, review the week.
+
+Skip any agent whose work is already fresh. If there's nothing to do, say so.
+
+### Step 3 — Builder agent
+
+For each open `build-request` issue (up to 5 per session to avoid context exhaustion):
+
+**Before the subagent:**
+1. Parse the game's config from `daemon/config.sh` to get: `owner/repo`, `local_dir`, `default_branch`, `build_cmd`, `forbidden_paths`.
+2. Label the issue `building`: `gh issue edit <N> --repo <owner/repo> --add-label building`
+3. Prepare the game repo:
+   ```bash
+   cd ~/stratos-games-factory/<local_dir>/
+   git fetch origin <default_branch>
+   git checkout <default_branch>
+   git reset --hard origin/<default_branch>
+   git clean -fd
+   ```
+4. Create the branch: `git checkout -b auto/<game>-issue-<N>-$(date +%s)`
+
+**Spawn a subagent** using the Agent tool. The subagent prompt must include:
+- The full path to the game repo
+- The issue number, title, and body
+- Instruction to read the game repo's `CLAUDE.md` first and follow its rules exactly
+- The build command to run as final step (if any)
+- The forbidden paths (do not edit or `git add` these)
+- Instruction to use conventional commits referencing the issue number
+- Instruction to end with a one-paragraph summary of what changed (or why it refused)
+
+Example subagent prompt:
+```
+You are working in the game repo at /Users/sahilmodi/stratos-games-factory/<local_dir>/.
+You are on branch auto/<game>-issue-<N>-<timestamp>.
+
+Implement this GitHub issue:
+  Repo: <owner/repo>
+  Issue: #<N>
+  Title: <title>
+  Body: <body>
+
+RULES:
+1. Read CLAUDE.md in this repo FIRST. Follow its rules exactly.
+2. Only do what the issue asks. No bonus refactors or cleanups.
+3. Conventional commits, reference the issue: "fix: description #<N>"
+4. Do NOT edit these paths: <forbidden_paths as comma list>
+5. Run the build as final step: <build_cmd>. Fix until it passes.
+6. If you cannot implement safely, make no changes and explain why.
+7. End with one paragraph summarizing what you changed.
+```
+
+**After the subagent returns:**
+1. Scrub forbidden paths (safety net):
+   ```bash
+   cd ~/stratos-games-factory/<local_dir>/
+   git checkout HEAD -- <each forbidden path>
+   ```
+2. If there are uncommitted changes, stage and commit them: `chore: trailing changes for #<N>`
+3. Rebase against latest origin:
+   ```bash
+   git fetch origin <default_branch>
+   git rebase origin/<default_branch>
+   ```
+   If rebase conflicts: `git rebase --abort`, comment on issue, remove `building` label, move on.
+4. Push: `git push -u origin <branch>`
+5. Open PR:
+   ```bash
+   gh pr create --repo <owner/repo> --base <default_branch> --head <branch> \
+     --title "auto: #<N> — <title>" \
+     --body "Closes #<N>
+
+   ## What changed
+   <subagent's summary>
+
+   ---
+   Generated by the Stratos Games Factory swarm."
+   ```
+6. Update labels: `gh issue edit <N> --repo <owner/repo> --remove-label building --add-label done`
+7. Comment on issue: `gh issue comment <N> --repo <owner/repo> --body "Built → <PR URL>"`
+8. Reset back: `cd ~/stratos-games-factory/` and `git checkout <default_branch>` in the game repo.
+
+**If the subagent produced no changes:** comment on the issue with the subagent's explanation, remove `building` label, move on.
+
+### Step 4 — Content agent
+
+Run inline (no subagent). For each game in the portfolio:
+
+1. Check open `build-request` count: `gh issue list --repo <repo> --label build-request --state open --json number --jq 'length'`. If >= 10, skip (queue is full).
+2. Get the 20 most recent issue titles for dedup: `gh issue list --repo <repo> --state all --limit 20 --json number,title,state`
+3. Read the game repo's content/level files to understand the existing structure.
+4. File up to 5 new issues with labels `build-request` + `content-agent`:
+   ```bash
+   gh label create content-agent --repo <repo> --color 0075ca --description "Filed by the content agent" 2>/dev/null || true
+   gh issue create --repo <repo> --label "build-request" --label "content-agent" \
+     --title "[content] <specific idea>" --body "<body following build-request template>"
+   ```
+
+**Content rules:**
+- Title starts with `[content]`
+- Body follows the `build-request` template: What / Where / How / Anything else
+- Body stays under 50 lines
+- Reference specific files in the codebase
+- Be concrete — "A 4x4 level where only 3 of 8 arrows are tappable" not "more levels please"
+- Do NOT duplicate any of the 20 recent issues
+- Good themes: difficulty variants, tutorial levels, pattern-based sets, visual themes, combo mechanics, timed modes
+
+### Step 5 — Competitor agent
+
+Run inline (no subagent). Covers all games in one pass.
+
+1. Use WebSearch to research:
+   - Top trending puzzle games on Apple App Store and Google Play this week
+   - Notable new mechanics in casual/puzzle games in the last 30 days
+   - Daily challenge / speed run / endless mode / meta-progression patterns
+2. For each game, propose exactly 3 specific mechanic adaptations:
+   - Cite the trending game that inspired it
+   - Reference specific files in our codebase
+   - Small enough for one PR (50-line issue body)
+   - No new dependencies, no touching `packages/`, `android/`, `capacitor.config.json`
+3. File one `market-intel` issue per game + one portfolio summary on the factory repo:
+   ```bash
+   gh label create market-intel --repo <repo> --color 5319e7 --description "Market intelligence from competitor agent" 2>/dev/null || true
+   gh issue create --repo <game-repo> --label "market-intel" \
+     --title "[market-intel] Week of <date> — 3 mechanics from trending games" --body "<suggestions>"
+   gh issue create --repo sahilmodi1965/stratos-games-factory --label "market-intel" \
+     --title "[market-intel] Portfolio scan — week of <date>" --body "<cross-portfolio themes>"
+   ```
+
+**Competitor rules:**
+- Cite real games by name. Never invent.
+- Prefer 3 sharp suggestions over 10 vague ones.
+- If web searches return nothing credible, file zero issues and say so honestly.
+- These issues are triaged by humans, NOT auto-built.
+
+### Step 6 — Council review
+
+Run inline (no subagent). Review the factory's own performance.
+
+1. Gather context:
+   - Read `build.log` (last 7 days of entries)
+   - Query closed issues and merged/closed PRs across all games (past 7 days)
+   - Query open auto/* PRs (stuck work)
+   - Read current `council/COUNCIL.md`
+2. Identify patterns: which builds failed and why, recurring failure modes, quality issues, what's brittle.
+3. Update `council/COUNCIL.md`:
+   - Append a `# Weekly review — YYYY-MM-DD` section
+   - Add entries: "Lesson learned", "Known issue", "Architecture decision", "Improvement suggestion"
+   - Every entry cites specific evidence (issue #, PR #, log timestamps)
+   - Hard cap: 50 active entries. Archive old/obsolete ones to `council/archive.md`.
+4. File `council`-labeled issues on `sahilmodi1965/stratos-games-factory` for actionable improvements.
+5. Commit and push COUNCIL.md changes.
+6. If the week was uneventful, say so honestly — don't invent recommendations.
+
+### Step 7 — Report
+
+After all agents complete, output a brief summary:
+- Builder: N issues processed, N PRs opened (list URLs)
+- Content: N ideas filed (list issue numbers)
+- Competitor: N market-intel issues filed
+- Council: N entries added, N archived
+- Anything that failed or was skipped, and why
+
+---
+
+## System architecture
 
 ```
                 ┌─────────────────────── Stratos Games Factory ──────────────────────┐
                 │                                                                      │
-   Ripon plays  │                              ┌──────────┐                            │
-   the live URL │                              │  daemon  │ (hourly cron, Sahil's Mac) │
-       │        │                              └────┬─────┘                            │
-       │ files  │                                   │                                  │
-       │ issue  │                                   │ claude -p (Max plan)             │
-       ▼        │                                   ▼                                  │
-   ┌──────────┐ │   ┌─────────┐  PR  ┌────────────┐ ┌──────────────┐                   │
-   │ GH Issue │─┼──▶│   PR    │─────▶│ pr-preview │ │  ci.yml      │                   │
-   │ build-   │ │   │ auto/*  │      │ → /pr/N/   │ │ npm build    │                   │
-   │ request  │ │   └────┬────┘      └─────┬──────┘ └──────┬───────┘                   │
-   └──────────┘ │        │                 │               │ on success                │
-                │        │                 │ comment URL   ▼                           │
-                │        │                 └──────────▶ ┌────────────┐                 │
-                │        │                              │ auto-merge │ (safe paths     │
-                │        │                              │  workflow  │  only: no .js/  │
-                │        │                              └─────┬──────┘  .ts/.html)     │
-                │        │                                    │                        │
-                │        │  not safe → human review           │ safe → merge + label   │
-                │        │           ◄────────────────────────┘                        │
-                │        ▼                                                             │
-                │   ┌──────────┐  push to main   ┌──────────┐                          │
-                │   │  merged  │ ──────────────▶ │ deploy   │ → gh-pages root          │
-                │   └──────────┘                 └──────────┘                          │
-                │                                                                      │
-                │   Ripon adds `ship-it` label   ┌──────────┐                          │
-                │           ─────────────────▶   │ release  │ → tag, GitHub Release    │
-                │                                └──────────┘                          │
-                │                                                                      │
-                │   Weekly Sunday 00:00 UTC      ┌──────────┐                          │
-                │           ─────────────────▶   │ cleanup  │ → prune merged + stale   │
-                │                                └──────────┘    auto/* branches       │
-                └──────────────────────────────────────────────────────────────────────┘
+   Ripon plays  │                          ┌──────────────┐                            │
+   the live URL │                          │ Claude Code  │ (Sahil says "go")          │
+       │        │                          │    swarm     │                            │
+       │ files  │                          └──────┬───────┘                            │
+       │ issue  │                                 │                                    │
+       ▼        │        ┌────────────────────────┼────────────────────┐               │
+   ┌──────────┐ │        │                        │                    │               │
+   │ GH Issue │─┼──▶ builder           content           competitor   │               │
+   │ build-   │ │   (subagent per    (inline, files    (inline, web   │               │
+   │ request  │ │    issue, opens     build-request     search, files │               │
+   └──────────┘ │    PRs)             issues)           market-intel) │               │
+                │        │                                             │               │
+                │        ▼                                             │               │
+                │   ┌─────────┐  PR  ┌────────────┐ ┌──────────────┐  │               │
+                │   │   PR    │─────▶│ pr-preview │ │  ci.yml      │  │               │
+                │   │ auto/*  │      │ → /pr/N/   │ │ npm build    │  │               │
+                │   └────┬────┘      └─────┬──────┘ └──────┬───────┘  │               │
+                │        │                 │               │ success  │               │
+                │        │                 │ comment URL   ▼          │               │
+                │        │                 └──────────▶ ┌──────────┐  │               │
+                │        │                              │ auto-    │  │               │
+                │        │                              │ merge    │  │               │
+                │        │                              └────┬─────┘  │               │
+                │        │  not safe → human review          │ safe   │               │
+                │        │         ◄─────────────────────────┘        │               │
+                │        ▼                                            │               │
+                │   ┌──────────┐  push to main   ┌──────────┐        │               │
+                │   │  merged  │ ──────────────▶ │ deploy   │        │               │
+                │   └──────────┘                 └──────────┘   council (inline,     │
+                │                                               reviews the week,    │
+                │   Ripon adds `ship-it` label   ┌──────────┐   updates COUNCIL.md)  │
+                │           ─────────────────▶   │ release  │        │               │
+                │                                └──────────┘        │               │
+                └────────────────────────────────────────────────────────────────────┘
 ```
 
 Key facts:
-- The **daemon** runs hourly on Sahil's MacBook using his Claude Code Max plan.
-- **Ripon and interns** push directly using their own $20 Claude Code Pro plans. Both paths coexist.
+- **Sahil opens Claude Code, says "go"** — the swarm runs all agents in priority order.
+- The **builder** spawns subagents (one per issue) for context isolation.
+- **Content, competitor, council** run inline — they file issues and update docs, not code.
 - **Auto-merge** ships safe-path-only PRs (CSS, JSON, content, levels, MD) instantly. Logic-touching PRs (.js/.ts/.html) wait for human review.
 - The **`ship-it` label** triggers production release on issues OR PRs.
-- All workflows are **deployed by `scripts/deploy-brain.sh`** from `templates/workflows-<game>/` — so the factory owns them and re-deploys on every change.
+- **QA agent** runs as GitHub Actions (Playwright) on every PR — zero Claude tokens.
+- All workflows are **deployed by `scripts/deploy-brain.sh`** from `templates/workflows-<game>/`.
 
-## How the daemon works
+## Rules for builder subagent sessions
 
-`daemon/stratos-daemon.sh` is the loop. It runs hourly via cron:
-
-1. For each game in `daemon/config.sh`:
-   1. `git fetch` + `reset --hard origin/main` the local clone (the daemon never carries local state).
-   2. Ensure all factory labels exist on the repo (idempotent).
-   3. `gh issue list --label build-request --state open` to find work.
-   4. For each open issue not already labeled `building` or `done`:
-      - Reject if body is >50 lines (too large for automation; comment & skip).
-      - **Refetch + reset to origin/main** (catch concurrent human pushes).
-      - **Recent-commit dedup**: if the issue title's significant words overlap heavily (3+) with any commit subject from the last 24h, close the issue with a comment ("looks already addressed").
-      - Create branch `auto/{game}-issue-{num}-{timestamp}`, label issue `building`.
-      - Run `claude -p` with a structured prompt that **forces it to read CLAUDE.md first** and then execute the issue.
-      - **Merge-conflict detection**: after Claude commits, refetch and `git rebase origin/main`. If the rebase conflicts, abort, comment on the issue, remove `building`, and leave the issue open for the next run.
-      - If the working tree changed and the rebase succeeded: push branch, open PR with `Closes #N`, label issue `done`, comment with PR link.
-      - If nothing changed: comment on the issue explaining why, remove `building` label.
-      - Telegram notification at each transition (if configured).
-2. A lockfile (`.daemon.lock`) prevents overlapping runs.
-3. Everything goes to `build.log`.
-
-## Adding a new game (for future interns)
-
-The flow for onboarding a new intern with a new game:
-
-1. **Intern creates a GitHub repo** for their game in their own account or under `mody-sahariar1`.
-2. **Intern adds `sahilmodi1965` as a collaborator** with write access. (Required so the daemon can push.)
-3. On Sahil's machine:
-   ```bash
-   cd ~/stratos-games-factory
-   bash scripts/add-game.sh owner/their-repo "Short description of the game"
-   ```
-   This clones the repo, registers it in `config.sh`, creates labels, deploys a starter `CLAUDE.md` and the issue template.
-4. **Sahil writes a real `CLAUDE.md`** for the new game (the starter is just a placeholder). Or have Claude write it interactively. Then commit and re-run `scripts/deploy-brain.sh` to deploy the autobuilder section + workflows.
-5. **Intern files issues, plays, tests.** The daemon builds them on Sahil's Max plan during hourly runs.
-6. **Intern can also push directly** with their own $20 Claude Code Pro plan for quick fixes. The "Direct contributor mode" rules in the deployed `CLAUDE.md` are their guide.
-7. **First release**: when the game feels ready, add the `ship-it` label and the release workflow takes over.
-
-This is the entire onboarding for a new collaborator. No new infrastructure, no new accounts, no new keys.
-
-## Cost model
-
-The factory is designed to run at fixed cost regardless of how many games or interns it serves:
-
-- **Sahil**: $200/mo Claude Code Max plan — powers the daemon's autonomous builds AND Sahil's own architecture work.
-- **Each collaborator (Ripon, interns)**: $20/mo Claude Code Pro plan + $20/mo Claude Chat (claude.ai) for feedback structuring. Total: $40/mo per person.
-- **Infrastructure**: $0. GitHub Pages (free for public repos), GitHub Actions (free tier covers everything we run), no API keys, no Vercel, no AWS, no databases.
-- **No external services** of any kind. No third-party CI. No artifact storage. No custom domains. No external monitoring.
-
-The math: 1 Sahil + 2 interns + 5 games still costs ~$280/mo total. Adding a 6th game costs $0. Adding a 3rd intern costs $40/mo. The system scales by adding people, not infrastructure.
-
-## Rules for daemon Claude sessions
-
-When you (Claude) are invoked by the daemon, you operate under tight constraints:
+When you (Claude) are spawned as a builder subagent, you operate under tight constraints:
 
 1. **Read the game repo's `CLAUDE.md` first.** If there is no `CLAUDE.md`, stop. The factory deploys one to every game; its absence means the brain hasn't been deployed yet.
 2. **Only do what the issue asks.** No bonus refactors. No "while I'm here" cleanups. No comments or docstrings on code you didn't change.
@@ -138,7 +299,36 @@ When you (Claude) are invoked by the daemon, you operate under tight constraints
    - `android/*` and `capacitor.config.json` in Bloxplode (native build artifacts).
    - `prototypes/`, `docs/` (built artifacts), or anything the game's CLAUDE.md flags as off-limits.
 5. **Run the build as the final step** (`npm run build` for Arrow Puzzle). If it fails, fix or revert until it passes. Never push a broken build.
-6. **If you cannot do the task safely, do nothing.** Output a one-paragraph explanation of why. The daemon will turn that into an issue comment so a human can clarify.
+6. **If you cannot do the task safely, do nothing.** Output a one-paragraph explanation of why. The swarm will turn that into an issue comment so a human can clarify.
+
+## Adding a new game (for future interns)
+
+The flow for onboarding a new intern with a new game:
+
+1. **Intern creates a GitHub repo** for their game in their own account or under `mody-sahariar1`.
+2. **Intern adds `sahilmodi1965` as a collaborator** with write access. (Required so the swarm can push.)
+3. On Sahil's machine:
+   ```bash
+   cd ~/stratos-games-factory
+   bash scripts/add-game.sh owner/their-repo "Short description of the game"
+   ```
+   This clones the repo, registers it in `config.sh`, creates labels, deploys a starter `CLAUDE.md` and the issue template.
+4. **Sahil writes a real `CLAUDE.md`** for the new game (the starter is just a placeholder). Or have Claude write it interactively. Then commit and re-run `scripts/deploy-brain.sh` to deploy the autobuilder section + workflows.
+5. **Intern files issues, plays, tests.** The swarm builds them when Sahil says "go".
+6. **Intern can also push directly** with their own $20 Claude Code Pro plan for quick fixes. The "Direct contributor mode" rules in the deployed `CLAUDE.md` are their guide.
+7. **First release**: when the game feels ready, add the `ship-it` label and the release workflow takes over.
+
+This is the entire onboarding for a new collaborator. No new infrastructure, no new accounts, no new keys.
+
+## Cost model
+
+The factory is designed to run at fixed cost regardless of how many games or interns it serves:
+
+- **Sahil**: $200/mo Claude Code Max plan — powers the swarm and Sahil's own architecture work.
+- **Each collaborator (Ripon, interns)**: $20/mo Claude Code Pro plan + $20/mo Claude Chat (claude.ai) for feedback structuring. Total: $40/mo per person.
+- **Infrastructure**: $0. GitHub Pages (free for public repos), GitHub Actions (free tier covers everything we run), no API keys, no Vercel, no AWS, no databases.
+
+The math: 1 Sahil + 2 interns + 5 games still costs ~$280/mo total. Adding a 6th game costs $0. Adding a 3rd intern costs $40/mo. The system scales by adding people, not infrastructure.
 
 ## How to add a new game
 
@@ -156,24 +346,30 @@ This:
 ## Architecture principles
 
 - **Humans test and document, machines build, humans review.** Anything that violates this is wrong.
-- **The factory never holds state.** Every daemon run starts from `origin/main`. There is no local "work in progress" — if it's not in a PR, it doesn't exist.
-- **The brain is the contract.** The daemon's Claude session is bound entirely by what is in the game's `CLAUDE.md`. To change daemon behavior on a game, change that game's `CLAUDE.md` and re-run `scripts/deploy-brain.sh`.
-- **Daemon and direct-push coexist.** The daemon detects concurrent human pushes via fetch-per-issue, recent-commit dedup, and merge-conflict abort. Humans don't need to coordinate — the daemon adapts.
+- **The factory never holds state.** Every swarm run starts from `origin/main`. There is no local "work in progress" — if it's not in a PR, it doesn't exist.
+- **The brain is the contract.** The builder subagent is bound entirely by what is in the game's `CLAUDE.md`. To change builder behavior on a game, change that game's `CLAUDE.md` and re-run `scripts/deploy-brain.sh`.
+- **Swarm and direct-push coexist.** The swarm resets to `origin/main` before each issue and rebases after. Humans don't need to coordinate — the swarm adapts.
 - **Small, reviewable PRs.** The 50-line issue cap is a feature. Big requests get split.
 - **Auto-merge ships safe changes instantly.** Anything touching .js/.ts/.html waits for review. The line between data and logic is the line between auto-merge and manual review.
-- **Failure is loud.** If something breaks, the daemon comments on the issue and pings Telegram. Silence means success.
-- **Zero infrastructure.** GitHub Pages + GitHub Actions + a Mac running cron. That's the entire stack.
+- **Failure is loud.** If something breaks, the swarm comments on the issue. Silence means success.
+- **Zero infrastructure.** GitHub Pages + GitHub Actions + Claude Code on a Mac. That's the entire stack.
+
+## Legacy: cron-based daemon (deprecated)
+
+The original daemon (`daemon/stratos-daemon.sh`) ran hourly via cron and invoked `claude -p` headlessly. The agent shell scripts (`agents/content/content-agent.sh`, `agents/competitor/competitor-agent.sh`, `council/review.sh`) followed the same pattern. These scripts are preserved as documentation but are deprecated in favor of swarm mode. See each script's header comment.
+
+To re-enable cron (not recommended): `bash daemon/install.sh --with-cron`
 
 ## Files in this repo
 
 ```
 stratos-games-factory/
-├── CLAUDE.md                            ← you are here
+├── CLAUDE.md                            ← you are here (the swarm brain)
 ├── README.md                            ← human entry point
 ├── daemon/
-│   ├── stratos-daemon.sh                ← the cron loop
+│   ├── stratos-daemon.sh                ← (deprecated) cron-based builder loop
 │   ├── install.sh                       ← one-shot setup
-│   └── config.sh                        ← game list, telegram config, paths
+│   └── config.sh                        ← game list, paths, limits (still active)
 ├── brain/
 │   ├── arrow-puzzle-autobuilder.md      ← appended to Arrow Puzzle CLAUDE.md
 │   └── bloxplode-claude.md              ← full CLAUDE.md for Bloxplode
@@ -187,6 +383,16 @@ stratos-games-factory/
 │   │   ├── release.yml                  ← ship-it label → tag + GitHub Release
 │   │   └── cleanup.yml                  ← weekly auto/* branch sweep
 │   └── workflows-bloxplode/             ← same set, customized for Bloxplode (no build, www/)
+├── agents/
+│   ├── registry.json                    ← authoritative agent list
+│   ├── content/content-agent.sh         ← (deprecated) cron-based content agent
+│   ├── competitor/competitor-agent.sh   ← (deprecated) cron-based competitor agent
+│   ├── qa/                              ← Playwright smoke tests (GitHub Actions, still active)
+│   └── platform/platform-agent.sh       ← native build agent (manual, still active)
+├── council/
+│   ├── review.sh                        ← (deprecated) cron-based council review
+│   ├── COUNCIL.md                       ← living memory
+│   └── archive.md                       ← retired entries
 ├── scripts/
 │   ├── deploy-brain.sh                  ← push brain + workflows + labels to all game repos
 │   ├── add-game.sh                      ← onboard a new game repo

@@ -84,34 +84,38 @@ say "Deploying brain (CLAUDE.md updates + issue templates) to each game repo"
 bash "$FACTORY_DIR/scripts/deploy-brain.sh"
 echo
 
-# ---------------------------------------------------------------- 5. cron
-say "Installing cron jobs (active agents from agents/registry.json)"
+# ---------------------------------------------------------------- 5. swarm mode (default) or cron (legacy)
+if [[ "${1:-}" == "--with-cron" ]]; then
+  say "Installing cron jobs (legacy mode, --with-cron flag passed)"
 
-# Cron lines for every active scheduled agent. Manual / on-event agents
-# (qa, platform) do not get cron entries.
-DAEMON_CRON="0 * * * * /bin/bash $FACTORY_DIR/daemon/stratos-daemon.sh >> $FACTORY_DIR/build.log 2>&1"
-COUNCIL_CRON="0 0 * * 0 /bin/bash $FACTORY_DIR/council/review.sh >> $FACTORY_DIR/council/review.log 2>&1"
-COMPETITOR_CRON="0 0 * * 2 /bin/bash $FACTORY_DIR/agents/competitor/competitor-agent.sh >> $FACTORY_DIR/agents/competitor/competitor-agent.log 2>&1"
-CONTENT_CRON="0 0 * * 3 /bin/bash $FACTORY_DIR/agents/content/content-agent.sh >> $FACTORY_DIR/agents/content/content-agent.log 2>&1"
+  DAEMON_CRON="0 * * * * /bin/bash $FACTORY_DIR/daemon/stratos-daemon.sh >> $FACTORY_DIR/build.log 2>&1"
+  COUNCIL_CRON="0 0 * * 0 /bin/bash $FACTORY_DIR/council/review.sh >> $FACTORY_DIR/council/review.log 2>&1"
+  COMPETITOR_CRON="0 0 * * 2 /bin/bash $FACTORY_DIR/agents/competitor/competitor-agent.sh >> $FACTORY_DIR/agents/competitor/competitor-agent.log 2>&1"
+  CONTENT_CRON="0 0 * * 3 /bin/bash $FACTORY_DIR/agents/content/content-agent.sh >> $FACTORY_DIR/agents/content/content-agent.log 2>&1"
 
-existing_cron="$(crontab -l 2>/dev/null || true)"
-new_cron="$existing_cron"
-add_cron() {
-  local name="$1" line="$2" marker="$3"
-  if echo "$existing_cron" | grep -Fq "$marker"; then
-    ok "$name cron already present"
-  else
-    new_cron="$(printf '%s\n%s\n' "$new_cron" "$line")"
-    ok "$name cron installed: $line"
+  existing_cron="$(crontab -l 2>/dev/null || true)"
+  new_cron="$existing_cron"
+  add_cron() {
+    local name="$1" line="$2" marker="$3"
+    if echo "$existing_cron" | grep -Fq "$marker"; then
+      ok "$name cron already present"
+    else
+      new_cron="$(printf '%s\n%s\n' "$new_cron" "$line")"
+      ok "$name cron installed: $line"
+    fi
+  }
+  add_cron "builder (hourly)"     "$DAEMON_CRON"     "stratos-daemon.sh"
+  add_cron "council (Sunday)"     "$COUNCIL_CRON"    "council/review.sh"
+  add_cron "competitor (Tuesday)" "$COMPETITOR_CRON" "competitor-agent.sh"
+  add_cron "content (Wednesday)"  "$CONTENT_CRON"    "content-agent.sh"
+
+  if [[ "$new_cron" != "$existing_cron" ]]; then
+    printf '%s\n' "$new_cron" | crontab -
   fi
-}
-add_cron "builder (hourly)"     "$DAEMON_CRON"     "stratos-daemon.sh"
-add_cron "council (Sunday)"     "$COUNCIL_CRON"    "council/review.sh"
-add_cron "competitor (Tuesday)" "$COMPETITOR_CRON" "competitor-agent.sh"
-add_cron "content (Wednesday)"  "$CONTENT_CRON"    "content-agent.sh"
-
-if [[ "$new_cron" != "$existing_cron" ]]; then
-  printf '%s\n' "$new_cron" | crontab -
+else
+  say "Swarm mode (default) — no cron jobs installed"
+  ok "To run the factory: open Claude Code in $FACTORY_DIR, say 'go'"
+  ok "To install legacy cron jobs instead: bash daemon/install.sh --with-cron"
 fi
 echo
 
@@ -140,6 +144,7 @@ ok "Install complete."
 echo
 echo "Next steps:"
 echo "  • File a test issue on a game repo with label 'build-request'"
-echo "  • Run the daemon manually:  bash $FACTORY_DIR/daemon/stratos-daemon.sh"
-echo "  • Watch it work:            tail -f $FACTORY_DIR/build.log"
-echo "  • Run an agent manually:    bash $FACTORY_DIR/agents/<name>/<name>-agent.sh"
+echo "  • Open Claude Code:  cd $FACTORY_DIR && claude"
+echo "  • Say 'go' — the swarm assesses work and runs all agents"
+echo "  • Or say 'what needs doing' for a status check first"
+echo "  • Dashboard:         bash $FACTORY_DIR/scripts/status.sh"
