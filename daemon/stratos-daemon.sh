@@ -61,28 +61,148 @@ ensure_label() {
 }
 
 # Check if an issue title is likely already addressed by recent (24h) commits.
-# Heuristic: extract significant words (length>=4) from the title, and check if
-# any single recent commit subject contains 3+ of them. Returns 0 if matched.
+#
+# Heuristic: extract significant words from the title, subtract per-game
+# stop-words (repo + game name parts) and dynamic stop-words (any word
+# appearing in 50%+ of recent commit subjects), then look for any recent
+# commit whose subject contains >=3 remaining title keywords.
+#
+# Council issue #2 traced a false positive on issue #16: the title's
+# "arrow puzzle game" overlapped with a cleanup commit's "arrow puzzle ...
+# game screen" because the repo-name words alone hit the 3-keyword
+# threshold. The stop-word filter below makes that class of overlap
+# impossible.
 recently_addressed() {
   local title="$1"
   local default_branch="$2"
+  local repo="$3"  # owner/repo, used to derive repo-name stop-words
 
   local recent
   recent=$(git log --since='24 hours ago' --pretty=format:'%s' "origin/$default_branch" 2>/dev/null)
   [[ -z "$recent" ]] && return 1
 
-  local keywords
-  keywords=$(printf '%s\n' "$title" \
+  local commit_count
+  commit_count=$(printf '%s\n' "$recent" | grep -c .)
+  [[ "$commit_count" -eq 0 ]] && return 1
+
+  # ---- 1. Repo-name stop-words ----
+  # Split owner/repo on slash AND underscore AND dash, lowercase, length>=4.
+  # NOTE: dash MUST be the last char in tr's set, otherwise tr interprets
+  # it as a range marker (e.g. "/-_" becomes the ASCII range / to _).
+  # For "mody-sahariar1/arrow-puzzle-testing" this yields:
+  #   mody, sahariar1, arrow, puzzle, testing
+  local repo_stops
+  repo_stops=$(printf '%s' "$repo" \
+    | tr 'A-Z' 'a-z' \
+    | tr '/_-' '\n\n\n' \
+    | awk 'length($0) >= 4 {print}' \
+    | sort -u)
+
+  # ---- 2. Dynamic stop-words: words appearing in >=50% of recent commits ----
+  # Only apply when there's enough signal (>=4 commits in window).
+  local dynamic_stops=""
+  if [[ "$commit_count" -ge 4 ]]; then
+    local threshold=$(( (commit_count + 1) / 2 ))  # 50% rounded up
+    dynamic_stops=$(printf '%s\n' "$recent" \
+      | awk -v t="$threshold" '
+        {
+          line = tolower($0)
+          gsub(/[^a-z0-9]+/, " ", line)
+          n = split(line, w, " ")
+          delete seen
+          for (i = 1; i <= n; i++) {
+            if (length(w[i]) >= 4 && !seen[w[i]]) {
+              seen[w[i]] = 1
+              count[w[i]]++
+            }
+          }
+        }
+        END {
+          for (k in count) if (count[k] >= t) print k
+        }' \
+      | sort -u)
+  fi
+
+  # ---- 3. Combined stop-word set ----
+  # repo_stops ∪ dynamic_stops ∪ static common-verb list
+  local stops_file
+  stops_file=$(mktemp -t stratos-stops.XXXXXX)
+  {
+    printf '%s\n' "$repo_stops"
+    printf '%s\n' "$dynamic_stops"
+    # Static common-verb / connector list
+    cat <<'STATIC_STOPS'
+build
+chore
+debug
+docs
+feat
+feature
+fixed
+fixes
+issue
+test
+tests
+that
+this
+with
+when
+then
+from
+into
+will
+been
+have
+some
+just
+like
+need
+make
+them
+than
+also
+only
+very
+much
+same
+both
+each
+over
+onto
+which
+where
+should
+would
+could
+about
+because
+update
+updated
+adds
+added
+remove
+removed
+STATIC_STOPS
+  } | sort -u > "$stops_file"
+
+  # ---- 4. Title keywords minus stop-words ----
+  local title_words_file
+  title_words_file=$(mktemp -t stratos-title.XXXXXX)
+  printf '%s\n' "$title" \
     | tr 'A-Z' 'a-z' \
     | tr -cs 'a-z0-9' '\n' \
-    | awk 'length($0) >= 4 && $0 !~ /^(build|fix|feat|chore|test|with|that|this|when|then|from|into|will|been|have|some|other|just|like|need|make|them|than|also|only|very|much|same|both|each|over|onto|onto|onto)$/' \
-    | sort -u)
-  [[ -z "$keywords" ]] && return 1
+    | awk 'length($0) >= 4' \
+    | sort -u > "$title_words_file"
+
+  local keywords
+  keywords=$(comm -23 "$title_words_file" "$stops_file")
+  rm -f "$stops_file" "$title_words_file"
 
   local total
   total=$(printf '%s\n' "$keywords" | grep -c .)
   [[ "$total" -lt 3 ]] && return 1
 
+  # ---- 5. Overlap check against recent commit subjects ----
   local subject subject_lc matches kw
   while IFS= read -r subject; do
     [[ -z "$subject" ]] && continue
@@ -138,20 +258,10 @@ for entry in "${GAME_REPOS[@]}"; do
   if [[ -n "$forbidden_paths" ]]; then
     log "  forbidden paths: ${forbidden_paths//:/ }"
   fi
-
-  # Resolve the system prompt file (template per game). The daemon will pass
-  # this to claude via --append-system-prompt so the rules stay sticky in the
-  # system prompt across every agent turn instead of being buried in the
-  # user message (which Claude can de-prioritize after many turns of work).
-  case "$local_dir" in
-    arrow-puzzle-testing) sys_prompt_file="$FACTORY_DIR/templates/system-prompt-arrow-puzzle.md" ;;
-    Bloxplode-Beta)       sys_prompt_file="$FACTORY_DIR/templates/system-prompt-bloxplode.md" ;;
-    *)                    sys_prompt_file="" ;;
-  esac
-  if [[ -n "$sys_prompt_file" && ! -f "$sys_prompt_file" ]]; then
-    log "  WARNING: system prompt file missing: $sys_prompt_file"
-    sys_prompt_file=""
-  fi
+  # NOTE: the daemon no longer passes a separate system prompt or council
+  # file to Claude. Each game repo's CLAUDE.md is now the single source of
+  # truth — see templates/claude-<game>.md for what gets deployed there.
+  # The user message tells Claude to read CLAUDE.md as its first action.
 
   clone_path="$FACTORY_DIR/$local_dir"
   if [[ ! -d "$clone_path/.git" ]]; then
@@ -222,7 +332,7 @@ for entry in "${GAME_REPOS[@]}"; do
     git reset --hard "origin/$default_branch" >> "$LOG_FILE" 2>&1
 
     # Check if recent commits already addressed this issue (concurrent direct push).
-    if recently_addressed "$title" "$default_branch"; then
+    if recently_addressed "$title" "$default_branch" "$repo"; then
       log "  issue #$num looks already addressed by recent commits, closing"
       gh issue close "$num" --repo "$repo" --comment "🤖 **Stratos daemon**: looks like this was already addressed in commits within the last 24 hours. Closing — please reopen with more specifics or file a new issue if it's still needed." >/dev/null 2>&1 || true
       total_skipped=$((total_skipped + 1))
@@ -243,87 +353,32 @@ for entry in "${GAME_REPOS[@]}"; do
       continue
     fi
 
-    # Build the (compact) user-message prompt. The hard rules + workflow
-    # discipline live in the system prompt file (sys_prompt_file). This
-    # message just gives Claude the issue context and a numbered to-do.
+    # The token-efficient prompt. The repo's own CLAUDE.md (deployed by
+    # scripts/deploy-brain.sh from templates/claude-<game>.md) is the single
+    # source of truth for everything: hard rules, exploration phases,
+    # forbidden paths, refusal criteria, final checklist. The daemon's job
+    # here is just to point Claude at it and hand over the issue.
     prompt_file="$(mktemp -t stratos-prompt.XXXXXX)"
     cat > "$prompt_file" <<EOF
-You are processing GitHub Issue #${num} on ${repo}.
+Read CLAUDE.md in this repo, then implement this GitHub issue.
 
-Working directory: the root of the ${game_name} repo (already checked out for
-you on a fresh branch off origin/${default_branch}).
-
-# Issue
-
+Repo: ${repo}
+Issue: #${num}
 Title: ${title}
 
 Body:
----
 ${body}
----
 
-# What to do
-
-1. Read CLAUDE.md and ARCHITECTURE.md (if present) end-to-end.
-2. Explore the relevant subsystem. Read at least 3 files in it before writing
-   anything. Trace at least one call path end-to-end.
-3. Decide whether the issue's premise actually fits the codebase. If the issue
-   asks for something the codebase fundamentally does not support (e.g. JSON
-   level files in a procedurally-generated game), satisfy the player-facing
-   intent in a way that fits the existing architecture — do NOT invent a
-   parallel system. If you can't find an interpretation that fits, refuse.
-4. Implement the smallest possible change that satisfies the issue. Use
-   conventional commits ("fix:", "feat:", "level:", "content:", etc.) and
-   reference "#${num}" in every commit message.
-5. Run \`${build_cmd:-npm run build}\` and ensure it exits 0. If it fails, fix
-   it and retry. As many iterations as you need.
-6. If \`package.json\` has a \`validate\` script, run \`npm run validate\` and
-   ensure it exits 0. Fix and retry on failure.
-7. Run \`git status\` and \`git diff --stat HEAD\`. Verify every changed file
-   is intentional. **CRITICAL**: never \`git add\` build output or any
-   forbidden path (see your system prompt). If something forbidden is in the
-   diff, reset it with \`git checkout HEAD -- <path>\`.
-8. End with a single-paragraph summary of what you changed (or why you
-   refused). Nothing else.
+End with one paragraph summarizing what you changed (or why you refused).
 EOF
 
     log "  invoking claude (effort=max, timeout ${CLAUDE_TIMEOUT_SECONDS}s)"
 
-    # Build the claude command. The system prompt is the per-game template
-    # PLUS the factory council's living memory (COUNCIL.md). Council notes
-    # are appended below the immutable per-game rules so they stay sticky
-    # across every agent turn — see council/COUNCIL.md for what that document
-    # is and how it gets updated by the weekly review script.
-    claude_args=("${CLAUDE_FLAGS[@]}")
-    sys_prompt_content=""
-    if [[ -n "$sys_prompt_file" ]]; then
-      sys_prompt_content="$(< "$sys_prompt_file")"
-    fi
-    council_file="$FACTORY_DIR/council/COUNCIL.md"
-    if [[ -f "$council_file" ]]; then
-      council_content="$(< "$council_file")"
-      if [[ -n "$sys_prompt_content" ]]; then
-        sys_prompt_content="${sys_prompt_content}
-
-================================================================================
-# Stratos Factory Council notes (living memory, updated weekly by review.sh)
-================================================================================
-
-${council_content}"
-      else
-        sys_prompt_content="$council_content"
-      fi
-      log "  council notes loaded ($(wc -l < "$council_file") lines)"
-    fi
-    if [[ -n "$sys_prompt_content" ]]; then
-      claude_args+=(--append-system-prompt "$sys_prompt_content")
-    fi
-
     claude_log="$(mktemp -t stratos-claude.XXXXXX)"
     if command -v gtimeout >/dev/null 2>&1; then
-      gtimeout "$CLAUDE_TIMEOUT_SECONDS" claude "${claude_args[@]}" < "$prompt_file" > "$claude_log" 2>&1
+      gtimeout "$CLAUDE_TIMEOUT_SECONDS" claude "${CLAUDE_FLAGS[@]}" < "$prompt_file" > "$claude_log" 2>&1
     else
-      claude "${claude_args[@]}" < "$prompt_file" > "$claude_log" 2>&1
+      claude "${CLAUDE_FLAGS[@]}" < "$prompt_file" > "$claude_log" 2>&1
     fi
     claude_exit=$?
     log "  claude exited $claude_exit"

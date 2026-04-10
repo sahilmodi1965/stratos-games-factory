@@ -25,12 +25,14 @@ ok()   { printf "\033[1;32m✓\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m!\033[0m %s\n" "$*"; }
 die()  { printf "\033[1;31m✗\033[0m %s\n" "$*"; exit 1; }
 
-ARROW_BRAIN="$FACTORY_DIR/brain/arrow-puzzle-autobuilder.md"
-BLOX_BRAIN="$FACTORY_DIR/brain/bloxplode-claude.md"
+# CLAUDE.md sources of truth — single lean document per game.
+# brain/*.md is kept for historical reference but is no longer load-bearing.
+ARROW_CLAUDE="$FACTORY_DIR/templates/claude-arrow-puzzle.md"
+BLOX_CLAUDE="$FACTORY_DIR/templates/claude-bloxplode.md"
 ISSUE_TEMPLATE="$FACTORY_DIR/templates/build-request.md"
 
-[[ -f "$ARROW_BRAIN" ]]    || die "missing $ARROW_BRAIN"
-[[ -f "$BLOX_BRAIN" ]]     || die "missing $BLOX_BRAIN"
+[[ -f "$ARROW_CLAUDE" ]]   || die "missing $ARROW_CLAUDE"
+[[ -f "$BLOX_CLAUDE" ]]    || die "missing $BLOX_CLAUDE"
 [[ -f "$ISSUE_TEMPLATE" ]] || die "missing $ISSUE_TEMPLATE"
 
 ensure_label() {
@@ -145,81 +147,32 @@ deploy_repo() {
     fi
   fi
 
-  # ---- CLAUDE.md
+  # ---- CLAUDE.md (full replacement from the per-game source of truth)
+  local claude_src=""
   case "$local_dir" in
-    arrow-puzzle-testing)
-      if [[ ! -f CLAUDE.md ]]; then
-        warn "  Arrow Puzzle has no CLAUDE.md — that is unexpected. Skipping append."
-      else
-        # Strip any previous autobuilder section AND trailing blank lines in one pass.
-        local tmp
-        tmp="$(mktemp)"
-        awk '
-          BEGIN { skip = 0; n = 0 }
-          /<!-- STRATOS-AUTOBUILDER:BEGIN -->/ { skip = 1; next }
-          /<!-- STRATOS-AUTOBUILDER:END -->/   { skip = 0; next }
-          skip == 0 { lines[++n] = $0 }
-          END {
-            while (n > 0 && lines[n] == "") n--
-            for (i = 1; i <= n; i++) print lines[i]
-          }
-        ' CLAUDE.md > "$tmp"
-        mv "$tmp" CLAUDE.md
-        printf '\n\n' >> CLAUDE.md
-        cat "$ARROW_BRAIN" >> CLAUDE.md
-        if ! git diff --quiet -- CLAUDE.md; then
-          git add CLAUDE.md
-          changed=1
-          ok "  appended autobuilder section to CLAUDE.md"
-        else
-          ok "  CLAUDE.md autobuilder section already current"
-        fi
-      fi
-      ;;
-    Bloxplode-Beta)
-      local should_write=0
-      if [[ ! -f CLAUDE.md ]]; then
-        should_write=1
-      elif grep -q "STRATOS-AUTOBUILDER:BEGIN" CLAUDE.md; then
-        # It's already a Stratos-deployed CLAUDE.md — refresh it.
-        should_write=1
-      else
-        warn "  Bloxplode has a hand-written CLAUDE.md — leaving it alone. Add the autobuilder section manually."
-      fi
-
-      if (( should_write )); then
-        if ! cmp -s "$BLOX_BRAIN" CLAUDE.md 2>/dev/null; then
-          cp "$BLOX_BRAIN" CLAUDE.md
-          git add CLAUDE.md
-          changed=1
-          ok "  wrote CLAUDE.md from brain/bloxplode-claude.md"
-        else
-          ok "  CLAUDE.md already current"
-        fi
-      fi
-      ;;
-    *)
-      # Generic game: only write a starter CLAUDE.md if missing
-      if [[ ! -f CLAUDE.md ]]; then
-        cat > CLAUDE.md <<EOF
+    arrow-puzzle-testing) claude_src="$ARROW_CLAUDE" ;;
+    Bloxplode-Beta)       claude_src="$BLOX_CLAUDE" ;;
+  esac
+  if [[ -n "$claude_src" && -f "$claude_src" ]]; then
+    if ! cmp -s "$claude_src" CLAUDE.md 2>/dev/null; then
+      cp "$claude_src" CLAUDE.md
+      git add CLAUDE.md
+      changed=1
+      ok "  wrote CLAUDE.md from $(basename "$claude_src")"
+    else
+      ok "  CLAUDE.md already current"
+    fi
+  elif [[ ! -f CLAUDE.md ]]; then
+    cat > CLAUDE.md <<EOF
 # CLAUDE.md
 
-Starter brain for $local_dir, deployed by the Stratos Games Factory.
-A human should fill in this file with project-specific rules.
-
-<!-- STRATOS-AUTOBUILDER:BEGIN -->
-## Stratos autobuilder rules
-
-The Stratos Games Factory daemon will refuse to make changes in this repo
-until a human writes proper rules above this marker.
-<!-- STRATOS-AUTOBUILDER:END -->
+Starter document for $local_dir. A human should fill in this file before
+the Stratos Games Factory daemon will safely operate on the repo.
 EOF
-        git add CLAUDE.md
-        changed=1
-        ok "  wrote starter CLAUDE.md"
-      fi
-      ;;
-  esac
+    git add CLAUDE.md
+    changed=1
+    warn "  wrote starter CLAUDE.md (no claude-$local_dir.md template found)"
+  fi
 
   if (( changed )); then
     git -c user.email="factory@stratos.games" -c user.name="Stratos Games Factory" \

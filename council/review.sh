@@ -207,8 +207,33 @@ a duplicate.
 Currently open council issues (do not duplicate these):
 $existing_council_issues
 
-STEP 5 — End your response with a single paragraph summarizing what you
-found and what you filed. Nothing else after that paragraph.
+STEP 5 — Prune \`council/COUNCIL.md\` to keep it lean.
+
+The factory daemon no longer reads COUNCIL.md directly — each game repo's
+own \`CLAUDE.md\` is the live source of truth. COUNCIL.md is now the
+factory's internal log only, and it must stay small enough to be useful.
+
+Rules:
+  - Hard cap: maximum **50 active entries** total across all sections
+    (Lesson learned / Known issue / Architecture decision /
+    Improvement suggestion).
+  - For each existing active entry, decide: is this lesson now ENFORCED
+    BY CODE (e.g. "the daemon resets forbidden paths" — that's already
+    in the daemon, the lesson is no longer load-bearing)? If yes, move
+    the entry to \`council/archive.md\` (append, never delete).
+  - For each existing active entry, decide: is this entry now FACTUALLY
+    OBSOLETE (e.g. references a file that no longer exists, or describes
+    a workaround for a fixed bug)? If yes, archive it the same way.
+  - If COUNCIL.md still has more than 50 active entries after pruning
+    enforced/obsolete ones, archive the OLDEST entries until you're at 50.
+  - When archiving an entry, prepend \`[archived YYYY-MM-DD]\` to its
+    first line so the archive preserves provenance.
+  - \`council/archive.md\` is append-only history. Never edit existing
+    archive entries.
+
+STEP 6 — End your response with a single paragraph summarizing what you
+found, what you filed, and what you archived. Nothing else after that
+paragraph.
 
 # Operating principles
 
