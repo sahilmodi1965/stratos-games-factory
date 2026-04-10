@@ -1,5 +1,7 @@
 #!/bin/bash
 # stratos-daemon.sh — the hourly Stratos Games Factory loop.
+[ -f "$(dirname "$0")/config.local.sh" ] && source "$(dirname "$0")/config.local.sh"
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:$PATH"
 #
 # What it does:
 #   1. For every game in config.sh, sync the local clone to origin/main.
