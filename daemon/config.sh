@@ -23,6 +23,7 @@ LOCKFILE="${LOCKFILE:-$FACTORY_DIR/.daemon.lock}"
 GAME_REPOS=(
   "mody-sahariar1/arrow-puzzle-testing|arrow-puzzle-testing|web|main|npm run build|docs:packages:prototypes"
   "mody-sahariar1/Bloxplode-Beta|Bloxplode-Beta|capacitor|main||android:capacitor.config.json:package-lock.json"
+  "sahilmodi1965/house-mafia|house-mafia|web|main|npm run build|docs:node_modules:dist"
 )
 
 # ---------------------------------------------------------------- daemon limits
@@ -40,15 +41,7 @@ CLAUDE_TIMEOUT_SECONDS="${CLAUDE_TIMEOUT_SECONDS:-1800}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
 TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
 
-# ---------------------------------------------------------------- claude flags
-# Headless agentic mode:
-#   -p / --print                       → non-interactive (still full agent loop)
-#   --dangerously-skip-permissions     → no permission prompts (cron requirement)
-#   --effort max                       → maximum reasoning effort per turn
-# The daemon ALSO passes --append-system-prompt at invocation time with rules
-# loaded from templates/system-prompt-<game>.md, so the rules stay sticky in
-# Claude's system prompt across every turn instead of being buried in the
-# user message.
+# ---------------------------------------------------------------- claude flags (legacy, used by deprecated daemon scripts)
 CLAUDE_FLAGS=(-p --dangerously-skip-permissions --effort max)
 
 # ---------------------------------------------------------------- local overrides

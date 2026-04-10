@@ -85,5 +85,8 @@ bash "$FACTORY_DIR/scripts/deploy-brain.sh"
 
 ok "Game added: $REPO"
 echo
-echo "It will be picked up by the daemon on the next cron tick. To run immediately:"
-echo "  bash $FACTORY_DIR/daemon/stratos-daemon.sh"
+echo "Next steps:"
+echo "  1. Write a real CLAUDE.md for the game (templates/claude-$LOCAL_DIR.md)"
+echo "  2. Create workflow templates (templates/workflows-$LOCAL_DIR/)"
+echo "  3. Run: bash scripts/deploy-brain.sh"
+echo "  4. Open Claude Code, say 'go' — the swarm will pick up the new game"

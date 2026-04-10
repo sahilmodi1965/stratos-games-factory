@@ -137,11 +137,14 @@ RULES:
 1. Read CLAUDE.md in this repo FIRST. Follow its rules exactly.
 2. Only do what the issue asks. No bonus refactors or cleanups.
 3. Conventional commits, reference the issue: "fix: description #<N>"
-4. Do NOT edit these paths: <forbidden_paths as comma list>
-5. Run the build as final step: <build_cmd>. Fix until it passes.
+4. Do NOT edit these paths: <forbidden_paths from config.sh, comma-separated>
+5. <if build_cmd is non-empty>: Run "<build_cmd>" as final step. Fix until it passes.
+   <if build_cmd is empty>: No build step for this game. Just verify your changes are correct.
 6. If you cannot implement safely, make no changes and explain why.
 7. End with one paragraph summarizing what you changed.
 ```
+
+**Important:** The `build_cmd` and `forbidden_paths` come from `daemon/config.sh` and are **different per game**. Do not hardcode `npm run build` — some games have no build step (e.g., Bloxplode serves raw www/).
 
 **After the subagent returns:**
 1. Scrub forbidden paths (safety net):
@@ -257,10 +260,10 @@ Run inline (no subagent). For each game in the portfolio:
 - Title starts with `[content]`
 - Body follows the `build-request` template: What / Where / How / Anything else
 - Body stays under 50 lines
-- Reference specific files in the codebase
-- Be concrete — "A 4x4 level where only 3 of 8 arrows are tappable" not "more levels please"
+- Reference specific files in the codebase — read the game's CLAUDE.md and explore its content/level system first
+- Be concrete and game-appropriate — the idea must fit the game's existing architecture
 - Do NOT duplicate any of the 20 recent issues
-- Good themes: difficulty variants, tutorial levels, pattern-based sets, visual themes, combo mechanics, timed modes
+- Tailor themes to each game's genre (puzzle levels for puzzle games, multiplayer modes for social games, etc.)
 
 ### Step 7 — Competitor agent
 
@@ -424,12 +427,9 @@ When you (Claude) are spawned as a builder subagent, you operate under tight con
 
 1. **Read the game repo's `CLAUDE.md` first.** If there is no `CLAUDE.md`, stop. The factory deploys one to every game; its absence means the brain hasn't been deployed yet.
 2. **Only do what the issue asks.** No bonus refactors. No "while I'm here" cleanups. No comments or docstrings on code you didn't change.
-3. **Conventional commits, one logical change per commit, every message references the issue number** (`fix: arrow rotation snap on touch end #42`).
-4. **Hard exclusions** — do not edit:
-   - `packages/*` in Arrow Puzzle (cross-game shared kit; needs human review).
-   - `android/*` and `capacitor.config.json` in Bloxplode (native build artifacts).
-   - `prototypes/`, `docs/` (built artifacts), or anything the game's CLAUDE.md flags as off-limits.
-5. **Run the build as the final step** (`npm run build` for Arrow Puzzle). If it fails, fix or revert until it passes. Never push a broken build.
+3. **Conventional commits, one logical change per commit, every message references the issue number** (`fix: description #42`).
+4. **Hard exclusions** — do not edit the `forbidden_paths` listed in `daemon/config.sh` for this game, or anything the game's CLAUDE.md flags as off-limits.
+5. **Run the build command** from `daemon/config.sh` (`build_cmd` field) as the final step. If the game has no build command (empty field), skip this. If the build fails, fix or revert until it passes. Never push a broken build.
 6. **If you cannot do the task safely, do nothing.** Output a one-paragraph explanation of why. The swarm will turn that into an issue comment so a human can clarify.
 
 ## Adding a new game (for future interns)

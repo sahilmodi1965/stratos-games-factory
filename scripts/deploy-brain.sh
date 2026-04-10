@@ -29,13 +29,15 @@ die()  { printf "\033[1;31m✗\033[0m %s\n" "$*"; exit 1; }
 # brain/*.md is kept for historical reference but is no longer load-bearing.
 ARROW_CLAUDE="$FACTORY_DIR/templates/claude-arrow-puzzle.md"
 BLOX_CLAUDE="$FACTORY_DIR/templates/claude-bloxplode.md"
+HOUSE_MAFIA_CLAUDE="$FACTORY_DIR/templates/claude-house-mafia.md"
 ISSUE_TEMPLATE="$FACTORY_DIR/templates/build-request.md"
 PR_TEMPLATE="$FACTORY_DIR/templates/pull_request_template.md"
 ARROW_DASHBOARD="$FACTORY_DIR/templates/readme-dashboard-arrow-puzzle.md"
 BLOX_DASHBOARD="$FACTORY_DIR/templates/readme-dashboard-bloxplode.md"
 
-[[ -f "$ARROW_CLAUDE" ]]    || die "missing $ARROW_CLAUDE"
-[[ -f "$BLOX_CLAUDE" ]]     || die "missing $BLOX_CLAUDE"
+[[ -f "$ARROW_CLAUDE" ]]       || die "missing $ARROW_CLAUDE"
+[[ -f "$BLOX_CLAUDE" ]]        || die "missing $BLOX_CLAUDE"
+[[ -f "$HOUSE_MAFIA_CLAUDE" ]] || die "missing $HOUSE_MAFIA_CLAUDE"
 [[ -f "$ISSUE_TEMPLATE" ]]  || die "missing $ISSUE_TEMPLATE"
 [[ -f "$PR_TEMPLATE" ]]     || die "missing $PR_TEMPLATE"
 [[ -f "$ARROW_DASHBOARD" ]] || die "missing $ARROW_DASHBOARD"
@@ -96,6 +98,9 @@ deploy_repo() {
       ;;
     Bloxplode-Beta)
       workflow_dir="$FACTORY_DIR/templates/workflows-bloxplode"
+      ;;
+    house-mafia)
+      workflow_dir="$FACTORY_DIR/templates/workflows-house-mafia"
       ;;
   esac
   if [[ -d "$workflow_dir" ]]; then
@@ -158,6 +163,7 @@ deploy_repo() {
   case "$local_dir" in
     arrow-puzzle-testing) qa_src_dir="${qa_src_dir}arrow-puzzle" ;;
     Bloxplode-Beta)       qa_src_dir="${qa_src_dir}bloxplode" ;;
+    house-mafia)          qa_src_dir="${qa_src_dir}house-mafia" ;;
     *)                    qa_src_dir="" ;;
   esac
   if [[ -n "$qa_src_dir" && -d "$qa_src_dir" ]]; then
@@ -186,8 +192,15 @@ deploy_repo() {
     fi
     # Patch package.json: ensure @playwright/test (and http-server for bloxplode) are dev deps + a test:e2e script.
     if [[ -f package.json ]] && command -v node >/dev/null 2>&1; then
+      # Detect kind from config.sh GAME_REPOS entry
       local pkg_kind="vite"
-      [[ "$local_dir" == "Bloxplode-Beta" ]] && pkg_kind="static"
+      for cfg_entry in "${GAME_REPOS[@]}"; do
+        IFS='|' read -r _r _d cfg_kind _ _ _ <<< "$cfg_entry"
+        if [[ "$_d" == "$local_dir" ]]; then
+          [[ "$cfg_kind" == "capacitor" ]] && pkg_kind="static"
+          break
+        fi
+      done
       node -e '
         const fs = require("fs");
         const kind = process.argv[1];
@@ -286,6 +299,7 @@ deploy_repo() {
   case "$local_dir" in
     arrow-puzzle-testing) claude_src="$ARROW_CLAUDE" ;;
     Bloxplode-Beta)       claude_src="$BLOX_CLAUDE" ;;
+    house-mafia)          claude_src="$HOUSE_MAFIA_CLAUDE" ;;
   esac
   if [[ -n "$claude_src" && -f "$claude_src" ]]; then
     if ! cmp -s "$claude_src" CLAUDE.md 2>/dev/null; then
