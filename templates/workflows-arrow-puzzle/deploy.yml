@@ -1,11 +1,12 @@
 name: Deploy main to GitHub Pages
-# Mirrors the latest main/docs/ contents to the root of gh-pages.
+# Builds the project (npm run build → docs/) then mirrors docs/ to gh-pages.
 # Uses keep_files=true so PR preview directories under /pr/* are preserved.
 # Deployed by the Stratos Games Factory — do not hand-edit.
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -20,11 +21,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
       - name: Verify docs/ exists
         run: |
           if [ ! -d docs ]; then
-            echo "::warning::docs/ does not exist on main; skipping deploy"
-            exit 0
+            echo "::error::docs/ does not exist after build — npm run build may not be writing to docs/"
+            exit 1
           fi
           ls -la docs/ | head -20
 
