@@ -1,51 +1,23 @@
-# monetization agent (planned)
+# monetization agent
 
-**Status**: planned
-**Schedule (when built)**: weekly, Monday 00:00 UTC (runs after product agent)
-**Estimated cost**: one Claude `--effort max` session per game per week + AdMob API calls
+**Status**: active
+**Dispatch**: swarm-inline (runs in Claude Code session when Sahil says "go")
+**Label**: `monetization-data`
 
-## What it will do
+## What it does
 
-Pulls AdMob revenue and ad-serving data each Monday, analyzes it against the product agent's behavior data, and files **ad-placement optimization issues** on the game repo. The goal is to squeeze more revenue per DAU without degrading the player experience that keeps them retaining.
+Reviews ad placement configuration in game code, cross-references with casual game monetization best practices, and files **ad-placement optimization issues**. Currently targets Bloxplode (the only game with ad integration). Skips games with no ad integration.
 
-For each game with AdMob integration, every Monday the agent will:
+## How it works
 
-1. Pull the past 7 days of AdMob reports: impressions, eCPM, fill rate, click rate, revenue per placement (interstitial, rewarded, banner).
-2. Pull the product agent's output from the same week to cross-reference with retention cohorts.
-3. Compute per-placement stats:
-   - Revenue per thousand sessions (RPM, broken down by ad format)
-   - Impression-to-retention-drop correlation (does showing a rewarded ad at level 5 drop D1 more than at level 10?)
-   - Ad frequency cap compliance
-4. Identify the top 3 optimization opportunities:
-   - Which placement is underperforming on eCPM and why?
-   - Where would an additional placement add revenue without hurting retention?
-   - Where would REMOVING a placement recover retention more than the revenue it earned?
-5. File **1 issue per opportunity**, labeled `monetization-data`.
+1. Reads the game's codebase for ad integration code (AdMob config, placement triggers, frequency logic).
+2. Cross-references with best practices: interstitial timing (not mid-action, natural break points), rewarded video placement (at moments of player need), banner positioning (bottom only, never overlapping UI), session pacing (first ad after 2+ min engagement).
+3. Files up to **3 optimization issues per game**, each labeled `build-request` + `monetization-data`.
 
-## When it will run
+## Known limitations
 
-Monday 00:00 UTC, after the product agent has finished (so it can read the product agent's output from the current run).
-
-## What data it will need
-
-- **AdMob API credentials** (service account JSON), same secure local dir as the product agent's Firebase credentials
-- **Read access** to the product agent's output for correlation
-- **GitHub write access** to file issues
-- Read access to the game's ad placement config (likely in `www/` or wherever AdMob IDs are declared)
-
-## What it will output
-
-- **Up to 3 issues per game** per week, labeled `monetization-data`
-- **A weekly ROI summary** on the factory repo: total revenue, RPM trend, and the agent's proposed priority-ordered optimization list
-- **Log entries** at `agents/monetization/monetization-agent.log`
-
-## Why this is planned, not active
-
-Same prerequisites as the product agent, plus:
-
-1. **AdMob integration must be live and serving ads.** Bloxplode has `@capacitor-community/admob` installed per `package.json`, but placement ID wiring and revenue reporting are not yet verified.
-2. **Product agent must exist first.** The monetization agent reads the product agent's output to correlate ad impressions with retention.
-3. **Baseline revenue data.** Without at least 30 days of AdMob data, optimization recommendations would be fitting to noise.
+- If no ad integration exists in a game, the agent skips it.
+- Without live AdMob revenue data, recommendations are based on code review + best practices rather than actual performance metrics.
 
 ## Guardrails
 

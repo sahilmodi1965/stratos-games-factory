@@ -2,28 +2,28 @@
 
 > A non-technical guide for play-testing Stratos games, reading the dashboard, testing PRs, and working with the agent swarm. You don't need to know any code.
 
-The factory now runs a **swarm of 6 active agents** that do most of the work for you. Your job is the part agents can't do: actually playing the game, judging whether it feels right, and making the human calls that decide what ships. This guide shows you how to do that with the new dashboards, the new PR template, and the agent swarm working alongside you.
+The factory runs a **swarm of 9 active agents** that do most of the work. Your job is the part agents can't do: actually playing the game, judging whether it feels right, and making the human calls that decide what ships. Sahil opens Claude Code, says "go", and the swarm builds everything you've filed. This guide shows you how to work with that system.
 
 ---
 
 ## The big picture
 
 ```
-You play the game        Wednesday: content agent files level ideas
-       │                                  │
-       │                                  ▼
-       │            Tuesday: competitor agent files market-intel
-       │                                  │
-       │                                  ▼
-       │  Issues land in the build queue, 24/7
-       │                  │
-       ▼                  ▼
-File a build-request → Hourly daemon picks it up → Claude builds it →
-QA agent runs Playwright → 🟢 PR comment + screenshot →
+You play the game        Swarm generates content ideas
+       |                              |
+       |                              v
+       |            Swarm scans market trends
+       |                              |
+       |                              v
+       |  Issues land in the build queue
+       |                  |
+       v                  v
+File a build-request → Sahil says "go" → swarm builds it →
+QA agent runs Playwright → PR comment + screenshot →
 Auto-merge OR you review → Merged → Live URL → You re-test
 ```
 
-You don't need to think about the agents most of the time. They run on schedule and file issues. You just play, test, and judge.
+You don't need to think about the agents most of the time. They run when Sahil kicks off the swarm, and they file issues. You just play, test, and judge.
 
 ---
 
@@ -38,7 +38,7 @@ Open either game's repo on GitHub. The very first thing you'll see is a row of b
 
 | Badge | What it shows | Click it to... |
 |---|---|---|
-| 🟢 **Play** / **Web preview** | The live game URL | Open the game in your browser |
+| **Play** / **Web preview** | The live game URL | Open the game in your browser |
 | **release** | The latest version tag | See all releases and their changelogs |
 | **build requests** (green count) | How many things humans (and agents) are asking for | See the list of open requests |
 | **PRs** (purple count) | How many changes are waiting for review | See the list of open PRs |
@@ -60,12 +60,12 @@ Target: **3-4 iterations per day, every day**. The agents fill the build queue a
 
 ### Morning iteration (1 of 3-4)
 
-1. **Open the live game URL** on your phone (badge → Play).
+1. **Open the live game URL** on your phone (badge -> Play).
 2. **Play 10-15 minutes.** Just play normally, the way a real player would.
 3. **Note everything weird**: bugs, awkward moments, anything that feels off, missing polish, audio issues, animation glitches.
 4. **Open the repo's Issues tab**, click "New issue", pick the **Build Request** template.
 5. **File 2-3 build requests**, one per concern. (One thing per issue. Don't bundle.)
-6. **Wait ~1 hour** for the hourly builder to pick them up.
+6. **Ping Sahil** when you've filed a batch — he'll run the swarm and your issues get built.
 
 ### Midday iteration (2 of 3-4)
 
@@ -77,7 +77,7 @@ Repeat. By now several PRs may have **auto-merged** (look for the `auto-merged` 
 
 ### Evening (optional)
 
-Quick fixes only. Anything tiny that bugged you today — open Claude Code, fix it, push directly. Or just file the issue and let the daemon handle it overnight.
+Quick fixes only. Anything tiny that bugged you today — open Claude Code, fix it, push directly. Or just file the issue and let Sahil's next swarm run handle it.
 
 ### End of day
 
@@ -89,16 +89,26 @@ Click the badges row on each game's README. If any badge is red, investigate. Lo
 
 This is the most important skill in the whole loop. The quality of the request determines the quality of the build.
 
-1. **Click the dashboard's "file a build request" link** (or Issues tab → New issue → Build Request template).
+1. **Click the dashboard's "file a build request" link** (or Issues tab -> New issue -> Build Request template).
 2. **Be specific.** Compare:
-   - ❌ "Arrows are broken" → ✅ "Level 12, third row from the top, the right arrow overlaps the blocker on Samsung A54 in landscape"
-   - ❌ "Combo feels off" → ✅ "After clearing a 4-row combo on level 7, the counter shows ×3 instead of ×4"
-   - ❌ "Make it nicer" → ✅ "Bump the 'Try Again' button from 32px to 60px so it's tappable on phones"
+   - Bad: "Arrows are broken" -> Good: "Level 12, third row from the top, the right arrow overlaps the blocker on Samsung A54 in landscape"
+   - Bad: "Combo feels off" -> Good: "After clearing a 4-row combo on level 7, the counter shows x3 instead of x4"
+   - Bad: "Make it nicer" -> Good: "Bump the 'Try Again' button from 32px to 60px so it's tappable on phones"
 3. **Always include device info** when reporting bugs: phone model, OS version, browser, orientation.
 4. **For features**, describe what the player should *experience*, not how to code it.
-5. **For levels**, describe the *feel* (not the grid coordinates) — let the daemon figure out the layout.
+5. **For levels**, describe the *feel* (not the grid coordinates) — let the builder figure out the layout.
 6. **One issue per theme.** Don't mix bug reports with feature requests.
-7. **Submit.** The `build-request` label is added automatically. Within an hour, the builder agent picks it up.
+7. **Submit.** The `build-request` label is added automatically. Sahil's next swarm run picks it up.
+
+## How to file analytics data
+
+The **product agent** turns your player data into concrete improvement issues. Here's how to feed it:
+
+1. Open Firebase Analytics or Play Console for the game.
+2. Take screenshots or export CSV of key metrics: level completion rates, session lengths, drop-off points.
+3. File an issue on the game repo with the `analytics-data` label.
+4. Paste the screenshots or data into the issue body with any notes ("Level 8 seems to lose everyone").
+5. The product agent reads this and files specific improvement issues like "Level 8 has 70% drop-off — reduce blocker count."
 
 ---
 
@@ -108,10 +118,10 @@ When the builder agent finishes a build, it opens a PR. Every PR follows the **s
 
 ### Step-by-step
 
-1. **Open the PR** (badge → Open PRs → click into the one you want to test).
+1. **Open the PR** (badge -> Open PRs -> click into the one you want to test).
 2. **Wait for the QA badge.** The QA agent runs automatically and posts:
-   - 🟢 **QA passed** = the smoke test ran cleanly. Safe to proceed.
-   - 🔴 **QA failed** = the page didn't load or crashed. Don't bother testing manually — it needs a fix first.
+   - **QA passed** = the smoke test ran cleanly. Safe to proceed.
+   - **QA failed** = the page didn't load or crashed. Don't bother testing manually — it needs a fix first.
 3. **Look for the PR Preview comment.** A bot comments with a URL like `https://mody-sahariar1.github.io/<game>/pr/<num>/`. **Open it on your phone.**
 4. **Run the testing checklist** in the PR template:
    - [ ] Game loads without errors (white screen = failure)
@@ -120,11 +130,11 @@ When the builder agent finishes a build, it opens a PR. Every PR follows the **s
    - [ ] Play 3 levels — no regressions on existing mechanics?
    - [ ] Check on mobile (real phone, not just desktop responsive mode)
 5. **Comment your verdict** on the PR:
-   - ✅ "Works as expected, ready to merge"
-   - ⚠️ "Partial — fixes the rotation but the animation is now skipped"
-   - ❌ "Doesn't fix it, still happens on Samsung A54"
-   - 🆕 "Introduced a new issue — score now resets between rounds (filing as #N)"
-6. **If it's wrong**, file a NEW issue (not a comment) describing the new problem. The daemon only reads new issues.
+   - "Works as expected, ready to merge"
+   - "Partial — fixes the rotation but the animation is now skipped"
+   - "Doesn't fix it, still happens on Samsung A54"
+   - "Introduced a new issue — score now resets between rounds (filing as #N)"
+6. **If it's wrong**, file a NEW issue (not a comment) describing the new problem.
 
 ### Device checklist
 
@@ -138,36 +148,19 @@ The PR template includes this — work through each on a real device when you ca
 
 ## What each agent does (in simple terms)
 
-The factory has 6 agents working alongside you. You don't need to manage any of them — they run on their own schedules and file GitHub issues that show up in the dashboard.
+The factory has 9 agents working alongside you. You don't need to manage any of them — they run when Sahil says "go" and they file GitHub issues that show up in the dashboard.
 
-| Agent | When it runs | What it does | Where its output appears |
-|---|---|---|---|
-| **builder** | Every hour | Picks up `build-request` issues and turns them into PRs | New PRs in the dashboard's Open PRs count |
-| **qa** | On every PR | Runs a Playwright smoke test, takes a screenshot, comments 🟢/🔴 | PR comments + screenshot artifacts |
-| **content** | Every Wednesday at midnight | Suggests 5 new level / content ideas per game and files them as build-requests | New issues in the build-requests count |
-| **competitor** | Every Tuesday at midnight | Searches for trending puzzle games and files 3 mechanic suggestions per game | New issues with the `market-intel` label |
-| **council** | Every Sunday at midnight | Reviews the week's factory activity and updates the factory's living memory | New issues with the `council` label on the factory repo |
-| **platform** | When Sahil flips `ship-it` | Builds the Android APK and files a `release-ready` issue | New issue with the `release-ready` label |
-
-There are also **3 planned agents** waiting on prerequisites:
-- **product** will pull Firebase player data and file data-backed improvement issues
-- **monetization** will analyze AdMob revenue and propose ad-placement changes
-- **ua** will generate store listings + ASO keywords on every release
-
----
-
-## The weekly rhythm
-
-| Day | Agent activity | Your job |
+| Agent | What it does | Where its output appears |
 |---|---|---|
-| **Monday** | (when product + monetization are built: data analysis files data-backed issues) | Triage anything new from Sunday's council review |
-| **Tuesday** | Market scan — competitor agent files trend-driven suggestions | Read the `market-intel` issues, decide which deserve to become `build-request` |
-| **Wednesday** | New content — content agent files 5 level ideas per game | Read the new content-agent issues, leave a thumbs-up or refine before they hit the builder |
-| **Thursday-Saturday** | Builder + qa + auto-merge drain the queue | Test PRs, test merged builds on the live URL, file follow-up issues |
-| **Sunday** | Council reviews the week, updates COUNCIL.md, files architectural improvement issues | Read the council's findings — they often catch things the rest of the system missed |
-| **Hourly, every day** | Builder picks up build-requests | File more requests as you find more bugs |
-| **On every PR** | QA runs the smoke test | Wait for 🟢 before manual testing |
-| **On `ship-it`** | Platform agent rebuilds Android | Pick up the `release-ready` issue and submit to Play Store |
+| **builder** | Picks up `build-request` issues and turns them into PRs | New PRs in the dashboard |
+| **product** | Reads your `analytics-data` issues and files data-backed improvements | New issues with `product-data` label |
+| **monetization** | Reviews ad placement code and suggests optimizations | New issues with `monetization-data` label |
+| **content** | Suggests 5 new level / content ideas per game | New issues with `content-agent` label |
+| **competitor** | Searches for trending puzzle games and files mechanic suggestions | New issues with `market-intel` label |
+| **ua** | Generates store listing descriptions, keywords, and screenshot ideas | New issues with `ua-assets` label |
+| **council** | Reviews the week's factory activity and updates the factory's memory | New issues with `council` label on the factory repo |
+| **qa** | Runs a Playwright smoke test on every PR, takes a screenshot | PR comments + screenshot artifacts |
+| **platform** | Builds the Android APK when Sahil flips `ship-it` | New issue with `release-ready` label |
 
 ---
 
@@ -175,12 +168,16 @@ There are also **3 planned agents** waiting on prerequisites:
 
 | Label | Meaning | Who creates it |
 |---|---|---|
-| `build-request` | Something to build (bug fix, feature, content) | You, or the content/competitor agents (after triage) |
+| `build-request` | Something to build (bug fix, feature, content) | You, or the content/product/competitor agents |
 | `building` | Builder is working on it RIGHT NOW | Builder agent (auto-removed when done) |
 | `done` | Builder opened a PR | Builder agent |
 | `auto-merged` | PR was small/safe and merged automatically | Auto-merge workflow |
+| `analytics-data` | Player data for the product agent to analyze | You (file manually with data/screenshots) |
+| `product-data` | Data-backed improvement from the product agent | Product agent |
+| `monetization-data` | Ad optimization suggestion | Monetization agent |
 | `market-intel` | Competitor agent suggestion (waiting for human triage) | Competitor agent |
-| `content-agent` | Content agent suggestion (also has `build-request`, goes straight to builder) | Content agent |
+| `content-agent` | Content agent suggestion (also has `build-request`) | Content agent |
+| `ua-assets` | Store listing assets for app store submission | UA agent |
 | `release-ready` | Native build done, ready for store submission | Platform agent |
 | `council` | Architectural improvement suggestion | Council agent |
 | `ship-it` | Trigger a production release | You (apply this manually when the game is ready) |
@@ -211,7 +208,7 @@ git push origin main                    # push directly
 - Use conventional commits and reference issue numbers.
 - If CI or QA fails after your push, fix it immediately or `git revert HEAD && git push`.
 
-For anything bigger than a small tweak, file a build-request and let the daemon handle it.
+For anything bigger than a small tweak, file a build-request and let the swarm handle it.
 
 ---
 
@@ -221,14 +218,16 @@ For anything bigger than a small tweak, file a build-request and let the daemon 
 |---|---|
 | See if anything needs my attention | Look at the badges on the game repo README |
 | File a bug | Click "file a build request" on the dashboard |
-| Test a PR | Wait for 🟢 QA, click the preview URL in the bot's comment |
+| Share player analytics | File an issue with `analytics-data` label + paste data |
+| Test a PR | Wait for QA pass, click the preview URL in the bot's comment |
 | Test a merged change | Open the live URL (NOT the preview URL) |
 | Report a regression | File a NEW issue, reference the old one |
-| Make a tiny fix yourself | `git pull --rebase` → `claude` → fix → push |
+| Make a tiny fix yourself | `git pull --rebase` -> `claude` -> fix -> push |
 | Trigger a release | Add the `ship-it` label to a tracking issue |
-| See what the council found | Look at the factory repo's `council` labeled issues |
 | See trending market suggestions | Look at the game repo's `market-intel` labeled issues |
-| See content agent ideas waiting | Look at the game repo's `content-agent` labeled issues |
+| See content agent ideas | Look at the game repo's `content-agent` labeled issues |
+| See store listing assets | Look at the game repo's `ua-assets` labeled issues |
+| See product improvement ideas | Look at the game repo's `product-data` labeled issues |
 
 ---
 
@@ -236,15 +235,14 @@ For anything bigger than a small tweak, file a build-request and let the daemon 
 
 The agents handle most things. Ping Sahil for:
 
-- Issues stuck on `build-request` for >2 hours (builder may be down).
-- Daemon keeps refusing the same issue (probably ambiguous or out-of-scope).
+- Issues stuck on `build-request` for a while — he needs to run the swarm.
 - A PR fails QA repeatedly with the same error.
 - Anything dangerous: data loss, broken sign-in, payment, security.
-- Native APK / store submission questions (those need a human, not an agent).
+- Native APK / store submission questions.
 - Whenever the game *feels* ready for `ship-it` — that's a judgment call you and Sahil make together.
 
 ---
 
-The system is built so every issue you file becomes a real change in the game, usually within the same hour. If you're filing 5-10 specific issues a day and testing every PR that comes back, the games will get visibly better every single day.
+The system is built so every issue you file becomes a real change in the game. File 5-10 specific issues, Sahil runs the swarm, and the games get visibly better every single day.
 
 — The Stratos Games Factory

@@ -1,60 +1,25 @@
-# ua (user acquisition) agent (planned)
+# ua (user acquisition) agent
 
-**Status**: planned
-**Schedule (when built)**: on release (triggered by `ship-it` label)
-**Estimated cost**: one Claude `--effort max` session per release
+**Status**: active
+**Dispatch**: swarm-inline (runs in Claude Code session when Sahil says "go" or "run UA prep")
+**Label**: `ua-assets`
 
-## What it will do
+## What it does
 
-Every time a game ships a new release, the UA agent generates the store-listing assets and ASO keywords the release needs. This is the "last mile" between the factory producing a new build and Ripon being able to push that build to the store.
+Generates store listing assets for app store submissions. Triggered when a `ship-it` label is applied, when no `ua-assets` issue has been filed in the past 30 days, or when Sahil says "run UA prep".
 
-For each release, the agent will:
+For each game, generates:
+- **5 App Store description variants** (gameplay-first, visual-first, challenge-first, casual-first, social-first)
+- **5 ASO keyword sets** (100 chars each, mix of high-volume and long-tail)
+- **Screenshot composition suggestions** (what game state to capture, caption text, which feature to highlight)
 
-1. Read the release tag + changelog (from the release workflow's output)
-2. Read the game's CLAUDE.md for tone and positioning
-3. Generate or regenerate:
-   - **App title candidates** (short + long variants, multiple locales)
-   - **App subtitle** (iOS) / **short description** (Play)
-   - **Full description** (multiple locales)
-   - **What's new** section with the changelog summarized in player-facing language
-   - **Keyword list** with ASO analysis (volume, difficulty, relevance)
-   - **Screenshot captions** (one caption per store screenshot slot)
-   - **Promotional text** (iOS) for the 170-char limit
-4. Generate or regenerate:
-   - **Feature graphic** prompt for a designer (or an image-gen model if we wire one up)
-   - **Screenshot overlay** copy (the text that sits on top of gameplay screenshots)
-5. File ONE `store-listing` issue per game release with all of the above in the body.
-6. If AI image generation is available, also generate draft screenshots as attachments.
+Files everything as a single `ua-assets` issue per game for human review.
 
-## When it will run
+## What it reads
 
-Triggered by the `ship-it` label on any issue or PR, or by the release workflow completing on a game repo (via a GitHub Actions `workflow_run` webhook or a self-hosted runner).
-
-## What data it will need
-
-- **Release tag and changelog** (from the release workflow's output)
-- **Game metadata** (current store listings, current screenshots) — read from the game repo's `store-listing/` directory when it exists, or bootstrapped from scratch the first time
-- **ASO data source** (optional, future: integration with a tool like AppTweak, SensorTower, or Apple's own App Store Connect keyword ranker)
-- **Claude with WebSearch** for current keyword trends
-
-## What it will output
-
-- **1 `store-listing` issue per game release** on the game repo, with the full listing package in the body
-- **An updated `store-listing/` directory** in the game repo (committed to a `store-listing/<version>` branch, PR opened for review) with:
-  - `title.md`, `subtitle.md`, `description.md`, `whats-new.md`, `keywords.md`
-  - `screenshots/overlay-copy.md`
-  - `locales/<locale>/` for each target locale
-- **Log entries** at `agents/ua/ua-agent.log`
-
-## Why this is planned, not active
-
-Three prerequisites:
-
-1. **At least one game must have an existing store listing** to bootstrap from (otherwise the agent has no tone reference). Neither game is in the stores yet.
-2. **Locale strategy** needs to be decided — which locales do we care about first?
-3. **Designer-in-the-loop** for screenshots. The agent can draft copy, but final visuals need human approval before store submission.
-
-Once any game hits a real ship-it, this agent becomes the immediate next priority because it's the bottleneck between "the factory built a release" and "the release is on the store".
+- Game features and mechanics from the codebase and CLAUDE.md
+- Latest release tag and changelog (if any)
+- Current game state for accurate feature descriptions
 
 ## Non-goals
 

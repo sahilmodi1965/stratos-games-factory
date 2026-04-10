@@ -1,50 +1,30 @@
-# product agent (planned)
+# product agent
 
-**Status**: planned
-**Schedule (when built)**: weekly, Monday 00:00 UTC
-**Estimated cost**: one Claude `--effort max` session per game per week + Firebase API calls
+**Status**: active
+**Dispatch**: swarm-inline (runs in Claude Code session when Sahil says "go")
+**Label**: `product-data`
 
-## What it will do
+## What it does
 
-Pulls raw player telemetry from Firebase Analytics and Crashlytics each Monday, analyzes it with Claude, and files **data-backed improvement issues** on the game repo. Unlike the content agent (which generates ideas from pattern-matching) and the competitor agent (which generates ideas from external trends), the product agent generates ideas from **actual player behavior** in our own games.
+Analyzes player behavior data and files **data-backed improvement issues** on game repos. Unlike the content agent (ideas from pattern-matching) and the competitor agent (ideas from external trends), the product agent generates ideas from **actual player behavior** in our own games.
 
-For each game with Firebase integration, every Monday the agent will:
+## Data sources (priority order)
 
-1. Pull the past 7 days of Firebase Analytics events (`level_start`, `level_complete`, `level_fail`, `ad_shown`, `ad_clicked`, `session_start`, `session_end`).
-2. Pull the past 7 days of Crashlytics issues (stack traces, affected users, affected devices).
-3. Compute cohort stats: D1 retention, D7 retention, avg session length, levels completed per session, retry rate per level, ad impressions per session.
-4. Identify the top 3 friction points:
-   - Which level has the worst completion rate?
-   - Which level has the highest rage-quit (retry-then-leave) rate?
-   - Which crash is affecting the most users?
-5. File **1 issue per friction point**, labeled `product-data`, with the raw stats in the body + a proposed fix.
+1. **`analytics-data` issues from Ripon** — Ripon pastes screenshots, CSVs, or text summaries of Firebase Analytics / Play Console data into issues labeled `analytics-data`. This is the primary input.
+2. **Firebase CLI** (if available) — pulls analytics directly. Falls back gracefully if not installed.
+3. **Game code analysis** — reads level/difficulty config to map analytics data to specific game elements.
 
-## When it will run
+## What it produces
 
-Monday 00:00 UTC via cron. Deliberately BEFORE the competitor agent (Tuesday) and content agent (Wednesday) so the product-data findings inform what those agents prioritize for the rest of the week.
+For each game, analyzes data for drop-off points, session length patterns, retry spikes, and feature engagement. Files up to **3 issues per game**, each labeled `build-request` + `product-data`, with:
+- Raw stats cited in the body
+- Specific files and config values to change
+- Concrete proposed fix
 
-## What data it will need
+## Known limitations
 
-- **Firebase Analytics read access** via a service account JSON key (stored outside the repo at `~/.config/stratos/firebase-sa.json` or similar, gitignored)
-- **Crashlytics API access** via the same service account
-- **GitHub write access** to file issues (via the existing `GH_TOKEN` in `config.local.sh`)
-- Read access to the game repos to cross-reference level IDs with `difficulty-config.js` or equivalent
-
-## What it will output
-
-- **Up to 3 issues per game** per week, labeled `product-data`.
-- **A weekly summary issue** on the factory repo summarizing cross-portfolio player-behavior trends.
-- **Log entries** at `agents/product/product-agent.log`.
-
-## Why this is planned, not active
-
-Three prerequisites before this can ship:
-
-1. **Firebase integration must exist in at least one Stratos game**. Bloxplode already has `@capacitor-firebase/crashlytics` installed per `package.json`, but Analytics initialization + event instrumentation is not yet verified.
-2. **Service account + API key management** needs a secure local secrets dir that cron can read but isn't in the repo.
-3. **Enough player traffic** that the weekly cohort stats are statistically meaningful. During beta testing with 10 users, this agent would produce noise.
-
-The council will flag when the data is ready by counting how many events-per-week the factory sees. When that number is high enough, we'll build the agent.
+- Without `analytics-data` issues from Ripon or Firebase CLI, the agent skips with a suggestion for Ripon to file data.
+- During beta testing with very few users, analytics may be noisy — the agent notes low confidence when sample sizes are small.
 
 ## Expected impact
 
