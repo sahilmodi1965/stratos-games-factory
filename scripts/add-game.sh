@@ -79,6 +79,13 @@ gh label create "building"      --repo "$REPO" --color "fbca04" --description "D
 gh label create "done"          --repo "$REPO" --color "5319e7" --description "Daemon has opened a PR for this" >/dev/null 2>&1 || true
 ok "Labels ready"
 
+# ---- 3b. ensure Actions workflow permissions allow write (needed for PR comments, auto-merge)
+say "Setting Actions workflow permissions to read-write"
+gh api "repos/$REPO/actions/permissions/workflow" -X PUT \
+  -f default_workflow_permissions="write" \
+  -F can_approve_pull_request_reviews=true 2>/dev/null || warn "Could not set Actions permissions (may need admin access)"
+ok "Actions permissions set"
+
 # ---- 4. deploy brain
 say "Deploying issue template + starter CLAUDE.md"
 bash "$FACTORY_DIR/scripts/deploy-brain.sh"

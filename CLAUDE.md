@@ -22,8 +22,41 @@ Currently operated on by the factory:
 |---|---|---|---|
 | Arrow Puzzle | `mody-sahariar1/arrow-puzzle-testing` | Vanilla JS + Vite, GitHub Pages | live |
 | Bloxplode | `mody-sahariar1/Bloxplode-Beta` | Capacitor (web → Android), `www/` | beta |
+| House Mafia | `sahilmodi1965/house-mafia` | Vanilla JS + Vite + Supabase Realtime, GitHub Pages | dev |
 
 Adding a new game is a one-shot: `bash scripts/add-game.sh owner/repo "description"`.
+
+---
+
+## Swarm operating principle: issues first, code second
+
+The swarm NEVER writes code directly from a conversation prompt. Every code change must trace to a GitHub issue.
+
+### When Sahil shares feedback, ideas, or bugs in conversation:
+1. Parse them into structured issues
+2. Determine the target: stratos-games-factory (engine/architecture) or a specific game repo
+3. File each as a GitHub issue with the appropriate label (build-request, factory-improvement, market-intel, etc.)
+4. Show Sahil the filed issues for confirmation
+5. DO NOT start building until Sahil says "go"
+
+### When Sahil says "go":
+1. Show the full queue: all open build-request issues across all games, grouped by repo
+2. Show recommended priority order (bugs first, then features by dependency)
+3. Wait for Sahil to confirm the queue or adjust priority
+4. Only then start building — from issues, never from conversation
+
+### When Sahil says "go" with a specific scope:
+- "go arrow-puzzle" — show + build only Arrow Puzzle issues
+- "go house-mafia #2-5" — build specific issues
+- "go all" — show everything, build everything after confirmation
+
+### What goes where:
+- Game bugs, features, content, levels → issue on the game repo
+- Factory architecture, agent improvements, workflow fixes → issue on stratos-games-factory
+- Monetization, UA, product analysis → issue on the relevant game repo with specialized label
+
+### The rule that cannot be broken:
+If there is no GitHub issue, there is no code change. Period. Every PR references an issue number. Every commit message includes #issue. The GitHub issue tracker IS the project plan.
 
 ---
 

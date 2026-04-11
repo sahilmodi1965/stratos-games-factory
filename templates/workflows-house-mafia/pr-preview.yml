@@ -14,8 +14,11 @@ permissions:
   issues: write
 
 concurrency:
-  group: pr-preview-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  # Shared group across ALL PRs to serialize gh-pages pushes.
+  # Without this, parallel PR pushes race on git push to gh-pages and some fail
+  # with "rejected — fetch first". cancel-in-progress: false queues runs instead.
+  group: gh-pages-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -36,6 +39,9 @@ jobs:
 
       - name: Build (with PR preview base path)
         run: npx vite build --base /house-mafia/pr/${{ github.event.pull_request.number }}/
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Publish preview to gh-pages
         uses: peaceiris/actions-gh-pages@v4
