@@ -55,6 +55,17 @@ The swarm NEVER writes code directly from a conversation prompt. Every code chan
 - Factory architecture, agent improvements, workflow fixes → issue on stratos-games-factory
 - Monetization, UA, product analysis → issue on the relevant game repo with specialized label
 
+### Swarm-state notes (a special kind of issue)
+
+When the swarm discovers an operational state worth remembering across sessions — a merge bottleneck, a paused initiative, a broken pipeline, a deferred decision, anything the next "go" needs to know about before redoing the same analysis — file it as an issue on `sahilmodi1965/stratos-games-factory` with the `swarm-state` label. These are NOT build requests. They are persistent messages the swarm leaves for its future self.
+
+Every `swarm-state` issue MUST include:
+- **Filed:** ISO date so staleness is obvious
+- **Why this issue exists:** what the swarm noticed and the analysis behind it
+- **When to close:** explicit criteria so future swarm runs (or Sahil) know when the note has served its purpose and can be closed
+
+The swarm checks for open `swarm-state` issues at the start of every Step 1 assess pass and surfaces them before doing any other work. The pattern lets the swarm coordinate with itself across sessions without polluting game-level `build-request` queues, memory files, or this CLAUDE.md.
+
 ### The rule that cannot be broken:
 If there is no GitHub issue, there is no code change. Period. Every PR references an issue number. Every commit message includes #issue. The GitHub issue tracker IS the project plan.
 
@@ -66,7 +77,15 @@ This is the primary way to operate the factory. When Sahil opens Claude Code in 
 
 ### Step 1 — Assess state
 
-Read `daemon/config.sh` to get the game list (`GAME_REPOS` array). For each game, run these `gh` commands to understand the full picture:
+**Before assessing game queues, check for open swarm-state notes.** These are operational notes the swarm has filed for itself across sessions (see "Swarm-state notes" above) — open queue blockers, paused initiatives, infra outages, anything that needs to be reckoned with before the swarm proceeds:
+
+```bash
+gh issue list --repo sahilmodi1965/stratos-games-factory --label swarm-state --state open --json number,title,body,createdAt
+```
+
+If any are open: surface them to Sahil first (number, title, when filed, the "When to close" criteria from each body), and ask whether to act on them, work around them, or proceed normally. **Do not silently re-run analysis a swarm-state note already documents** — that is the entire point of the pattern. If the bottleneck the note describes is still in effect, point Sahil at it; do not re-derive it.
+
+Then, read `daemon/config.sh` to get the game list (`GAME_REPOS` array). For each game, run these `gh` commands to understand the full picture:
 
 ```bash
 # Pending work (Ripon's requests)
