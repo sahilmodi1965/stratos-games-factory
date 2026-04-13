@@ -95,6 +95,23 @@ bash scripts/status.sh
 
 Paused games shown as `⏸ PAUSED` in the dashboard MUST be skipped in Steps 2–9. They count as state-only reads, not action targets.
 
+**Feedback loop — every "go" verifies the previous "go" left the factory healthy:**
+
+After running `status.sh`, read the last 3 rows of `council/runs.jsonl` and surface them to Sahil as a mini health check:
+
+```bash
+tail -3 council/runs.jsonl 2>/dev/null | jq -r '"  \(.ts | split("T")[0]) \(.scope // "all") — \(.games | to_entries | map("\(.key):\(.value.prs)p/\(.value.issues)i") | join(" ")) notes=\(.notes // "")"' || echo "  (no prior runs logged)"
+```
+
+Report these three rows at the top of your state summary as **"Prior runs"** — this is the swarm's self-check:
+
+- If `runs.jsonl` is empty → this is the first structured-log run, note it and move on.
+- If the latest row is from > 7 days ago → flag it; the swarm has been idle.
+- If a row says `"failed":` with a non-zero number → surface the failure before doing new work; don't silently re-attempt.
+- If a row's `notes` mentions `decomposition rule fired` → confirm on the next pass that the split-issues produced PRs; don't lose track.
+
+Sahil does not review PRs on the factory repo — this feedback loop is how drift becomes visible without code review. **Do not skip this.** If the loop itself is broken (e.g., `runs.jsonl` missing), that IS the signal that something regressed — report it loudly.
+
 ### Step 2 — Prioritize
 
 Work in this order (highest priority first):
@@ -130,6 +147,7 @@ An issue can contain two kinds of work:
 2. File a second `build-request` issue titled `[polish] <original title>` containing ONLY the subjective piece. Its body uses the polish-PR feedback template (see factory-improvement #27), exposes knobs as CSS variables where possible, and ships in small iterations via PR comments, **never closed-and-refiled**.
 3. Comment on the original issue linking to both and close it as superseded.
 4. Build the `[structure]` issue immediately this pass. Leave `[polish]` for the next pass (or for Ripon to iterate).
+5. **Record the trip in `runs.jsonl`** (Step 10): add `"decomposition_rule_fired":[{"original":<N>,"structure":<N1>,"polish":<N2>}]` to this pass's row so the feedback loop in Step 1 can show it to Sahil on the next go. This is how we verify the rule is working without requiring anyone to read the code.
 
 **If the issue is purely mechanical or purely subjective, do not split — build as-is.** Most issues are one or the other.
 
