@@ -77,62 +77,23 @@ This is the primary way to operate the factory. When Sahil opens Claude Code in 
 
 ### Step 1 — Assess state
 
-**Before assessing game queues, check for open swarm-state notes.** These are operational notes the swarm has filed for itself across sessions (see "Swarm-state notes" above) — open queue blockers, paused initiatives, infra outages, anything that needs to be reckoned with before the swarm proceeds:
+Run the dashboard:
 
 ```bash
-gh issue list --repo sahilmodi1965/stratos-games-factory --label swarm-state --state open --json number,title,body,createdAt
+bash scripts/status.sh
 ```
 
-If any are open: surface them to Sahil first (number, title, when filed, the "When to close" criteria from each body), and ask whether to act on them, work around them, or proceed normally. **Do not silently re-run analysis a swarm-state note already documents** — that is the entire point of the pattern. If the bottleneck the note describes is still in effect, point Sahil at it; do not re-derive it.
+`status.sh` is the single source of truth for the factory's operational state. It reads `daemon/config.sh` for the game list, pulls swarm-state notes, PR backlogs, pending build-requests, stuck `building` labels, agent freshness, council recency, and outputs a structured view plus a **suggested focus** line. It also auto-detects paused games from swarm-state notes (any note whose body mentions a game and the word "paused"/"dormant") and skips them.
 
-Then, read `daemon/config.sh` to get the game list (`GAME_REPOS` array). For each game, run these `gh` commands to understand the full picture:
+**Do not re-run the raw `gh issue list` / `gh pr list` loops that `status.sh` replaces.** If the script fails, fix it — do not fall back to 12 ad-hoc `gh` calls, that is how issues get missed (see issue #25 for why).
 
-```bash
-# Pending work (Ripon's requests)
-gh issue list --repo <owner/repo> --label build-request --state open --json number,title,body,labels
+**After running `status.sh`, surface to Sahil:**
 
-# Stuck issues (labeled building but no PR yet)
-gh issue list --repo <owner/repo> --label building --state open --json number,title
+1. Any open swarm-state notes, with the "When to close" criteria from each body — ask whether to act on them, work around them, or proceed normally. **Do not silently re-run analysis a swarm-state note already documents** — that is the entire point of the pattern.
+2. The dashboard output verbatim (the dashboard already has the structure Sahil expects).
+3. Your own recommended action plan on top of the suggested-focus line (which agents to run, in what order, whether to drain a backlog first).
 
-# Open auto/* PRs awaiting review
-gh pr list --repo <owner/repo> --state open --json number,title,headRefName,labels
-
-# Recent content agent activity (last filed issue)
-gh issue list --repo <owner/repo> --label content-agent --state all --limit 1 --json number,createdAt
-
-# Recent competitor agent activity
-gh issue list --repo <owner/repo> --label market-intel --state all --limit 1 --json number,createdAt
-
-# Analytics data from Ripon (input for product agent)
-gh issue list --repo <owner/repo> --label analytics-data --state open --json number,title,createdAt
-
-# Recent product agent activity
-gh issue list --repo <owner/repo> --label product-data --state all --limit 1 --json number,createdAt
-
-# Recent monetization agent activity
-gh issue list --repo <owner/repo> --label monetization-data --state all --limit 1 --json number,createdAt
-
-# Recent UA agent activity
-gh issue list --repo <owner/repo> --label ua-assets --state all --limit 1 --json number,createdAt
-```
-
-Also check when the council last ran:
-```bash
-git log --format='%aI %s' --grep='council:' -1
-```
-
-**Report the full state to Sahil before proceeding:**
-- N build-request issues pending (list them with numbers and titles)
-- N auto/* PRs awaiting review
-- N stuck issues (labeled `building` but no PR)
-- N analytics-data issues from Ripon (unprocessed player data)
-- Last product-agent run: date
-- Last monetization-agent run: date
-- Last content-agent run: date
-- Last competitor-agent run: date
-- Last UA-agent run: date
-- Last council review: date
-- Recommended action plan (what agents to run, in what order)
+Paused games shown as `⏸ PAUSED` in the dashboard MUST be skipped in Steps 2–9. They count as state-only reads, not action targets.
 
 ### Step 2 — Prioritize
 
@@ -151,6 +112,28 @@ Skip any agent whose work is already fresh. If there's nothing to do, say so.
 ### Step 3 — Builder agent
 
 For each open `build-request` issue (up to 5 per session to avoid context exhaustion):
+
+**Before anything else — classify the issue (structure vs polish):**
+
+An issue can contain two kinds of work:
+
+- **Mechanical** — levels, save keys, controller hooks, route wiring, config fields, game logic, event handlers. Text-specifiable, unambiguous, survives review unchanged.
+- **Subjective** — pixel placement, rotation angles, timing curves, color feel, copy tone, animation easing, aspect-ratio choices. Requires a human eye to judge; prose specs are lossy.
+
+**If an issue contains both, split it before building.** This is the rule that exists to stop the tutorial saga (arrow-puzzle PRs #75/#80/#85 were all closed because mechanical scaffolding was bundled with visual polish the human eye rejected — every closure threw away working structural code).
+
+**Detection heuristic.** An issue is a candidate for splitting if its body contains **mechanical markers** (`save.set`, `controller`, `level`, `boot`, `startX`, config field names, file paths under `src/`) AND **more than 2 subjective markers** from: `rotate(`, `transform`, `padding`, `font-size`, `animation`, `ease`, `opacity`, `scale(`, `translate`, "feel", "looks", "polish", "aspect ratio", "instead of X use Y".
+
+**Split procedure when the rule fires:**
+
+1. File a new `build-request` issue titled `[structure] <original title>` containing ONLY the mechanical parts, plus a no-op placeholder for the subjective piece (e.g., "tutorial runs but with no hand overlay yet — polish tracked separately").
+2. File a second `build-request` issue titled `[polish] <original title>` containing ONLY the subjective piece. Its body uses the polish-PR feedback template (see factory-improvement #27), exposes knobs as CSS variables where possible, and ships in small iterations via PR comments, **never closed-and-refiled**.
+3. Comment on the original issue linking to both and close it as superseded.
+4. Build the `[structure]` issue immediately this pass. Leave `[polish]` for the next pass (or for Ripon to iterate).
+
+**If the issue is purely mechanical or purely subjective, do not split — build as-is.** Most issues are one or the other.
+
+**The rule's acceptance test:** if you are about to build an issue whose body contains both a `startTutorial(` method spec AND a `rotate(135deg)` CSS instruction, you are looking at a split candidate — not a build candidate. Stop and file the two replacement issues.
 
 **Before the subagent:**
 1. Parse the game's config from `daemon/config.sh` to get: `owner/repo`, `local_dir`, `default_branch`, `build_cmd`, `forbidden_paths`.
@@ -407,9 +390,11 @@ Run inline (no subagent). Review the factory's own performance.
 5. Commit and push COUNCIL.md changes.
 6. If the week was uneventful, say so honestly — don't invent recommendations.
 
-### Step 10 — Report
+### Step 10 — Report + log the run
 
-After all agents complete, output a brief summary:
+After all agents complete:
+
+**1. Output a brief summary to Sahil:**
 - Builder: N issues processed, N PRs opened (list URLs)
 - Product: N data-backed issues filed, N analytics-data issues processed
 - Monetization: N optimization issues filed
@@ -418,6 +403,21 @@ After all agents complete, output a brief summary:
 - UA: N store listing issues filed
 - Council: N entries added, N archived
 - Anything that failed or was skipped, and why
+
+**2. Append one structured row to `council/runs.jsonl`** with the same numbers so future councils (and the per-game baseline metrics from factory-improvement #21) can reason from data, not prose. Minimal schema v1:
+
+```json
+{"ts":"<ISO8601>","scope":"<go_scope>","agents":["builder","content"],"games":{"arrow-puzzle":{"issues":3,"prs":3,"failed":0,"skipped":0},"bloxplode":{"issues":0,"prs":0,"failed":0,"skipped":0}},"swarm_state_seen":[6,32],"notes":"<one-line human note>"}
+```
+
+Append with:
+```bash
+echo '<one-line json>' >> council/runs.jsonl
+```
+
+One row per "go", no exceptions. If the swarm was interrupted mid-pass, log what completed with `"notes":"interrupted after builder"`. Do NOT rewrite prior rows — append only. The file is consumed by council weekly review (Step 9) and by the per-game baseline metrics script (factory-improvement #21) once that ships.
+
+Commit `council/runs.jsonl` as part of the pass (or separately if no other changes landed). Don't let the log drift out of git.
 
 ---
 
