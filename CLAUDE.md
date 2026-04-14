@@ -381,6 +381,7 @@ Run inline (no subagent). Analyzes player behavior data and files data-backed im
 - Title starts with `[product]`
 - If no analytics data is available (no `analytics-data` issues, no Firebase CLI), skip with a message suggesting Ripon file an `analytics-data` issue with current stats
 - Never invent data. If the numbers aren't there, say so.
+- **Observation routing — mandatory.** If during this pass you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file the appropriate tracked artifact via the routing matrix at the top of CLAUDE.md (game issue / factory-improvement / swarm-state / memory) BEFORE completing this step. Never let an observation die in your inline summary text.
 
 ### Step 5 — Monetization agent
 
@@ -412,6 +413,7 @@ Run inline (no subagent). Reviews ad placement configuration and files optimizat
 - Stay under 50-line body
 - Do NOT touch `android/`, `capacitor.config.json`, or native ad SDK setup — only web-layer config
 - If no ad integration exists in a game, skip it and note "no ad integration found"
+- **Observation routing — mandatory.** If during this pass you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file the appropriate tracked artifact via the routing matrix at the top of CLAUDE.md (game issue / factory-improvement / swarm-state / memory) BEFORE completing this step. Never let an observation die in your inline summary text.
 
 ### Step 6 — Content agent
 
@@ -435,6 +437,7 @@ Run inline (no subagent). For each game in the portfolio:
 - Be concrete and game-appropriate — the idea must fit the game's existing architecture
 - Do NOT duplicate any of the 20 recent issues
 - Tailor themes to each game's genre (puzzle levels for puzzle games, multiplayer modes for social games, etc.)
+- **Observation routing — mandatory.** If during this pass you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file the appropriate tracked artifact via the routing matrix at the top of CLAUDE.md (game issue / factory-improvement / swarm-state / memory) BEFORE completing this step. Never let an observation die in your inline summary text.
 
 ### Step 7 — Competitor agent
 
@@ -463,6 +466,7 @@ Run inline (no subagent). Covers all games in one pass.
 - Prefer 3 sharp suggestions over 10 vague ones.
 - If web searches return nothing credible, file zero issues and say so honestly.
 - These issues are triaged by humans, NOT auto-built.
+- **Observation routing — mandatory.** If during this pass you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file the appropriate tracked artifact via the routing matrix at the top of CLAUDE.md (game issue / factory-improvement / swarm-state / memory) BEFORE completing this step. Never let an observation die in your inline summary text.
 
 ### Step 8 — UA agent (user acquisition)
 
@@ -506,6 +510,7 @@ Run inline (no subagent). Generates store listing assets for app store submissio
 - Write for the casual mobile gamer audience
 - Include localization notes (flag terms that need translation attention)
 - These issues are for human review — Ripon/Sahil picks the best variants
+- **Observation routing — mandatory.** If during this pass you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file the appropriate tracked artifact via the routing matrix at the top of CLAUDE.md (game issue / factory-improvement / swarm-state / memory) BEFORE completing this step. Never let an observation die in your inline summary text.
 
 ### Step 9 — Council review
 
@@ -529,6 +534,7 @@ Run inline (no subagent). Review the factory's own performance.
    - **"Architecture decision"** → COUNCIL.md entry only. These are audit-trail decisions, not actionable work.
 5. Commit and push COUNCIL.md changes **and the new tracked artifacts** in the same commit (or note them clearly if they live in different repos).
 6. If the week was uneventful, say so honestly — don't invent recommendations. **But also check `runs.jsonl` for the `factory_delta` field across the past 7 days**: if zero passes contributed back to the factory (no memory writes, no brain edits, no factory-improvement issues filed by builders/inline agents), that itself is a "Known issue" — sessions are consuming the factory without paying back.
+7. **Note on data quality with thin `runs.jsonl` history** (~15 rows as of 2026-04-15): the council's pattern recognition is intuitive (Claude-style synthesis), not statistical, until ~50+ rows accumulate. Expected behavior at this stage of the factory's life — do not invent statistical patterns or imagine recurring failures from a single occurrence. As `runs.jsonl` data thickens over the coming weeks, the council's analysis becomes more data-driven; once factory-improvement #21 (per-game baseline metrics script) ships, the council can read computed metrics directly instead of grepping prose.
 
 ### Step 10 — Report + log the run
 
