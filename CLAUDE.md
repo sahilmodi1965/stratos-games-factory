@@ -71,6 +71,50 @@ If there is no GitHub issue, there is no code change. Period. Every PR reference
 
 ---
 
+## North star and milestone gate
+
+### The north star
+
+**Ship real-world working products with correct monetization, correct distribution, and correct compliance.** Not "merge PRs faster". Not "build more features". Real games in real users' hands, on real stores, with ads serving, listings polished, and compliance handled.
+
+The north star has **veto authority over every other rule in this file**, including the milestone shape itself. If a milestone, an agent, a validator, or any swarm decision works against the north star, the north star wins. Everything else is up for revision; the north star is not.
+
+### Current milestone
+
+The factory is always in exactly one F-milestone at a time. The current milestone is recorded in `council/MILESTONE` — a single-line file. Read it at the start of every `go`. State it aloud in your first response.
+
+The milestones are defined in detail in `council/ROADMAP.md`:
+
+- **F1** — One real game, fully shipped (multi-format web+iOS+Android, ads, UA, compliance, real users)
+- **F2** — Multiple games on the same cycle, each measurably better than the last
+- **F3** — Cadence: one shippable game per week
+- **F4** — Portfolio scale: five new games per week
+
+Per-game progression is tracked on the G-series (G1 foundation → G5 cadence on autopilot), also defined in `council/ROADMAP.md` and tracked as GitHub milestones on each game repo.
+
+### The milestone gate (binding rule)
+
+In Step 2 prioritization, **filter every issue by its milestone label before any agent fires**. An issue tagged with a future milestone is invisible to the swarm. It does not get built. It does not get planned. It does not get listed. It sits untouched, no matter how appealing or "easy" or tempting.
+
+This is the rule that prevents drift toward shiny F4 work (federated MCP, multi-harness adapters, genre packs) while F1 (an actual shipped game) is incomplete. Most of the architectural backlog is F4. **None of it gets built until F1 is closed.**
+
+Issues without a milestone label are **unmilestoned** — review them in Step 1 and either tag them with a milestone or close them. Never build unmilestoned issues; that is how drift starts.
+
+### The self-improvement debt clause
+
+A milestone is **not complete** when its outcome holds. A milestone is complete when:
+
+1. The outcome holds (the one-sentence verifiable test in `council/ROADMAP.md` passes), **AND**
+2. Every gap that surfaced reaching it has been encoded as a permanent factory capability — brain shard, CLAUDE.md rule, council entry, validator, agent prompt, smoke test. **Tribal memory does not count.**
+
+Without (2), the factory ships the milestone, learns ten things, forgets nine of them by the next milestone, and rebuilds them from scratch. The clause is the mechanism that makes the factory monotonically better.
+
+### Council authority over milestone shape
+
+The council (Step 9 weekly review or a manual `re-shape milestones` invocation) **MAY** re-order, rename, split, or merge milestones — but **ONLY** if doing so moves the factory closer to the north star. The council **MAY NOT** change the north star itself. If a re-shape happens, update `council/ROADMAP.md` and `council/MILESTONE` in the same commit, log it as a `swarm-state` note, and surface it at the top of the next `go`.
+
+---
+
 ## Swarm mode
 
 This is the primary way to operate the factory. When Sahil opens Claude Code in this directory and says **"go"**, **"run the swarm"**, **"what needs doing"**, or similar — you ARE the swarm. You do not invoke `claude -p`. You do not run shell scripts. You are the autonomous build factory.
@@ -112,7 +156,21 @@ Report these three rows at the top of your state summary as **"Prior runs"** —
 
 Sahil does not review PRs on the factory repo — this feedback loop is how drift becomes visible without code review. **Do not skip this.** If the loop itself is broken (e.g., `runs.jsonl` missing), that IS the signal that something regressed — report it loudly.
 
+**Read the current milestone:**
+
+```bash
+cat council/MILESTONE 2>/dev/null || echo "UNDECLARED"
+```
+
+State the current milestone aloud at the top of your assess summary, alongside the north-star statement: *"Factory is in F1 — ship one real game across web/iOS/Android with ads, UA, and compliance."* If `MILESTONE` is missing or returns `UNDECLARED`, **stop the swarm** and ask Sahil to declare a milestone before any other work. The milestone gate (Step 2) cannot run without a declared milestone.
+
 ### Step 2 — Prioritize
+
+**Apply the milestone gate before ranking agents.** For the factory repo and every game repo, fetch open issues and filter to those whose milestone matches the current `council/MILESTONE` value, OR which carry no milestone at all. Issues tagged with future milestones (e.g. F2/F3/F4 when current is F1, or G3/G4/G5 when the game's pointer is at G1) are **invisible** to this pass — do not list them, do not build them, do not plan around them.
+
+If an unmilestoned issue is encountered, either tag it now (using your judgment about which milestone it serves, per the definitions in `council/ROADMAP.md`) or skip it. **Do not build unmilestoned issues.** That is how drift starts.
+
+The milestone gate is the rule that keeps the factory on the north star. F4-class work (federated MCP, multi-harness, genre packs) is forbidden until F1 closes — no matter how appealing.
 
 Work in this order (highest priority first):
 
