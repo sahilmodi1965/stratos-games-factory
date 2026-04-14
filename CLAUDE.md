@@ -115,6 +115,31 @@ The council (Step 9 weekly review or a manual `re-shape milestones` invocation) 
 
 ---
 
+## Observation routing — every gap becomes a tracked artifact
+
+This is the rule that makes the factory self-learning. Every agent — main thread, subagent, inline agent (council/content/competitor/product/monetization/UA), and any future agent — follows the same routing matrix when it observes a problem the factory should fix or remember. **Never let an observation die in conversation.** Produce a tracked artifact, every time.
+
+### The routing matrix
+
+| What you observed | Where it goes | How |
+|---|---|---|
+| **Buildable bug or feature gap in a game** | Issue on the **game repo** | `gh issue create --label build-request --milestone <G-stage>` — pick from the G quick reference, bias to G1 if unclear |
+| **Buildable bug or capability gap in the factory** (validators, agents, brain, gates, workflows) | Issue on **`sahilmodi1965/stratos-games-factory`** | `gh issue create --label factory-improvement --milestone <F-stage>` — pick from the F quick reference, bias to F1 if unclear |
+| **Persistent operational state** future passes need to know about (constraint, paused initiative, deferred decision) | Issue on the factory repo | `gh issue create --label swarm-state` — no milestone. Must include "Filed:", "Why this issue exists:", "When to close:" per the swarm-state pattern |
+| **Behavioral lesson** future Claude sessions should apply (preference, advisory, corner case) | Memory file via the auto memory system | Use feedback / project / user types per the memory schema. Memory shapes Claude's behavior; issues track factory work. The two are not exclusive — many lessons need both. |
+| **Regression in factory metrics** (smoke pass rate, build cycle time, decomposition trip rate, time-to-fix) | Surfaced in next council weekly review **AND** filed as factory-improvement issue with the proposed fix | Council reads `runs.jsonl` for patterns and turns recurring failures into buildable issues — never let a regression sit only in the log |
+
+### Enforcement principles
+
+1. **Subagents inherit this rule.** Every subagent prompt (the Step 3 builder spawn template included) ends with: *"If during your work you observe any factory gap, missing capability, or behavioral lesson, file it as the appropriate tracked artifact via the routing matrix in CLAUDE.md BEFORE ending. Never report a gap in your summary text and let it die there."*
+2. **Inline agents follow the same rule.** When an inline agent (council/content/competitor/product/monetization/UA) identifies a gap that does not match its own output type, it files the routed artifact in the same pass — not just mentions it in its report.
+3. **The main thread audits the routing.** Step 10 (report + log) explicitly checks: *"did any observation in this pass go unrouted?"* If yes, route it before logging.
+4. **The council closes the long loop.** Step 9 reads `runs.jsonl` weekly and turns recurring patterns the per-pass routing missed into tracked artifacts. See Step 9 for the artifact-per-entry mapping.
+
+This is the single mechanism that makes the factory self-learning **without requiring an orchestrator agent**. Routing is distributed to every agent; the matrix is the single source of truth; observations cannot escape into ephemeral conversation.
+
+---
+
 ## Swarm mode
 
 This is the primary way to operate the factory. When Sahil opens Claude Code in this directory and says **"go"**, **"run the swarm"**, **"what needs doing"**, or similar — you ARE the swarm. You do not invoke `claude -p`. You do not run shell scripts. You are the autonomous build factory.
@@ -163,6 +188,16 @@ cat council/MILESTONE 2>/dev/null || echo "UNDECLARED"
 ```
 
 State the current milestone aloud at the top of your assess summary, alongside the north-star statement: *"Factory is in F1 — ship one real game across web/iOS/Android with ads, UA, and compliance."* If `MILESTONE` is missing or returns `UNDECLARED`, **stop the swarm** and ask Sahil to declare a milestone before any other work. The milestone gate (Step 2) cannot run without a declared milestone.
+
+**Check council staleness — ALWAYS, even on scoped passes:**
+
+```bash
+find council/COUNCIL.md -mtime +7 -print 2>/dev/null | grep -q . && echo "STALE" || echo "fresh"
+```
+
+If `COUNCIL.md` was last touched more than 7 days ago, **the council weekly review (Step 9) becomes mandatory for this pass and runs FIRST, before Step 2 prioritization**, regardless of scope. The self-learning loop cannot lie dormant — if it has been more than 7 days since the council distilled `runs.jsonl` into lessons, the next pass MUST run the council before doing anything else. This is the rule that prevents the factory from forgetting what it learned.
+
+If `COUNCIL.md` is fresh (<7 days), Step 9 fires only at its normal Step 2 priority. Surface the staleness state in your assess summary (e.g., `council: 4 days old (fresh)` or `council: 12 days STALE — running Step 9 first`).
 
 ### Step 2 — Prioritize
 
@@ -270,6 +305,7 @@ RULES:
    <if build_cmd is empty>: No build step for this game. Just verify your changes are correct.
 6. If you cannot implement safely, make no changes and explain why.
 7. End with one paragraph summarizing what you changed.
+8. **Observation routing — mandatory.** If during your work you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file it as the appropriate tracked artifact BEFORE ending. Use the routing matrix in the factory CLAUDE.md (`/Users/sahilmodi/stratos-games-factory/CLAUDE.md` → "Observation routing" section): game issue with G-milestone for game gaps, factory-improvement issue with F-milestone for factory gaps, swarm-state note for persistent constraints, memory file for behavioral lessons. **Never let an observation die in your summary text.** Use `gh issue create --repo sahilmodi1965/stratos-games-factory --label factory-improvement --milestone F<N>` for factory gaps. Include the routed artifact URLs in your final summary.
 ```
 
 **Important:** The `build_cmd` and `forbidden_paths` come from `daemon/config.sh` and are **different per game**. Do not hardcode `npm run build` — some games have no build step (e.g., Bloxplode serves raw www/).
@@ -486,9 +522,13 @@ Run inline (no subagent). Review the factory's own performance.
    - Add entries: "Lesson learned", "Known issue", "Architecture decision", "Improvement suggestion"
    - Every entry cites specific evidence (issue #, PR #, log timestamps)
    - Hard cap: 50 active entries. Archive old/obsolete ones to `council/archive.md`.
-4. File `council`-labeled issues on `sahilmodi1965/stratos-games-factory` for actionable improvements.
-5. Commit and push COUNCIL.md changes.
-6. If the week was uneventful, say so honestly — don't invent recommendations.
+4. **Produce a tracked artifact for every entry**, per the observation routing matrix at the top of this file. The COUNCIL.md text is the audit trail; the tracked artifact is the work item. **Both are required.** Mapping:
+   - **"Improvement suggestion"** → file a `factory-improvement` issue on `sahilmodi1965/stratos-games-factory` with an F-milestone, so it enters the buildable queue and the gate decides priority. Reference the COUNCIL.md entry in the issue body.
+   - **"Known issue"** → file a `swarm-state` note (if one does not already exist) on the factory repo, so it surfaces at the start of every assess pass until resolved. No milestone.
+   - **"Lesson learned"** → save a memory file via the auto memory system (feedback / project / user type per the memory schema), so future Claude sessions inherit the lesson without needing to read COUNCIL.md.
+   - **"Architecture decision"** → COUNCIL.md entry only. These are audit-trail decisions, not actionable work.
+5. Commit and push COUNCIL.md changes **and the new tracked artifacts** in the same commit (or note them clearly if they live in different repos).
+6. If the week was uneventful, say so honestly — don't invent recommendations. **But also check `runs.jsonl` for the `factory_delta` field across the past 7 days**: if zero passes contributed back to the factory (no memory writes, no brain edits, no factory-improvement issues filed by builders/inline agents), that itself is a "Known issue" — sessions are consuming the factory without paying back.
 
 ### Step 10 — Report + log the run
 
@@ -504,16 +544,20 @@ After all agents complete:
 - Council: N entries added, N archived
 - Anything that failed or was skipped, and why
 
-**2. Append one structured row to `council/runs.jsonl`** with the same numbers so future councils (and the per-game baseline metrics from factory-improvement #21) can reason from data, not prose. Minimal schema v1:
+**2. Append one structured row to `council/runs.jsonl`** with the same numbers so future councils (and the per-game baseline metrics from factory-improvement #21) can reason from data, not prose. Minimal schema v2:
 
 ```json
-{"ts":"<ISO8601>","scope":"<go_scope>","agents":["builder","content"],"games":{"arrow-puzzle":{"issues":3,"prs":3,"failed":0,"skipped":0},"bloxplode":{"issues":0,"prs":0,"failed":0,"skipped":0}},"swarm_state_seen":[6,32],"notes":"<one-line human note>"}
+{"ts":"<ISO8601>","scope":"<go_scope>","agents":["builder","content"],"games":{"arrow-puzzle":{"issues":3,"prs":3,"failed":0,"skipped":0},"bloxplode":{"issues":0,"prs":0,"failed":0,"skipped":0}},"swarm_state_seen":[6,32],"factory_delta":{"memory_writes":["feedback_xyz"],"brain_edits":["CLAUDE.md"],"factory_issues_filed":[36,37,38],"observations_routed":4},"notes":"<one-line human note>"}
 ```
+
+The `factory_delta` block is **mandatory** and is how the council weekly review (Step 9) detects whether sessions are paying back into the factory or just consuming from it. Fill it honestly, even with empty arrays — `"factory_delta":{"memory_writes":[],"brain_edits":[],"factory_issues_filed":[],"observations_routed":0}` is a valid (and revealing) value. A pass with all-empty `factory_delta` is a pass that consumed without contributing — the council will surface this as a "Known issue" if it persists.
 
 Append with:
 ```bash
 echo '<one-line json>' >> council/runs.jsonl
 ```
+
+**3. Audit observation routing before committing the row.** Walk back through this pass: did any agent (you, a subagent, an inline agent) observe a gap, regression, or behavioral lesson and *not* file the appropriate tracked artifact per the routing matrix at the top of this file? If yes, route it now — file the issue, save the memory file, write the swarm-state note — then update the `factory_delta` block to reflect the routed artifacts. **Never let an observation die in the conversation log.**
 
 One row per "go", no exceptions. If the swarm was interrupted mid-pass, log what completed with `"notes":"interrupted after builder"`. Do NOT rewrite prior rows — append only. The file is consumed by council weekly review (Step 9) and by the per-game baseline metrics script (factory-improvement #21) once that ships.
 
