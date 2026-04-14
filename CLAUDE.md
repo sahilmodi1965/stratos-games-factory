@@ -168,9 +168,26 @@ State the current milestone aloud at the top of your assess summary, alongside t
 
 **Apply the milestone gate before ranking agents.** For the factory repo and every game repo, fetch open issues and filter to those whose milestone matches the current `council/MILESTONE` value, OR which carry no milestone at all. Issues tagged with future milestones (e.g. F2/F3/F4 when current is F1, or G3/G4/G5 when the game's pointer is at G1) are **invisible** to this pass — do not list them, do not build them, do not plan around them.
 
-If an unmilestoned issue is encountered, either tag it now (using your judgment about which milestone it serves, per the definitions in `council/ROADMAP.md`) or skip it. **Do not build unmilestoned issues.** That is how drift starts.
+**Tagging is mandatory, not optional.** If an unmilestoned issue is encountered, **tag it before any build action** using the quick reference below. Issues with no milestone are not buildable — and any new issue the swarm files during the pass MUST include `--milestone <name>` on `gh issue create`. Never file or build unmilestoned. That is how drift starts.
 
 The milestone gate is the rule that keeps the factory on the north star. F4-class work (federated MCP, multi-harness, genre packs) is forbidden until F1 closes — no matter how appealing.
+
+#### Milestone tagging quick reference
+
+**Factory (F-series):**
+- **F1** — work that unblocks shipping the first real game (smoke gates, store-readiness, signing, submission tooling, agent-loop fixes that gate F1 outcomes)
+- **F2** — work that makes the cycle reproducible across multiple games (genre packs, baselines, dedup, trust ladder)
+- **F3** — work that scales the cycle in time (parallelism, brain sharding, factory-as-skill, workflows-base)
+- **F4** — work that decouples the swarm from Claude Code (federated MCP, multi-harness adapters)
+
+**Per-game (G-series):**
+- **G1** — bugs/regressions that block the core loop, foundation architecture, mobile rendering fixes
+- **G2** — distribution prep (Capacitor wrap, signing, store listing drafts, ads stubbed)
+- **G3** — submission, real install onboarding, first analytics-data
+- **G4** — liveops cycle work (data-driven fixes from real telemetry)
+- **G5** — agent-cadence improvements (autopilot product/UA/monetization passes)
+
+**When in doubt: bias to the EARLIER milestone** (G1 over G2, F1 over F2). Earlier milestones are the gate; later ones can wait. Swarm-state notes (label `swarm-state`) do not need a milestone — they are persistent state, not work.
 
 Work in this order (highest priority first):
 

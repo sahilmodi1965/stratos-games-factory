@@ -1,6 +1,7 @@
-# Local game repo clones — operated on by the daemon, never tracked here
+# Local game repo clones — operated on by the swarm, never tracked here
 arrow-puzzle-testing/
 Bloxplode-Beta/
+house-mafia/
 
 # Daemon runtime state
 build.log
