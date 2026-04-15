@@ -521,7 +521,26 @@ Run inline (no subagent). Review the factory's own performance.
    - **"Architecture decision"** → COUNCIL.md entry only. These are audit-trail decisions, not actionable work.
 5. Commit and push COUNCIL.md changes **and the new tracked artifacts** in the same commit (or note them clearly if they live in different repos).
 6. If the week was uneventful, say so honestly — don't invent recommendations. **But also check `runs.jsonl` for the `factory_delta` field across the past 7 days**: if zero passes contributed back to the factory (no memory writes, no brain edits, no factory-improvement issues filed by builders/inline agents), that itself is a "Known issue" — sessions are consuming the factory without paying back.
-7. **Note on data quality with thin `runs.jsonl` history** (~15 rows as of 2026-04-15): the council's pattern recognition is intuitive (Claude-style synthesis), not statistical, until ~50+ rows accumulate. Expected behavior at this stage of the factory's life — do not invent statistical patterns or imagine recurring failures from a single occurrence. As `runs.jsonl` data thickens over the coming weeks, the council's analysis becomes more data-driven; once factory-improvement #21 (per-game baseline metrics script) ships, the council can read computed metrics directly instead of grepping prose.
+7. **Brain-vs-game ratio aggregation (factory-improvement #48).** Read `arbitration_decision` from every `runs.jsonl` row in the last 50 passes (or all rows if fewer):
+   ```bash
+   tail -50 council/runs.jsonl | jq -r '.arbitration_decision // "unset"' | sort | uniq -c
+   ```
+   Compute the percentage of passes tagged `"brain"` vs `"game"` vs `"mixed"` vs `"review"` (treat `"mixed"` as half-brain for the ratio calculation). **Healthy band: 15-40% brain work.** Act on drift:
+   - **<15% brain** — file a factory-improvement noting the factory may be shipping without encoding (self-improvement debt clause leaking). Title format: `council: brain contribution rate dropped to X% over last 50 passes — potential debt-clause leak`.
+   - **>40% brain** — file a factory-improvement noting the factory may be refactoring instead of shipping (F4-trap, building the factory while F1 slips). Title format: `council: brain contribution rate rose to X% over last 50 passes — potential F4-drift`.
+   - **15-40%** — healthy. Note the ratio in the weekly review and move on.
+   Include the top 3 `arbitration_reason` values by frequency so the council can identify which decision-tree branches are firing most often — a persistent "branch 1: unencoded gap from prior pass" pattern means encoding is always one pass late; a persistent "branch 3: compounding ROI" pattern means you're burning through the factory-improvement backlog (good).
+8. **Decomposition trip-rate aggregation (factory-improvement #47).** Read `decomposition_rule_fired` from every `runs.jsonl` row in the last 50 passes:
+   ```bash
+   trips=$(tail -50 council/runs.jsonl | jq -r '.decomposition_rule_fired // [] | length' | awk '{s+=$1} END {print s}')
+   prs=$(tail -50 council/runs.jsonl | jq -r '[.games[]?.prs] | add // 0' | awk '{s+=$1} END {print s}')
+   echo "decomposition trips=$trips over $prs shipped PRs"
+   ```
+   Compute the trip rate as `trips / prs`. **Healthy band: 10-30%** of shipped build-requests in user-facing surfaces trigger the decomposition rule. Act on drift:
+   - **<10%** — the rule may not be firing often enough. Either issue-writing is pre-splitting cleanly (good, verify by reading the 10 most recent `build-request` issue bodies) OR the detection heuristic in Step 3 is missing real splits (bad, file a factory-improvement to tighten the heuristic). Determine which by sampling.
+   - **>30%** — the issue-writing process is producing too many bundled issues. File a factory-improvement to strengthen `templates/build-request.md` with a pre-splitting checkbox ("is this purely mechanical? purely subjective? or both?") so writers declare upfront and the swarm doesn't have to split at build time.
+   - **10-30%** — healthy. Surface the latest 5 `decomposition_rule_fired` entries in the COUNCIL.md weekly review section so the reasoning is auditable: which issues split, into which children, did both children ship?
+9. **Note on data quality with thin `runs.jsonl` history** (~30 rows as of 2026-04-15): the council's pattern recognition is intuitive (Claude-style synthesis), not statistical, until ~50+ rows accumulate. Expected behavior at this stage of the factory's life — do not invent statistical patterns or imagine recurring failures from a single occurrence. The arbitration and decomposition aggregations above are reliable once the 50-row window fills; treat earlier numbers as directional, not decisive.
 
 ### Step 10 — Report + log the run
 
