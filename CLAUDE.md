@@ -254,8 +254,6 @@ RULES:
 8. **Observation routing — mandatory.** If during your work you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file it as the appropriate tracked artifact BEFORE ending. Read the routing matrix at `/Users/sahilmodi/stratos-games-factory/council/ROUTING.md` — it maps observation types to destinations (game issue / factory-improvement / swarm-state / memory). **Never let an observation die in your summary text.** Include the routed artifact URLs in your final summary.
 ```
 
-**Important:** The `build_cmd` and `forbidden_paths` come from `daemon/config.sh` and are **different per game**. Do not hardcode `npm run build` — some games have no build step (e.g., Bloxplode serves raw www/).
-
 **After the subagent returns:**
 1. Scrub forbidden paths (safety net):
    ```bash
@@ -272,9 +270,9 @@ RULES:
 4. Push: `git push -u origin <branch>`
 5. Open PR. **The PR body depends on the issue type:**
 
-   **For `[polish]`-prefixed issues** — use the canonical polish template at `templates/polish-pr-body.md`. Substitute `<ISSUE>`, `<PREVIEW_URL>` (the PR-preview URL for this PR, derived from the preview workflow), and `<TUNABLES_FILE>` (the path to the CSS variables file, e.g. `games/arrow-puzzle/src/styles/tutorial-tunables.css`). Do NOT open a polish PR with a plain body — the template instructs Ripon how to respond (and, critically, to NOT close-and-refile). This is the mechanism that stops the tutorial-saga pattern.
+   **`[polish]` issues** — use `templates/polish-pr-body.md`, substitute `<ISSUE>`, `<PREVIEW_URL>`, `<TUNABLES_FILE>`. Never open a polish PR with a plain body (template is the anti-close-and-refile mechanism).
 
-   **For every other issue** — use the standard body:
+   **Every other issue** — standard body:
    ```bash
    gh pr create --repo <owner/repo> --base <default_branch> --head <branch> \
      --title "auto: #<N> — <title>" \
@@ -293,9 +291,11 @@ RULES:
 
 **If the subagent produced no changes:** comment on the issue with the subagent's explanation, remove `building` label, move on.
 
-**CSS variable tunables convention (for `[polish]` issues):** the builder subagent MUST expose every visual knob (rotation angles, sizes, offsets, animation timings, colors) as CSS variables in a single tunables file at `games/<game>/src/styles/<feature>-tunables.css`. Iteration on polish PRs happens by editing that one file — never by modifying source code. Ripon's feedback ("rotate 150, not 135") maps directly to a 1-line edit. This is the other half of the anti-saga mechanism: if the visual is off, the fix is always a single CSS value change, not a rebuild.
+**CSS tunables for `[polish]` issues.** Expose every visual knob (rotation, size, offset, timing, color) as CSS variables in `games/<game>/src/styles/<feature>-tunables.css`. Polish iteration is a 1-line edit to that file, never a source rebuild — Ripon's "rotate 150, not 135" feedback maps directly to one PR comment.
 
-**Wayfinding stub requirement for user-facing `[structure]` PRs (factory-improvement #44):** any `[structure]` PR for a user-facing feature (tutorial, onboarding, cutscene, level intro, win/lose screen, settings flow, first-launch UX) MUST ship with a minimal wayfinding DOM element that identifies the feature to a human observer — even if the visual polish is deferred to a sibling `[polish]` PR. The wayfinding element is a plain DOM text node (not canvas, not an image) with a dedicated CSS class (e.g., `.wayfinding-banner`) so the polish PR can style or replace it without touching mechanical code. It identifies the feature unambiguously (e.g., `Tutorial 1/3 — tap the highlighted arrow`, `Loading next level…`, `You win!`). **Detection heuristic:** if the structure half of a split issue touches `startX` / `showY` / screen-manager / controller-flow for a user-facing surface, the wayfinding element is mandatory. **Forbidden antipattern:** shipping a structure PR that activates a user-facing feature with zero on-screen text or identifying element, on the reasoning that "the polish PR will add the UI." The polish PR may never land; the structure PR may sit on main for hours or days looking broken. The 2026-04-15 arrow-puzzle #139 incident — tutorial boot gate re-enabled with no visual signal, users saw sparse boards and concluded "generator broken" — is the canonical failure this rule prevents.
+**Wayfinding stub for user-facing `[structure]` PRs (#44).** A `[structure]` PR for a user-facing surface (tutorial, onboarding, cutscene, level intro, win/lose, first-launch) MUST ship a plain DOM text node — dedicated CSS class (e.g. `.wayfinding-banner`), identifies the feature unambiguously (`Tutorial 1/3 — tap the highlighted arrow`, `You win!`), replaced by the sibling `[polish]` PR. **Detection:** structure half touches `startX`/`showY`/screen-manager/controller-flow for a user-facing surface → mandatory. **Forbidden:** activating a user-facing feature with zero on-screen text because "polish lands later" (arrow-puzzle #139 — tutorial boot with no visual signal, users saw sparse boards and concluded "generator broken").
+
+**Smoke-test runtime fidelity (#43).** Every smoke MUST (a) call the same runtime entry point the player reaches (`generateLevel(N)`, not `smokeFill(TIER)` with hand-picked args), (b) pass the same arguments the runtime uses, (c) assert the *positive* state that should exist (`#screen-game.active` present, `.arrow` pixel count > 0), never the negation (`!menu.active`). **Forbidden antipatterns:** negation assertions (a false positive on any screen transition), subset-of-signature helpers, hand-picked tier arguments that bypass `getDifficulty(level)`. A smoke one step removed from the player's runtime path is a placebo — PR #131 smoke tested Moderate while `generateLevel(1)` returns Baseline; PR #139 smoke asserted `!menu.active` while the tutorial never activated. Both shipped green.
 
 ### Step 4 — Product agent
 
@@ -329,7 +329,7 @@ Run inline (no subagent). Analyzes player behavior data and files data-backed im
 - Title starts with `[product]`
 - If no analytics data is available (no `analytics-data` issues, no Firebase CLI), skip with a message suggesting Ripon file an `analytics-data` issue with current stats
 - Never invent data. If the numbers aren't there, say so.
-- **Observation routing — mandatory.** If during this pass you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file the appropriate tracked artifact via the routing matrix at the top of CLAUDE.md (game issue / factory-improvement / swarm-state / memory) BEFORE completing this step. Never let an observation die in your inline summary text.
+- **Observation routing — mandatory** (see §Observation routing at the top of this file; applies to every agent).
 
 ### Step 5 — Monetization agent
 
@@ -361,7 +361,7 @@ Run inline (no subagent). Reviews ad placement configuration and files optimizat
 - Stay under 50-line body
 - Do NOT touch `android/`, `capacitor.config.json`, or native ad SDK setup — only web-layer config
 - If no ad integration exists in a game, skip it and note "no ad integration found"
-- **Observation routing — mandatory.** If during this pass you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file the appropriate tracked artifact via the routing matrix at the top of CLAUDE.md (game issue / factory-improvement / swarm-state / memory) BEFORE completing this step. Never let an observation die in your inline summary text.
+- **Observation routing — mandatory** (see §Observation routing at the top of this file; applies to every agent).
 
 ### Step 6 — Content agent
 
@@ -385,7 +385,7 @@ Run inline (no subagent). For each game in the portfolio:
 - Be concrete and game-appropriate — the idea must fit the game's existing architecture
 - Do NOT duplicate any of the 20 recent issues
 - Tailor themes to each game's genre (puzzle levels for puzzle games, multiplayer modes for social games, etc.)
-- **Observation routing — mandatory.** If during this pass you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file the appropriate tracked artifact via the routing matrix at the top of CLAUDE.md (game issue / factory-improvement / swarm-state / memory) BEFORE completing this step. Never let an observation die in your inline summary text.
+- **Observation routing — mandatory** (see §Observation routing at the top of this file; applies to every agent).
 
 ### Step 7 — Competitor agent
 
@@ -414,7 +414,7 @@ Run inline (no subagent). Covers all games in one pass.
 - Prefer 3 sharp suggestions over 10 vague ones.
 - If web searches return nothing credible, file zero issues and say so honestly.
 - These issues are triaged by humans, NOT auto-built.
-- **Observation routing — mandatory.** If during this pass you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file the appropriate tracked artifact via the routing matrix at the top of CLAUDE.md (game issue / factory-improvement / swarm-state / memory) BEFORE completing this step. Never let an observation die in your inline summary text.
+- **Observation routing — mandatory** (see §Observation routing at the top of this file; applies to every agent).
 
 ### Step 8 — UA agent (user acquisition)
 
@@ -458,7 +458,7 @@ Run inline (no subagent). Generates store listing assets for app store submissio
 - Write for the casual mobile gamer audience
 - Include localization notes (flag terms that need translation attention)
 - These issues are for human review — Ripon/Sahil picks the best variants
-- **Observation routing — mandatory.** If during this pass you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file the appropriate tracked artifact via the routing matrix at the top of CLAUDE.md (game issue / factory-improvement / swarm-state / memory) BEFORE completing this step. Never let an observation die in your inline summary text.
+- **Observation routing — mandatory** (see §Observation routing at the top of this file; applies to every agent).
 
 ### Step 9 — Council review
 
