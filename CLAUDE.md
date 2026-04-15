@@ -117,26 +117,13 @@ The council (Step 9 weekly review or a manual `re-shape milestones` invocation) 
 
 ## Observation routing — every gap becomes a tracked artifact
 
-This is the rule that makes the factory self-learning. Every agent — main thread, subagent, inline agent (council/content/competitor/product/monetization/UA), and any future agent — follows the same routing matrix when it observes a problem the factory should fix or remember. **Never let an observation die in conversation.** Produce a tracked artifact, every time.
+**Every agent follows the routing matrix in [`council/ROUTING.md`](council/ROUTING.md) when it observes a problem the factory should fix or remember. Never let an observation die in conversation.** Produce a tracked artifact, every time.
 
-### The routing matrix
+The matrix maps observation types to destinations: game bug → game issue (G-milestone) · factory gap → factory-improvement issue (F-milestone) · persistent state → swarm-state note · behavioral lesson → memory file · metric regression → council + factory-improvement.
 
-| What you observed | Where it goes | How |
-|---|---|---|
-| **Buildable bug or feature gap in a game** | Issue on the **game repo** | `gh issue create --label build-request --milestone <G-stage>` — pick from the G quick reference, bias to G1 if unclear |
-| **Buildable bug or capability gap in the factory** (validators, agents, brain, gates, workflows) | Issue on **`sahilmodi1965/stratos-games-factory`** | `gh issue create --label factory-improvement --milestone <F-stage>` — pick from the F quick reference, bias to F1 if unclear |
-| **Persistent operational state** future passes need to know about (constraint, paused initiative, deferred decision) | Issue on the factory repo | `gh issue create --label swarm-state` — no milestone. Must include "Filed:", "Why this issue exists:", "When to close:" per the swarm-state pattern |
-| **Behavioral lesson** future Claude sessions should apply (preference, advisory, corner case) | Memory file via the auto memory system | Use feedback / project / user types per the memory schema. Memory shapes Claude's behavior; issues track factory work. The two are not exclusive — many lessons need both. |
-| **Regression in factory metrics** (smoke pass rate, build cycle time, decomposition trip rate, time-to-fix) | Surfaced in next council weekly review **AND** filed as factory-improvement issue with the proposed fix | Council reads `runs.jsonl` for patterns and turns recurring failures into buildable issues — never let a regression sit only in the log |
+Read `council/ROUTING.md` for the full matrix and enforcement principles. This rule binds every agent — main thread, builder subagent, inline agents, council. The Step 3 subagent prompt template enforces it explicitly (rule 8); Steps 4-8 inline agents enforce it via their "Observation routing — mandatory" rule; Step 9 council converts insights into tracked artifacts per entry type; Step 10 audits routing before logging the pass.
 
-### Enforcement principles
-
-1. **Subagents inherit this rule.** Every subagent prompt (the Step 3 builder spawn template included) ends with: *"If during your work you observe any factory gap, missing capability, or behavioral lesson, file it as the appropriate tracked artifact via the routing matrix in CLAUDE.md BEFORE ending. Never report a gap in your summary text and let it die there."*
-2. **Inline agents follow the same rule.** When an inline agent (council/content/competitor/product/monetization/UA) identifies a gap that does not match its own output type, it files the routed artifact in the same pass — not just mentions it in its report.
-3. **The main thread audits the routing.** Step 10 (report + log) explicitly checks: *"did any observation in this pass go unrouted?"* If yes, route it before logging.
-4. **The council closes the long loop.** Step 9 reads `runs.jsonl` weekly and turns recurring patterns the per-pass routing missed into tracked artifacts. See Step 9 for the artifact-per-entry mapping.
-
-This is the single mechanism that makes the factory self-learning **without requiring an orchestrator agent**. Routing is distributed to every agent; the matrix is the single source of truth; observations cannot escape into ephemeral conversation.
+This is the single mechanism that makes the factory self-learning without requiring an orchestrator agent.
 
 ---
 
@@ -195,7 +182,7 @@ State the current milestone aloud at the top of your assess summary, alongside t
 find council/COUNCIL.md -mtime +7 -print 2>/dev/null | grep -q . && echo "STALE" || echo "fresh"
 ```
 
-If `COUNCIL.md` was last touched more than 7 days ago, **the council weekly review (Step 9) becomes mandatory for this pass and runs FIRST, before Step 2 prioritization**, regardless of scope. The self-learning loop cannot lie dormant — if it has been more than 7 days since the council distilled `runs.jsonl` into lessons, the next pass MUST run the council before doing anything else. This is the rule that prevents the factory from forgetting what it learned.
+If `COUNCIL.md` is >7 days old, **Step 9 council review is mandatory this pass and runs FIRST, before Step 2**, regardless of scope. The self-learning loop cannot lie dormant — if the council has not distilled `runs.jsonl` into lessons in over a week, the next pass MUST run it before anything else. This prevents the factory from forgetting what it learned.
 
 If `COUNCIL.md` is fresh (<7 days), Step 9 fires only at its normal Step 2 priority. Surface the staleness state in your assess summary (e.g., `council: 4 days old (fresh)` or `council: 12 days STALE — running Step 9 first`).
 
@@ -207,22 +194,7 @@ If `COUNCIL.md` is fresh (<7 days), Step 9 fires only at its normal Step 2 prior
 
 The milestone gate is the rule that keeps the factory on the north star. F4-class work (federated MCP, multi-harness, genre packs) is forbidden until F1 closes — no matter how appealing.
 
-#### Milestone tagging quick reference
-
-**Factory (F-series):**
-- **F1** — work that unblocks shipping the first real game (smoke gates, store-readiness, signing, submission tooling, agent-loop fixes that gate F1 outcomes)
-- **F2** — work that makes the cycle reproducible across multiple games (genre packs, baselines, dedup, trust ladder)
-- **F3** — work that scales the cycle in time (parallelism, brain sharding, factory-as-skill, workflows-base)
-- **F4** — work that decouples the swarm from Claude Code (federated MCP, multi-harness adapters)
-
-**Per-game (G-series):**
-- **G1** — bugs/regressions that block the core loop, foundation architecture, mobile rendering fixes
-- **G2** — distribution prep (Capacitor wrap, signing, store listing drafts, ads stubbed)
-- **G3** — submission, real install onboarding, first analytics-data
-- **G4** — liveops cycle work (data-driven fixes from real telemetry)
-- **G5** — agent-cadence improvements (autopilot product/UA/monetization passes)
-
-**When in doubt: bias to the EARLIER milestone** (G1 over G2, F1 over F2). Earlier milestones are the gate; later ones can wait. Swarm-state notes (label `swarm-state`) do not need a milestone — they are persistent state, not work.
+**Milestone definitions live in `council/ROADMAP.md`.** Quick decision rule: bias to the **earliest** milestone when unclear (G1 over G2, F1 over F2) — earlier milestones are the gate; later ones wait. Swarm-state notes (label `swarm-state`) do not need a milestone.
 
 Work in this order (highest priority first):
 
@@ -240,28 +212,13 @@ Skip any agent whose work is already fresh. If there's nothing to do, say so.
 
 For each open `build-request` issue (up to 5 per session to avoid context exhaustion):
 
-**Before anything else — classify the issue (structure vs polish):**
+**Decomposition rule — split structure vs polish before building.** An issue contains **mechanical** work (levels, save keys, controllers, config, game logic — text-specifiable) and/or **subjective** work (pixel placement, rotation angles, timing curves, copy tone — needs human eye). If it contains both, split before building. This exists to stop the tutorial saga (arrow-puzzle PRs #75/#80/#85 all closed because mechanical scaffolding was bundled with visual polish the human eye rejected).
 
-An issue can contain two kinds of work:
+**Detection heuristic.** Split candidate if body contains mechanical markers (`save.set`, `controller`, `level`, `boot`, file paths under `src/`) AND >2 subjective markers (`rotate(`, `transform`, `padding`, `animation`, `ease`, "feel", "looks", "polish", "aspect ratio", "instead of X use Y").
 
-- **Mechanical** — levels, save keys, controller hooks, route wiring, config fields, game logic, event handlers. Text-specifiable, unambiguous, survives review unchanged.
-- **Subjective** — pixel placement, rotation angles, timing curves, color feel, copy tone, animation easing, aspect-ratio choices. Requires a human eye to judge; prose specs are lossy.
+**Split procedure:** file `[structure] <title>` (mechanical only, no-op placeholder for subjective piece), file `[polish] <title>` (subjective only, using the polish-PR template at `templates/polish-pr-body.md` with CSS-variable tunables per factory-improvement #27, **never closed-and-refiled**), comment on the original linking both and close it as superseded, build `[structure]` this pass and leave `[polish]` for next. Record `"decomposition_rule_fired":[{"original":<N>,"structure":<N1>,"polish":<N2>}]` in `runs.jsonl` (Step 10) so the Step 1 feedback loop tracks it.
 
-**If an issue contains both, split it before building.** This is the rule that exists to stop the tutorial saga (arrow-puzzle PRs #75/#80/#85 were all closed because mechanical scaffolding was bundled with visual polish the human eye rejected — every closure threw away working structural code).
-
-**Detection heuristic.** An issue is a candidate for splitting if its body contains **mechanical markers** (`save.set`, `controller`, `level`, `boot`, `startX`, config field names, file paths under `src/`) AND **more than 2 subjective markers** from: `rotate(`, `transform`, `padding`, `font-size`, `animation`, `ease`, `opacity`, `scale(`, `translate`, "feel", "looks", "polish", "aspect ratio", "instead of X use Y".
-
-**Split procedure when the rule fires:**
-
-1. File a new `build-request` issue titled `[structure] <original title>` containing ONLY the mechanical parts, plus a no-op placeholder for the subjective piece (e.g., "tutorial runs but with no hand overlay yet — polish tracked separately").
-2. File a second `build-request` issue titled `[polish] <original title>` containing ONLY the subjective piece. Its body uses the polish-PR feedback template (see factory-improvement #27), exposes knobs as CSS variables where possible, and ships in small iterations via PR comments, **never closed-and-refiled**.
-3. Comment on the original issue linking to both and close it as superseded.
-4. Build the `[structure]` issue immediately this pass. Leave `[polish]` for the next pass (or for Ripon to iterate).
-5. **Record the trip in `runs.jsonl`** (Step 10): add `"decomposition_rule_fired":[{"original":<N>,"structure":<N1>,"polish":<N2>}]` to this pass's row so the feedback loop in Step 1 can show it to Sahil on the next go. This is how we verify the rule is working without requiring anyone to read the code.
-
-**If the issue is purely mechanical or purely subjective, do not split — build as-is.** Most issues are one or the other.
-
-**The rule's acceptance test:** if you are about to build an issue whose body contains both a `startTutorial(` method spec AND a `rotate(135deg)` CSS instruction, you are looking at a split candidate — not a build candidate. Stop and file the two replacement issues.
+**Acceptance test:** an issue with both a `startTutorial(` method spec AND a `rotate(135deg)` CSS instruction is a split candidate, not a build candidate. Most issues are purely one type — do not split those.
 
 **Before the subagent:**
 1. Parse the game's config from `daemon/config.sh` to get: `owner/repo`, `local_dir`, `default_branch`, `build_cmd`, `forbidden_paths`.
@@ -276,16 +233,7 @@ An issue can contain two kinds of work:
    ```
 4. Create the branch: `git checkout -b auto/<game>-issue-<N>-$(date +%s)`
 
-**Spawn a subagent** using the Agent tool. The subagent prompt must include:
-- The full path to the game repo
-- The issue number, title, and body
-- Instruction to read the game repo's `CLAUDE.md` first and follow its rules exactly
-- The build command to run as final step (if any)
-- The forbidden paths (do not edit or `git add` these)
-- Instruction to use conventional commits referencing the issue number
-- Instruction to end with a one-paragraph summary of what changed (or why it refused)
-
-Example subagent prompt:
+**Spawn a subagent** using the Agent tool with this prompt template:
 ```
 You are working in the game repo at /Users/sahilmodi/stratos-games-factory/<local_dir>/.
 You are on branch auto/<game>-issue-<N>-<timestamp>.
@@ -305,7 +253,7 @@ RULES:
    <if build_cmd is empty>: No build step for this game. Just verify your changes are correct.
 6. If you cannot implement safely, make no changes and explain why.
 7. End with one paragraph summarizing what you changed.
-8. **Observation routing — mandatory.** If during your work you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file it as the appropriate tracked artifact BEFORE ending. Use the routing matrix in the factory CLAUDE.md (`/Users/sahilmodi/stratos-games-factory/CLAUDE.md` → "Observation routing" section): game issue with G-milestone for game gaps, factory-improvement issue with F-milestone for factory gaps, swarm-state note for persistent constraints, memory file for behavioral lessons. **Never let an observation die in your summary text.** Use `gh issue create --repo sahilmodi1965/stratos-games-factory --label factory-improvement --milestone F<N>` for factory gaps. Include the routed artifact URLs in your final summary.
+8. **Observation routing — mandatory.** If during your work you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file it as the appropriate tracked artifact BEFORE ending. Read the routing matrix at `/Users/sahilmodi/stratos-games-factory/council/ROUTING.md` — it maps observation types to destinations (game issue / factory-improvement / swarm-state / memory). **Never let an observation die in your summary text.** Include the routed artifact URLs in your final summary.
 ```
 
 **Important:** The `build_cmd` and `forbidden_paths` come from `daemon/config.sh` and are **different per game**. Do not hardcode `npm run build` — some games have no build step (e.g., Bloxplode serves raw www/).
@@ -571,165 +519,16 @@ Commit `council/runs.jsonl` as part of the pass (or separately if no other chang
 
 ---
 
-## System architecture
-
-```
-                ┌─────────────────────── Stratos Games Factory ──────────────────────┐
-                │                                                                      │
-   Ripon plays  │                          ┌──────────────┐                            │
-   the live URL │                          │ Claude Code  │ (Sahil says "go")          │
-       │        │                          │    swarm     │                            │
-       │ files  │                          └──────┬───────┘                            │
-       │ issue  │                                 │                                    │
-       ▼        │        ┌────────────────────────┼────────────────────┐               │
-   ┌──────────┐ │        │                        │                    │               │
-   │ GH Issue │─┼──▶ builder           content           competitor   │               │
-   │ build-   │ │   (subagent per    (inline, files    (inline, web   │               │
-   │ request  │ │    issue, opens     build-request     search, files │               │
-   └──────────┘ │    PRs)             issues)           market-intel) │               │
-                │        │                                             │               │
-                │        ▼                                             │               │
-                │   ┌─────────┐  PR  ┌────────────┐ ┌──────────────┐  │               │
-                │   │   PR    │─────▶│ pr-preview │ │  ci.yml      │  │               │
-                │   │ auto/*  │      │ → /pr/N/   │ │ npm build    │  │               │
-                │   └────┬────┘      └─────┬──────┘ └──────┬───────┘  │               │
-                │        │                 │               │ success  │               │
-                │        │                 │ comment URL   ▼          │               │
-                │        │                 └──────────▶ ┌──────────┐  │               │
-                │        │                              │ auto-    │  │               │
-                │        │                              │ merge    │  │               │
-                │        │                              └────┬─────┘  │               │
-                │        │  not safe → human review          │ safe   │               │
-                │        │         ◄─────────────────────────┘        │               │
-                │        ▼                                            │               │
-                │   ┌──────────┐  push to main   ┌──────────┐        │               │
-                │   │  merged  │ ──────────────▶ │ deploy   │        │               │
-                │   └──────────┘                 └──────────┘   council (inline,     │
-                │                                               reviews the week,    │
-                │   Ripon adds `ship-it` label   ┌──────────┐   updates COUNCIL.md)  │
-                │           ─────────────────▶   │ release  │        │               │
-                │                                └──────────┘        │               │
-                └────────────────────────────────────────────────────────────────────┘
-```
-
-Key facts:
-- **Sahil opens Claude Code, says "go"** — the swarm runs all 9 agents in priority order.
-- The **builder** spawns subagents (one per issue) for context isolation.
-- **Product, monetization, content, competitor, UA, council** all run inline — they file issues, not code.
-- The **product agent** reads Ripon's `analytics-data` issues and turns raw stats into actionable `build-request` issues.
-- The **UA agent** generates store listing variants when a game approaches release.
-- **Auto-merge** ships safe-path-only PRs (CSS, JSON, content, levels, MD) instantly. Logic-touching PRs (.js/.ts/.html) wait for human review.
-- The **`ship-it` label** triggers production release on issues OR PRs.
-- **QA agent** runs as GitHub Actions (Playwright) on every PR — zero Claude tokens.
-- All workflows are **deployed by `scripts/deploy-brain.sh`** from `templates/workflows-<game>/`.
-
-## Rules for builder subagent sessions
-
-When you (Claude) are spawned as a builder subagent, you operate under tight constraints:
-
-1. **Read the game repo's `CLAUDE.md` first.** If there is no `CLAUDE.md`, stop. The factory deploys one to every game; its absence means the brain hasn't been deployed yet.
-2. **Only do what the issue asks.** No bonus refactors. No "while I'm here" cleanups. No comments or docstrings on code you didn't change.
-3. **Conventional commits, one logical change per commit, every message references the issue number** (`fix: description #42`).
-4. **Hard exclusions** — do not edit the `forbidden_paths` listed in `daemon/config.sh` for this game, or anything the game's CLAUDE.md flags as off-limits.
-5. **Run the build command** from `daemon/config.sh` (`build_cmd` field) as the final step. If the game has no build command (empty field), skip this. If the build fails, fix or revert until it passes. Never push a broken build.
-6. **If you cannot do the task safely, do nothing.** Output a one-paragraph explanation of why. The swarm will turn that into an issue comment so a human can clarify.
-
-## Adding a new game (for future interns)
-
-The flow for onboarding a new intern with a new game:
-
-1. **Intern creates a GitHub repo** for their game in their own account or under `mody-sahariar1`.
-2. **Intern adds `sahilmodi1965` as a collaborator** with write access. (Required so the swarm can push.)
-3. On Sahil's machine:
-   ```bash
-   cd ~/stratos-games-factory
-   bash scripts/add-game.sh owner/their-repo "Short description of the game"
-   ```
-   This clones the repo, registers it in `config.sh`, creates labels, deploys a starter `CLAUDE.md` and the issue template.
-4. **Sahil writes a real `CLAUDE.md`** for the new game (the starter is just a placeholder). Or have Claude write it interactively. Then commit and re-run `scripts/deploy-brain.sh` to deploy the autobuilder section + workflows.
-5. **Intern files issues, plays, tests.** The swarm builds them when Sahil says "go".
-6. **Intern can also push directly** with their own $20 Claude Code Pro plan for quick fixes. The "Direct contributor mode" rules in the deployed `CLAUDE.md` are their guide.
-7. **First release**: when the game feels ready, add the `ship-it` label and the release workflow takes over.
-
-This is the entire onboarding for a new collaborator. No new infrastructure, no new accounts, no new keys.
-
-## Cost model
-
-The factory is designed to run at fixed cost regardless of how many games or interns it serves:
-
-- **Sahil**: $200/mo Claude Code Max plan — powers the swarm and Sahil's own architecture work.
-- **Each collaborator (Ripon, interns)**: $20/mo Claude Code Pro plan + $20/mo Claude Chat (claude.ai) for feedback structuring. Total: $40/mo per person.
-- **Infrastructure**: $0. GitHub Pages (free for public repos), GitHub Actions (free tier covers everything we run), no API keys, no Vercel, no AWS, no databases.
-
-The math: 1 Sahil + 2 interns + 5 games still costs ~$280/mo total. Adding a 6th game costs $0. Adding a 3rd intern costs $40/mo. The system scales by adding people, not infrastructure.
-
-## How to add a new game
-
-```bash
-bash scripts/add-game.sh owner/new-game "Short description"
-```
-
-This:
-1. Clones the repo into `~/stratos-games-factory/<repo-name>/`.
-2. Appends an entry to `daemon/config.sh`.
-3. Creates the `build-request` / `building` / `done` / `ship-it` / `auto-merged` labels on the repo.
-4. Pushes a starter `CLAUDE.md` if none exists, plus the issue template.
-5. Note: workflow templates are per-game (`templates/workflows-<game>/`). New games of arbitrary structure need a workflow set written for them — clone `workflows-arrow-puzzle/` or `workflows-bloxplode/` as a starting point.
-
 ## Architecture principles
 
 - **Humans test and document, machines build, humans review.** Anything that violates this is wrong.
-- **The factory never holds state.** Every swarm run starts from `origin/main`. There is no local "work in progress" — if it's not in a PR, it doesn't exist.
+- **The factory never holds state.** Every swarm run starts from `origin/main`. There is no local work in progress — if it's not in a PR, it doesn't exist.
 - **The brain is the contract.** The builder subagent is bound entirely by what is in the game's `CLAUDE.md`. To change builder behavior on a game, change that game's `CLAUDE.md` and re-run `scripts/deploy-brain.sh`.
-- **Swarm and direct-push coexist.** The swarm resets to `origin/main` before each issue and rebases after. Humans don't need to coordinate — the swarm adapts.
+- **Swarm and direct-push coexist.** The swarm resets to `origin/main` before each issue and rebases after.
 - **Small, reviewable PRs.** The 50-line issue cap is a feature. Big requests get split.
-- **Auto-merge ships safe changes instantly.** Anything touching .js/.ts/.html waits for review. The line between data and logic is the line between auto-merge and manual review.
+- **Auto-merge ships safe changes instantly.** Safe-path-only (CSS/JSON/MD/content/levels) auto-merges; logic-touching (.js/.ts/.html) waits for human review.
 - **Failure is loud.** If something breaks, the swarm comments on the issue. Silence means success.
-- **Zero infrastructure.** GitHub Pages + GitHub Actions + Claude Code on a Mac. That's the entire stack.
+- **Zero infrastructure.** GitHub Pages + GitHub Actions + Claude Code on a Mac.
+- **Subagents bound by Step 3 prompt template.** Rules for builder subagents live in the Step 3 spawn template above (read game CLAUDE.md first, only do what issue asks, conventional commits, forbidden paths, build command, observation routing mandatory). There is no separate "subagent rules" section — Step 3 is the contract.
 
-## Legacy: cron-based daemon (deprecated)
-
-The original daemon (`daemon/stratos-daemon.sh`) ran hourly via cron and invoked `claude -p` headlessly. The agent shell scripts (`agents/content/content-agent.sh`, `agents/competitor/competitor-agent.sh`, `council/review.sh`) followed the same pattern. These scripts are preserved as documentation but are deprecated in favor of swarm mode. See each script's header comment.
-
-To re-enable cron (not recommended): `bash daemon/install.sh --with-cron`
-
-## Files in this repo
-
-```
-stratos-games-factory/
-├── CLAUDE.md                            ← you are here (the swarm brain)
-├── README.md                            ← human entry point
-├── daemon/
-│   ├── stratos-daemon.sh                ← (deprecated) cron-based builder loop
-│   ├── install.sh                       ← one-shot setup
-│   └── config.sh                        ← game list, paths, limits (still active)
-├── brain/
-│   ├── arrow-puzzle-autobuilder.md      ← appended to Arrow Puzzle CLAUDE.md
-│   └── bloxplode-claude.md              ← full CLAUDE.md for Bloxplode
-├── templates/
-│   ├── build-request.md                 ← issue template deployed to every game
-│   ├── workflows-arrow-puzzle/          ← GitHub Actions for Arrow Puzzle
-│   │   ├── ci.yml                       ← npm install + npm run build
-│   │   ├── pr-preview.yml               ← deploy PR build to gh-pages /pr/N/
-│   │   ├── deploy.yml                   ← mirror main/docs to gh-pages root
-│   │   ├── auto-merge.yml               ← merge daemon PRs after CI (safe paths only)
-│   │   ├── release.yml                  ← ship-it label → tag + GitHub Release
-│   │   └── cleanup.yml                  ← weekly auto/* branch sweep
-│   └── workflows-bloxplode/             ← same set, customized for Bloxplode (no build, www/)
-├── agents/
-│   ├── registry.json                    ← authoritative agent list
-│   ├── content/content-agent.sh         ← (deprecated) cron-based content agent
-│   ├── competitor/competitor-agent.sh   ← (deprecated) cron-based competitor agent
-│   ├── qa/                              ← Playwright smoke tests (GitHub Actions, still active)
-│   └── platform/platform-agent.sh       ← native build agent (manual, still active)
-├── council/
-│   ├── review.sh                        ← (deprecated) cron-based council review
-│   ├── COUNCIL.md                       ← living memory
-│   └── archive.md                       ← retired entries
-├── scripts/
-│   ├── deploy-brain.sh                  ← push brain + workflows + labels to all game repos
-│   ├── add-game.sh                      ← onboard a new game repo
-│   └── status.sh                        ← rich dashboard
-└── docs/
-    └── ripon-guide.md                   ← non-technical guide for the play-tester
-```
+Human-facing onboarding docs (cost model, how to add a new game, file tree, system diagram) live in `README.md`, not here. This brain file is for operational rules only.
