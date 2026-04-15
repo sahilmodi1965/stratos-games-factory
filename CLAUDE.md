@@ -214,11 +214,9 @@ For each open `build-request` issue (up to 5 per session to avoid context exhaus
 
 **Decomposition rule — split structure vs polish before building.** An issue contains **mechanical** work (levels, save keys, controllers, config, game logic — text-specifiable) and/or **subjective** work (pixel placement, rotation angles, timing curves, copy tone — needs human eye). If it contains both, split before building. This exists to stop the tutorial saga (arrow-puzzle PRs #75/#80/#85 all closed because mechanical scaffolding was bundled with visual polish the human eye rejected).
 
-**Detection heuristic.** Split candidate if body contains mechanical markers (`save.set`, `controller`, `level`, `boot`, file paths under `src/`) AND >2 subjective markers (`rotate(`, `transform`, `padding`, `animation`, `ease`, "feel", "looks", "polish", "aspect ratio", "instead of X use Y").
+**Detection heuristic.** Split if body contains mechanical markers (`save.set`, `level`, `src/` paths) AND >2 subjective markers (`rotate(`, `transform`, `padding`, `animation`, `ease`, "feel", "looks", "polish", "aspect ratio", "instead of X use Y"). **Never split wiring-heavy issues** — mechanical half modifying `boot()`/`init()`/`tick()`/`render()`, or adding a dep to a file already on the boot path. The polish split cannot isolate wiring risk. Build one-shot with a boot-smoke asserting a canonical post-boot entity renders (e.g. `.arrow` pixels).
 
-**Split procedure:** file `[structure] <title>` (mechanical only, no-op placeholder for subjective piece), file `[polish] <title>` (subjective only, using the polish-PR template at `templates/polish-pr-body.md` with CSS-variable tunables per factory-improvement #27, **never closed-and-refiled**), comment on the original linking both and close it as superseded, build `[structure]` this pass and leave `[polish]` for next. Record `"decomposition_rule_fired":[{"original":<N>,"structure":<N1>,"polish":<N2>}]` in `runs.jsonl` (Step 10) so the Step 1 feedback loop tracks it.
-
-**Acceptance test:** an issue with both a `startTutorial(` method spec AND a `rotate(135deg)` CSS instruction is a split candidate, not a build candidate. Most issues are purely one type — do not split those.
+**Split procedure.** File `[structure] <title>` (mechanical) + `[polish] <title>` (subjective, using `templates/polish-pr-body.md` with CSS-variable tunables per factory-improvement #27, **never closed-and-refiled**). Comment on original linking both, close as superseded. Build `[structure]` this pass; leave `[polish]` for next. Record `"decomposition_rule_fired":[{"original":<N>,"structure":<N1>,"polish":<N2>,"smoked":<bool>}]` in `runs.jsonl` — `smoked:false` is the council-flagged wiring-gap failure mode.
 
 **Before the subagent:**
 1. Parse the game's config from `daemon/config.sh` to get: `owner/repo`, `local_dir`, `default_branch`, `build_cmd`, `forbidden_paths`.
@@ -501,7 +499,7 @@ After all agents complete:
 **2. Append one structured row to `council/runs.jsonl`** with the same numbers so future councils (and the per-game baseline metrics from factory-improvement #21) can reason from data, not prose. Minimal schema v2:
 
 ```json
-{"ts":"<ISO8601>","scope":"<go_scope>","agents":["builder","content"],"games":{"arrow-puzzle":{"issues":3,"prs":3,"failed":0,"skipped":0},"bloxplode":{"issues":0,"prs":0,"failed":0,"skipped":0}},"swarm_state_seen":[6,32],"factory_delta":{"memory_writes":["feedback_xyz"],"brain_edits":["CLAUDE.md"],"factory_issues_filed":[36,37,38],"observations_routed":4},"notes":"<one-line human note>"}
+{"ts":"<ISO8601>","scope":"<go_scope>","agents":["builder","content"],"games":{"arrow-puzzle":{"issues":3,"prs":3,"failed":0,"skipped":0},"bloxplode":{"issues":0,"prs":0,"failed":0,"skipped":0}},"swarm_state_seen":[6,32],"decomposition_rule_fired":[{"original":136,"structure":137,"polish":138,"smoked":true}],"factory_delta":{"memory_writes":["feedback_xyz"],"brain_edits":["CLAUDE.md"],"factory_issues_filed":[36,37,38],"observations_routed":4},"notes":"<one-line human note>"}
 ```
 
 The `factory_delta` block is **mandatory** and is how the council weekly review (Step 9) detects whether sessions are paying back into the factory or just consuming from it. Fill it honestly, even with empty arrays — `"factory_delta":{"memory_writes":[],"brain_edits":[],"factory_issues_filed":[],"observations_routed":0}` is a valid (and revealing) value. A pass with all-empty `factory_delta` is a pass that consumed without contributing — the council will surface this as a "Known issue" if it persists.
