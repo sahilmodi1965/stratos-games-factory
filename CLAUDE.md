@@ -332,6 +332,28 @@ RULES:
 
 **CSS tunables for `[polish]` issues.** Expose every visual knob (rotation, size, offset, timing, color) as CSS variables in `games/<game>/src/styles/<feature>-tunables.css`. Polish iteration is a 1-line edit to that file, never a source rebuild — Ripon's "rotate 150, not 135" feedback maps directly to one PR comment.
 
+**Polish PR follow-up routing (factory-improvement #46).** Once a polish PR merges, any new visual feedback has nowhere to go in the polish-pr-body convention (which tells Ripon to comment on the open PR). A new `build-request` issue filed **within 7 days** of a polish PR merging, where the title or body references the same feature (e.g. `tutorial`, `win-screen`, `level-intro`), is one of three things. Classify BEFORE spawning a subagent:
+
+1. **Route A — CSS variable tweak (fast path, no subagent).** Issue body contains keywords like `rotation`, `size`, `color`, `padding`, `spacing`, `feel`, `looks`, `too small`, `too big`, `wrong position`, `off-center`, AND names no file paths, AND proposes at most one numeric / unit change. Main thread handles directly: open the existing tunables file, apply the one-line change, commit with `polish: <old> → <new> for #<N>`, open a polish-pr-body PR substituting the new tunables path, close the issue when merged. ~30 seconds of main-thread time, no subagent spawn.
+
+2. **Route B — mechanical bug uncovered by the polish landing (default).** The polish made a structural defect visible (layout race exposed by wayfinding banner; `getBoundingClientRect` timing bug exposed by hand overlay; dead code path exposed by animation). Issue body names file paths, references specific runtime behavior, or identifies a timing / race / null-check bug. Route as a normal builder subagent task with a standard PR body — the fix touches source code, not the tunables file. This is what arrow-puzzle #147 was: Ripon filed it after #145 merged, the bug was `layout.resize()` timing in `game-controller.js`, not a CSS tweak.
+
+3. **Route C — real new feature request (decomposition check).** Issue body proposes additional functionality not in the original polish spec. Treat as a normal `build-request` that must itself pass the decomposition rule check — may itself split into structure + polish.
+
+**Runnable detection heuristic** (execute before spawning a subagent for any issue that touches a recently-merged polish surface):
+```bash
+body=$(gh issue view <N> --repo <repo> --json body -q .body)
+keywords='(rotation|size|color|padding|spacing|feel|looks|too small|too big|wrong position|off-center)'
+paths='(src/|games/|packages/|\.js|\.ts|\.css)'
+if echo "$body" | grep -qiE "$keywords" && ! echo "$body" | grep -qE "$paths"; then
+  route=A  # CSS variable tweak — main thread handles directly
+else
+  route=B  # default: mechanical bug — spawn builder subagent
+fi
+```
+
+**Manual override:** any issue tagged `polish-iteration` is forced to route A regardless of body content. Add the label on each game repo on first use: `gh label create polish-iteration --repo <repo> --color a371f7 --description "Single-variable CSS tunable tweak for a merged polish PR"`.
+
 **Wayfinding stub for user-facing `[structure]` PRs (#44).** A `[structure]` PR for a user-facing surface (tutorial, onboarding, cutscene, level intro, win/lose, first-launch) MUST ship a plain DOM text node — dedicated CSS class (e.g. `.wayfinding-banner`), identifies the feature unambiguously (`Tutorial 1/3 — tap the highlighted arrow`, `You win!`), replaced by the sibling `[polish]` PR. **Detection:** structure half touches `startX`/`showY`/screen-manager/controller-flow for a user-facing surface → mandatory. **Forbidden:** activating a user-facing feature with zero on-screen text because "polish lands later" (arrow-puzzle #139 — tutorial boot with no visual signal, users saw sparse boards and concluded "generator broken").
 
 **Smoke-test runtime fidelity (#43).** Every smoke MUST (a) call the same runtime entry point the player reaches (`generateLevel(N)`, not `smokeFill(TIER)` with hand-picked args), (b) pass the same arguments the runtime uses, (c) assert the *positive* state that should exist (`#screen-game.active` present, `.arrow` pixel count > 0), never the negation (`!menu.active`). **Forbidden antipatterns:** negation assertions (a false positive on any screen transition), subset-of-signature helpers, hand-picked tier arguments that bypass `getDifficulty(level)`. A smoke one step removed from the player's runtime path is a placebo — PR #131 smoke tested Moderate while `generateLevel(1)` returns Baseline; PR #139 smoke asserted `!menu.active` while the tutorial never activated. Both shipped green.
