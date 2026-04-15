@@ -127,6 +127,43 @@ This is the single mechanism that makes the factory self-learning without requir
 
 ---
 
+## Brain-vs-game arbitration (factory-improvement #48)
+
+Every pass faces a tradeoff: invest tool budget in a brain edit (slow now, fast forever) or ship game work (slow each time, no compounding). Prior to this rule, the tradeoff was made by per-pass agent instinct with no audit trail. This section makes the decision explicit, logged, and monitored.
+
+### The decision tree
+
+At the start of Step 3 builder prioritization — BEFORE any game work or factory-improvement build — walk this tree and pick the first branch that matches:
+
+1. **Is there an unencoded F1 gap from the prior pass?** Check `factory_delta` in the last 3 `runs.jsonl` rows for `factory_issues_filed` entries that are NOT also in `brain_edits` or `memory_writes`. If an issue was filed but never encoded into CLAUDE.md / memory, it is in an unencoded state. **Encode it now, before any game build**, even if the rule is small. Log the edit in this pass's `brain_edits`.
+
+2. **Did the prior pass ship game work that requires a new brain rule to not regress?** Examples: the polish PR shipped a CSS tunables convention (brain must encode "all visual knobs go in tunables file"); a structure PR shipped without a smoke (brain must encode "structure PRs must ship with a smoke"); a feature shipped without a wayfinding element (brain must encode the wayfinding stub rule). If yes, encode the rule now, even if it's small. Log in `brain_edits`.
+
+3. **Is there an open factory-improvement issue tagged F1 that would save >30 minutes per future pass?** This is the compounding-ROI check. A brain edit that saves 30 minutes × 50 future passes = 25 hours of recovered context. Compare against the single-shot ROI of shipping one game PR. If the factory-improvement wins, build it now. Log in `brain_edits` + `factory_issues_closed`.
+
+4. **Are there open game build-requests in the F1 milestone gate?** Build them in the order the existing Step 3 prioritization specifies. This is the default branch for most passes once brain debt is current.
+
+5. **No game work pending either?** Run the inline agents (Steps 4-8) and council (Step 9). Use the pass for review work that Step 9 would do anyway.
+
+**Log the decision in this pass's `runs.jsonl` row** with two new fields:
+- `arbitration_decision`: one of `"brain"`, `"game"`, `"mixed"`, `"review"`
+- `arbitration_reason`: one sentence naming the branch that matched and why
+
+### Healthy brain:game ratio
+
+Over the last 50 passes (weekly review window), a healthy F1 cycle runs **20-30% brain work, 70-80% game work**. The Step 9 council reads `arbitration_decision` across the window and reports:
+- `<15% brain` → council files a factory-improvement noting the factory may be shipping without encoding (the self-improvement debt clause is leaking).
+- `>40% brain` → council files a factory-improvement noting the factory may be refactoring instead of shipping (the F4-trap — building the factory while F1 slips).
+- `15-40%` → healthy, no action.
+
+The council's job is to detect drift in either direction before it shows up in F1 progress. Persistent imbalance is a leading indicator of misaligned arbitration, not a lagging indicator of missed milestones.
+
+### Why this rule exists
+
+Today's arbitration is implicit: milestone gate pressure (both compete equally), self-improvement debt clause (forced encoding at milestone-end, not per-pass), and per-pass agent judgment (instinct). The gap: filing a tracked artifact is enforced, **encoding the rule is not**. A session can ship 5 game PRs, route 5 observations, and end with zero brain work — and the current `factory_delta` accounting can't tell whether that was the right tradeoff or whether the factory is drifting. This rule makes the decision visible per pass, logged for audit, and aggregated weekly for drift detection.
+
+---
+
 ## Swarm mode
 
 This is the primary way to operate the factory. When Sahil opens Claude Code in this directory and says **"go"**, **"run the swarm"**, **"what needs doing"**, or similar — you ARE the swarm. You do not invoke `claude -p`. You do not run shell scripts. You are the autonomous build factory.
@@ -500,11 +537,13 @@ After all agents complete:
 - Council: N entries added, N archived
 - Anything that failed or was skipped, and why
 
-**2. Append one structured row to `council/runs.jsonl`** with the same numbers so future councils (and the per-game baseline metrics from factory-improvement #21) can reason from data, not prose. Minimal schema v2:
+**2. Append one structured row to `council/runs.jsonl`** with the same numbers so future councils (and the per-game baseline metrics from factory-improvement #21) can reason from data, not prose. Schema v3 (adds `arbitration_decision` + `arbitration_reason` per factory-improvement #48):
 
 ```json
-{"ts":"<ISO8601>","scope":"<go_scope>","agents":["builder","content"],"games":{"arrow-puzzle":{"issues":3,"prs":3,"failed":0,"skipped":0},"bloxplode":{"issues":0,"prs":0,"failed":0,"skipped":0}},"swarm_state_seen":[6,32],"decomposition_rule_fired":[{"original":136,"structure":137,"polish":138,"smoked":true}],"factory_delta":{"memory_writes":["feedback_xyz"],"brain_edits":["CLAUDE.md"],"factory_issues_filed":[36,37,38],"observations_routed":4},"notes":"<one-line human note>"}
+{"ts":"<ISO8601>","scope":"<go_scope>","agents":["builder","content"],"games":{"arrow-puzzle":{"issues":3,"prs":3,"failed":0,"skipped":0},"bloxplode":{"issues":0,"prs":0,"failed":0,"skipped":0}},"swarm_state_seen":[6,32],"decomposition_rule_fired":[{"original":136,"structure":137,"polish":138,"smoked":true}],"arbitration_decision":"game","arbitration_reason":"No unencoded brain debt; no brain rule required by prior pass; open F1 game work with direct F1 outcome ROI.","factory_delta":{"memory_writes":["feedback_xyz"],"brain_edits":["CLAUDE.md"],"factory_issues_filed":[36,37,38],"observations_routed":4},"notes":"<one-line human note>"}
 ```
+
+**`arbitration_decision`** is one of `"brain"` (pass was primarily brain work), `"game"` (pass was primarily game work), `"mixed"` (both shipped in meaningful quantities), `"review"` (pass ran inline agents / council only — no builds). **`arbitration_reason`** is one sentence naming which branch of the arbitration decision tree matched (see the "Brain-vs-game arbitration" section between Observation routing and Swarm mode). Both fields are **mandatory** — the Step 9 council aggregates them weekly for drift detection.
 
 The `factory_delta` block is **mandatory** and is how the council weekly review (Step 9) detects whether sessions are paying back into the factory or just consuming from it. Fill it honestly, even with empty arrays — `"factory_delta":{"memory_writes":[],"brain_edits":[],"factory_issues_filed":[],"observations_routed":0}` is a valid (and revealing) value. A pass with all-empty `factory_delta` is a pass that consumed without contributing — the council will surface this as a "Known issue" if it persists.
 
