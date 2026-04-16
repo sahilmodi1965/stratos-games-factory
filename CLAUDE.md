@@ -454,12 +454,23 @@ After all agents complete:
 
 The `factory_delta` block is **mandatory** with all 5 keys present (`memory_writes`, `brain_edits`, `factory_issues_filed`, `factory_issues_closed`, `observations_routed`). Empty arrays are valid; missing keys are not. All-empty = pass consumed without contributing (Step 9 surfaces persistent emptiness as a Known issue).
 
-**Mandatory-field enforcement (#50):** before appending the row, verify the JSON parses AND contains `arbitration_decision` + `arbitration_reason` + a complete `factory_delta`. Do NOT commit a row missing these — the row is the council's only data source. Once `scripts/log-run.sh` lands (#50), use it; until then, eyeball the row before `>>`.
+**Mandatory-field enforcement (#50).** The canonical write path is `scripts/log-run.sh` — it validates required args (`--scope`, `--arbitration-decision`, `--arbitration-reason`, `--notes`) before building the row, and runs a jq schema check on the built row before append. Invalid invocations exit 2 (args) or 3 (schema). Use it on every pass:
 
-Append with:
 ```bash
-row='{...}'; echo "$row" | jq -e '.arbitration_decision and .arbitration_reason and (.factory_delta | has("memory_writes") and has("brain_edits") and has("factory_issues_filed") and has("factory_issues_closed") and has("observations_routed"))' >/dev/null && echo "$row" >> council/runs.jsonl || echo "ROW REJECTED — missing mandatory fields"
+bash scripts/log-run.sh \
+  --scope <go-scope> \
+  --arbitration-decision brain|game|mixed|review \
+  --arbitration-reason "<one sentence naming the matching decision-tree branch>" \
+  --notes "<one-line human note>" \
+  --game arrow-puzzle:0:0:0:0 --game bloxplode:0:0:0:0 --game house-mafia:0:0:0:0 \
+  --brain-edits CLAUDE.md \
+  --factory-issues-filed 50,51 --factory-issues-closed 30,45 \
+  --observations-routed 2 \
+  --swarm-state-seen 35,22 \
+  --append
 ```
+
+Run `bash scripts/log-run.sh --help` for the full arg list. `--append` writes to `council/runs.jsonl`; omit it to emit the row to stdout for review first.
 
 **3. Audit observation routing before committing the row.** Walk back through this pass: did any agent (you, a subagent, an inline agent) observe a gap, regression, or behavioral lesson and *not* file the appropriate tracked artifact per the routing matrix at the top of this file? If yes, route it now — file the issue, save the memory file, write the swarm-state note — then update the `factory_delta` block to reflect the routed artifacts. **Never let an observation die in the conversation log.**
 
