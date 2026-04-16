@@ -127,40 +127,17 @@ This is the single mechanism that makes the factory self-learning without requir
 
 ---
 
-## Brain-vs-game arbitration (factory-improvement #48)
+## Brain-vs-game arbitration (#48)
 
-Every pass faces a tradeoff: invest tool budget in a brain edit (slow now, fast forever) or ship game work (slow each time, no compounding). Prior to this rule, the tradeoff was made by per-pass agent instinct with no audit trail. This section makes the decision explicit, logged, and monitored.
+Every pass picks brain work (slow now, fast forever) vs game work (slow each time, no compounding). Walk this tree at the start of Step 3 — pick the first branch that matches, log the choice in `runs.jsonl` as `arbitration_decision` + `arbitration_reason`:
 
-### The decision tree
+1. **Unencoded F1 gap from prior pass?** Check the last 3 `runs.jsonl` rows for `factory_issues_filed` entries NOT in `brain_edits`/`memory_writes`. If yes → encode now, even if small.
+2. **Prior pass shipped game work that needs a new brain rule to not regress?** (e.g., shipped polish without tunables convention; shipped structure without smoke; shipped wayfinding violation.) → Encode now.
+3. **Open F1 factory-improvement that saves >30 min per future pass?** Compounding-ROI check: 30 min × 50 future passes = 25 hours recovered. If factory-improvement wins vs single-shot game PR → build it now.
+4. **Open F1 game build-requests?** Build per Step 3 prioritization. Default branch for most passes once brain debt is current.
+5. **Nothing pending?** Inline agents (Steps 4-8) + council (Step 9).
 
-At the start of Step 3 builder prioritization — BEFORE any game work or factory-improvement build — walk this tree and pick the first branch that matches:
-
-1. **Is there an unencoded F1 gap from the prior pass?** Check `factory_delta` in the last 3 `runs.jsonl` rows for `factory_issues_filed` entries that are NOT also in `brain_edits` or `memory_writes`. If an issue was filed but never encoded into CLAUDE.md / memory, it is in an unencoded state. **Encode it now, before any game build**, even if the rule is small. Log the edit in this pass's `brain_edits`.
-
-2. **Did the prior pass ship game work that requires a new brain rule to not regress?** Examples: the polish PR shipped a CSS tunables convention (brain must encode "all visual knobs go in tunables file"); a structure PR shipped without a smoke (brain must encode "structure PRs must ship with a smoke"); a feature shipped without a wayfinding element (brain must encode the wayfinding stub rule). If yes, encode the rule now, even if it's small. Log in `brain_edits`.
-
-3. **Is there an open factory-improvement issue tagged F1 that would save >30 minutes per future pass?** This is the compounding-ROI check. A brain edit that saves 30 minutes × 50 future passes = 25 hours of recovered context. Compare against the single-shot ROI of shipping one game PR. If the factory-improvement wins, build it now. Log in `brain_edits` + `factory_issues_closed`.
-
-4. **Are there open game build-requests in the F1 milestone gate?** Build them in the order the existing Step 3 prioritization specifies. This is the default branch for most passes once brain debt is current.
-
-5. **No game work pending either?** Run the inline agents (Steps 4-8) and council (Step 9). Use the pass for review work that Step 9 would do anyway.
-
-**Log the decision in this pass's `runs.jsonl` row** with two new fields:
-- `arbitration_decision`: one of `"brain"`, `"game"`, `"mixed"`, `"review"`
-- `arbitration_reason`: one sentence naming the branch that matched and why
-
-### Healthy brain:game ratio
-
-Over the last 50 passes (weekly review window), a healthy F1 cycle runs **20-30% brain work, 70-80% game work**. The Step 9 council reads `arbitration_decision` across the window and reports:
-- `<15% brain` → council files a factory-improvement noting the factory may be shipping without encoding (the self-improvement debt clause is leaking).
-- `>40% brain` → council files a factory-improvement noting the factory may be refactoring instead of shipping (the F4-trap — building the factory while F1 slips).
-- `15-40%` → healthy, no action.
-
-The council's job is to detect drift in either direction before it shows up in F1 progress. Persistent imbalance is a leading indicator of misaligned arbitration, not a lagging indicator of missed milestones.
-
-### Why this rule exists
-
-Today's arbitration is implicit: milestone gate pressure (both compete equally), self-improvement debt clause (forced encoding at milestone-end, not per-pass), and per-pass agent judgment (instinct). The gap: filing a tracked artifact is enforced, **encoding the rule is not**. A session can ship 5 game PRs, route 5 observations, and end with zero brain work — and the current `factory_delta` accounting can't tell whether that was the right tradeoff or whether the factory is drifting. This rule makes the decision visible per pass, logged for audit, and aggregated weekly for drift detection.
+`arbitration_decision` is `"brain"` / `"game"` / `"mixed"` / `"review"`. `arbitration_reason` names the matching branch in one sentence. Both are mandatory schema fields per Step 10. Step 9 council aggregates the ratio (healthy band 15-40% brain — see Step 9 for drift response).
 
 ---
 
@@ -288,9 +265,9 @@ RULES:
    <if build_cmd is empty>: No build step for this game. Just verify your changes are correct.
 6. If you cannot implement safely, make no changes and explain why.
 7. End with one paragraph summarizing what you changed.
-8. **Observation routing — mandatory.** If during your work you observe any factory gap, missing capability, broken validator, or behavioral lesson the factory should remember, file it as the appropriate tracked artifact BEFORE ending. Read the routing matrix at `/Users/sahilmodi/stratos-games-factory/council/ROUTING.md` — it maps observation types to destinations (game issue / factory-improvement / swarm-state / memory). **Never let an observation die in your summary text.** Include the routed artifact URLs in your final summary.
-9. **Smoke-test runtime fidelity (factory-improvement #43).** If your work adds or modifies any test (Playwright, Vitest, validate-script smoke, anything), the test MUST: (a) call the same runtime entry point the player reaches — `generateLevel(N)` not `smokeFill(HAND_PICKED_TIER)`, the real `boot()` path not a synthetic helper; (b) pass the same arguments the runtime uses — let `getDifficulty(level)` decide the tier, not a hard-coded `DIFFICULTY.find(t => t.label === 'Moderate')`; (c) assert the *positive* state that should exist (`#screen-game.classList.contains('active')`, arrow-pixel count > 400, `result.arrowCount` inside an observed band), NEVER the negation of what should not exist (`!menu.classList.contains('active')` is forbidden — it false-positives on every screen transition). If your test cannot reach the runtime entry point from a Node harness, promote it to Playwright and open the live URL — do not write a partial-signature helper smoke. The 2026-04-15 #131 + #139 dual regression is the canonical failure this rule prevents: both smokes were green; both PRs shipped broken because both tests were one step removed from the player's path.
-10. **Wayfinding stub for user-facing `[structure]` PRs (factory-improvement #44).** If the issue you are building is the `[structure]` half of a decomposed user-facing feature (tutorial, onboarding, cutscene, level intro, win/lose screen, settings flow, first-launch UX) — detected by your work touching `startX()`, `showY()`, `screens.show(...)`, screen-manager calls, or controller-flow for a user-facing surface — you MUST add a plain DOM text element with a dedicated CSS class (e.g., `.wayfinding-banner`, `.tutorial-step-label`) that identifies the feature unambiguously to a human observer. Examples: `Tutorial 1/3 — tap the highlighted arrow`, `Loading next level…`, `You win!`. The wayfinding element is a plain `<div>` or `<span>` with text content (NOT canvas, NOT an image), positioned visibly inside the active screen, independent of any sibling polish PR — if the polish PR's hand overlay or animation breaks, the wayfinding element must still render. The sibling `[polish]` PR replaces or restyles it via the CSS tunables file. **Forbidden antipattern:** activating a user-facing feature with zero on-screen text on the reasoning that "the polish PR will add the UI" — the polish PR may never land, the structure PR may sit on main for hours or days looking broken, and Ripon will conclude the game itself is broken (arrow-puzzle #139 was exactly this — tutorial boot gate re-enabled with no visual signal, users saw sparse boards and concluded the generator was broken when the tutorial was actually running correctly).
+8. **Observation routing — mandatory.** If you observe any factory gap, missing capability, or behavioral lesson, file the tracked artifact per `council/ROUTING.md` (game issue / factory-improvement / swarm-state / memory) BEFORE ending. Include the artifact URLs in your summary. Never let an observation die in your summary text.
+9. **Smoke-test runtime fidelity (#43).** Every test you add/modify MUST: (a) call the runtime entry the player reaches (`generateLevel(N)`, not `smokeFill(HAND_PICKED_TIER)`); (b) pass the runtime args (let `getDifficulty(level)` decide, not hard-coded `'Moderate'`); (c) assert positive state (`screen.active`, `pixelCount > N`), NEVER the negation (`!menu.active` is forbidden — false-positives on every screen transition). If you can't reach the runtime entry from Node, promote to Playwright on the live URL. Reference: PR #131 (wrong tier) + PR #139 (negation assertion) — both shipped green, both broken.
+10. **Wayfinding stub for user-facing `[structure]` PRs (#44).** If your work touches `startX()`/`showY()`/`screens.show(...)`/screen-manager for a user-facing surface (tutorial, onboarding, cutscene, win/lose, first-launch), you MUST add a plain DOM text element with a dedicated CSS class (e.g. `.wayfinding-banner`) identifying the feature: `Tutorial 1/3 — tap the highlighted arrow`, `You win!`. Plain `<div>` or `<span>` (NOT canvas, NOT image), visible in the active screen, independent of any sibling polish PR. Forbidden: activating a user-facing feature with zero on-screen text because "polish lands later" (arrow-puzzle #139 — Ripon saw a tutorial board with no UI and concluded the generator was broken).
 ```
 
 **After the subagent returns:**
@@ -332,206 +309,94 @@ RULES:
 
 **CSS tunables for `[polish]` issues.** Expose every visual knob (rotation, size, offset, timing, color) as CSS variables in `games/<game>/src/styles/<feature>-tunables.css`. Polish iteration is a 1-line edit to that file, never a source rebuild — Ripon's "rotate 150, not 135" feedback maps directly to one PR comment.
 
-**Polish PR follow-up routing (factory-improvement #46).** Once a polish PR merges, any new visual feedback has nowhere to go in the polish-pr-body convention (which tells Ripon to comment on the open PR). A new `build-request` issue filed **within 7 days** of a polish PR merging, where the title or body references the same feature (e.g. `tutorial`, `win-screen`, `level-intro`), is one of three things. Classify BEFORE spawning a subagent:
+**Polish PR follow-up routing (#46).** A `build-request` filed within 7 days of a polish PR merge, referencing the same feature, is one of three things — classify BEFORE spawning a subagent:
 
-1. **Route A — CSS variable tweak (fast path, no subagent).** Issue body contains keywords like `rotation`, `size`, `color`, `padding`, `spacing`, `feel`, `looks`, `too small`, `too big`, `wrong position`, `off-center`, AND names no file paths, AND proposes at most one numeric / unit change. Main thread handles directly: open the existing tunables file, apply the one-line change, commit with `polish: <old> → <new> for #<N>`, open a polish-pr-body PR substituting the new tunables path, close the issue when merged. ~30 seconds of main-thread time, no subagent spawn.
+- **Route A — CSS variable tweak.** Body has tweak keywords (`rotation`, `size`, `color`, `padding`, `spacing`, `feel`, `looks`, `too small/big`, `off-center`) AND names no file paths AND proposes ≤1 numeric change. Main thread handles directly: edit the tunables file, commit `polish: <old> → <new> for #<N>`, open a polish-pr-body PR. ~30s. No subagent.
+- **Route B — mechanical bug exposed by the polish landing (default).** Body names file paths or identifies a runtime/timing/null-check bug. Standard builder subagent. Example: arrow-puzzle #147 (`layout.resize()` race exposed by #145).
+- **Route C — real new feature request.** Treat as a fresh `build-request`; re-runs the decomposition check.
 
-2. **Route B — mechanical bug uncovered by the polish landing (default).** The polish made a structural defect visible (layout race exposed by wayfinding banner; `getBoundingClientRect` timing bug exposed by hand overlay; dead code path exposed by animation). Issue body names file paths, references specific runtime behavior, or identifies a timing / race / null-check bug. Route as a normal builder subagent task with a standard PR body — the fix touches source code, not the tunables file. This is what arrow-puzzle #147 was: Ripon filed it after #145 merged, the bug was `layout.resize()` timing in `game-controller.js`, not a CSS tweak.
-
-3. **Route C — real new feature request (decomposition check).** Issue body proposes additional functionality not in the original polish spec. Treat as a normal `build-request` that must itself pass the decomposition rule check — may itself split into structure + polish.
-
-**Runnable detection heuristic** (execute before spawning a subagent for any issue that touches a recently-merged polish surface):
 ```bash
 body=$(gh issue view <N> --repo <repo> --json body -q .body)
 keywords='(rotation|size|color|padding|spacing|feel|looks|too small|too big|wrong position|off-center)'
 paths='(src/|games/|packages/|\.js|\.ts|\.css)'
-if echo "$body" | grep -qiE "$keywords" && ! echo "$body" | grep -qE "$paths"; then
-  route=A  # CSS variable tweak — main thread handles directly
-else
-  route=B  # default: mechanical bug — spawn builder subagent
-fi
+if echo "$body" | grep -qiE "$keywords" && ! echo "$body" | grep -qE "$paths"; then route=A; else route=B; fi
 ```
 
-**Manual override:** any issue tagged `polish-iteration` is forced to route A regardless of body content. Add the label on each game repo on first use: `gh label create polish-iteration --repo <repo> --color a371f7 --description "Single-variable CSS tunable tweak for a merged polish PR"`.
+Manual override: any issue tagged `polish-iteration` → route A. Create label on first use per repo: `gh label create polish-iteration --color a371f7`.
 
-**Wayfinding stub for user-facing `[structure]` PRs (#44).** A `[structure]` PR for a user-facing surface (tutorial, onboarding, cutscene, level intro, win/lose, first-launch) MUST ship a plain DOM text node — dedicated CSS class (e.g. `.wayfinding-banner`), identifies the feature unambiguously (`Tutorial 1/3 — tap the highlighted arrow`, `You win!`), replaced by the sibling `[polish]` PR. **Detection:** structure half touches `startX`/`showY`/screen-manager/controller-flow for a user-facing surface → mandatory. **Forbidden:** activating a user-facing feature with zero on-screen text because "polish lands later" (arrow-puzzle #139 — tutorial boot with no visual signal, users saw sparse boards and concluded "generator broken").
-
-**Smoke-test runtime fidelity (#43).** Every smoke MUST (a) call the same runtime entry point the player reaches (`generateLevel(N)`, not `smokeFill(TIER)` with hand-picked args), (b) pass the same arguments the runtime uses, (c) assert the *positive* state that should exist (`#screen-game.active` present, `.arrow` pixel count > 0), never the negation (`!menu.active`). **Forbidden antipatterns:** negation assertions (a false positive on any screen transition), subset-of-signature helpers, hand-picked tier arguments that bypass `getDifficulty(level)`. A smoke one step removed from the player's runtime path is a placebo — PR #131 smoke tested Moderate while `generateLevel(1)` returns Baseline; PR #139 smoke asserted `!menu.active` while the tutorial never activated. Both shipped green.
+**Inline-agent preamble (Steps 4-8).** All inline agents apply observation routing per `council/ROUTING.md` (no per-step repetition). Three of them (product / monetization / UA) operate in **two modes per game** — strategy mode (G1+, no upstream data needed; files prerequisite issues + a strategy advisory) and data mode (G2+, existing data-driven flow). Strategy mode is the rule that keeps these agents productive from G1 onward — they BUILD the conditions for their own data mode, not skip silently waiting for them. Closes factory-improvement #30.
 
 ### Step 4 — Product agent
 
-Run inline (no subagent). Analyzes player behavior data and files data-backed improvement issues.
+Pick mode by data availability:
 
-**Data sources (in priority order):**
-1. **`analytics-data` issues from Ripon**: Check for open issues labeled `analytics-data` on each game repo. Ripon pastes screenshots, CSVs, or text summaries of Firebase Analytics / Play Console data into these issues. This is the primary input.
-2. **Firebase CLI** (if available): Run `firebase` commands to pull analytics directly. Check with `command -v firebase`. If not available, skip — rely on Ripon's data issues.
-3. **Game code analysis**: Read the game's level/difficulty config files to understand the progression curve and map analytics data to specific game elements.
+- **Strategy mode (G1+, no analytics).** Game has no `analytics-data` issues AND no analytics SDK (`grep -riE 'firebase|gtag|analytics' <game_dir>/`). File:
+  - `[G2] feat: integrate Firebase Analytics` build-request (skip if open).
+  - One `[product-strategy]` advisory per game per 30d: event taxonomy + key funnels + drop-off levels to watch when data lands.
+- **Data mode (G2+, analytics-data present).** Read open `analytics-data` issues + game's level/difficulty config. Analyze drop-off / session length / retry spikes / engagement. File up to 3 `[product]` build-requests citing raw stats. Close processed `analytics-data` issues with links.
 
-**For each game:**
-1. Read any open `analytics-data` issues: `gh issue list --repo <repo> --label analytics-data --state open --json number,title,body`
-2. Read the game's level/difficulty configuration files to understand the progression.
-3. Analyze the data for:
-   - **Drop-off points**: which levels have abnormally low completion rates
-   - **Session length patterns**: are sessions too short (boring) or too long (exhausting)
-   - **Retry spikes**: which levels cause excessive retries (frustration)
-   - **Feature engagement**: which mechanics get used vs ignored
-4. File up to 3 data-backed improvement issues per game:
-   ```bash
-   gh label create product-data --repo <repo> --color 1d76db --description "Data-backed improvement from product agent" 2>/dev/null || true
-   gh issue create --repo <repo> --label "build-request" --label "product-data" \
-     --title "[product] <specific data-backed suggestion>" \
-     --body "<body with raw stats, analysis, and concrete fix>"
-   ```
-5. Close processed `analytics-data` issues with a comment linking to the filed improvement issues.
+Rules: title `[product]` or `[product-strategy]`. Data-mode suggestions cite numbers ("L8 70% drop-off vs 35% avg"), not feel. ≤50-line body. Never invent data.
 
-**Product rules:**
-- Every suggestion MUST cite specific data: "Level 8 has 70% drop-off vs 35% average" not "Level 8 seems hard"
-- Suggestions must be actionable by the builder agent (reference specific files, stay under 50-line body)
-- Title starts with `[product]`
-- If no analytics data is available (no `analytics-data` issues, no Firebase CLI), skip with a message suggesting Ripon file an `analytics-data` issue with current stats
-- Never invent data. If the numbers aren't there, say so.
-- **Observation routing — mandatory** (see §Observation routing at the top of this file; applies to every agent).
+```bash
+gh label create product-data --color 1d76db 2>/dev/null || true; gh label create product-strategy --color 1d76db 2>/dev/null || true
+```
 
 ### Step 5 — Monetization agent
 
-Run inline (no subagent). Reviews ad placement configuration and files optimization issues.
+**SDK pre-flight (#49):** `grep -riE 'admob|adsense|interstitial|rewarded|banner' <game_dir>/`; also `linkrunner|mmp` and `applovin|max.*mediation`.
 
-**Pre-flight SDK check (factory-improvement #49):** Before reviewing a game's ad config, verify the game has an ad SDK integrated at all. Run: `grep -riE 'admob|adsense|interstitial|rewarded|banner' <game_dir>/` (for Capacitor games, search `www/`). Also check for LinkRunner MMP (`grep -riE 'linkrunner|mmp' <game_dir>/`) and AppLovin MAX (`grep -riE 'applovin|max.*mediation' <game_dir>/`). Report the SDK status in your output:
-- **AdMob present + LinkRunner present + AppLovin present** → full monetization stack, review ad placement AND mediation config
-- **AdMob present, others missing** → review ad placement only, flag missing LinkRunner/AppLovin as G3 blockers
-- **No ad SDK** → skip the game, note "no ad integration found — monetization agent cannot contribute until AdMob is integrated (G2 prerequisite)"
+- **Strategy mode (G1+, no ad SDK).** File:
+  - `[G2] feat: integrate AdMob` build-request (skip if open).
+  - `[G3] feat: integrate LinkRunner MMP` and `[G3] feat: integrate AppLovin MAX mediation` (G3 prerequisites).
+  - One `[monetization-strategy]` advisory per game per 30d: ad placement plan in this game's loop (interstitial trigger points, rewarded-video opportunities, banner positioning).
+- **Data mode (G2+, ad SDK present).** Read existing ad config. Cross-reference best practices: interstitials ≤1/2-3 min at natural break points; rewarded at moments of need; banner bottom only, hidden during play; first impression after 2+ min. File up to 3 `[monetization]` build-requests with current config + citation + concrete change.
 
-**For each game with ad integration (currently Bloxplode — skip games without):**
-1. Read the game's codebase looking for ad integration code:
-   - AdMob config, ad unit IDs, placement triggers
-   - Interstitial frequency/timing logic
-   - Rewarded video placement and reward values
-   - Banner ad positioning
-   - LinkRunner MMP event forwarding (if present)
-   - AppLovin MAX adapter config (if present)
-2. Cross-reference with casual game monetization best practices:
-   - **Interstitials**: not more than once per 2-3 minutes of gameplay, never mid-action, always at natural break points (level complete, game over)
-   - **Rewarded video**: offered at moments of player need (extra life, hint, skip level), never forced
-   - **Banners**: bottom of screen only, never overlapping game UI, hidden during active gameplay
-   - **Session pacing**: first ad impression should come after 2+ minutes of engagement, never on first screen
-3. File up to 3 optimization issues per game:
-   ```bash
-   gh label create monetization-data --repo <repo> --color 0d7a3f --description "Ad optimization from monetization agent" 2>/dev/null || true
-   gh issue create --repo <repo> --label "build-request" --label "monetization-data" \
-     --title "[monetization] <specific optimization>" \
-     --body "<body with current config, best practice citation, and concrete change>"
-   ```
+Rules: title `[monetization]` or `[monetization-strategy]`. Reference specific files + lines. ≤50-line body. Do NOT touch `android/`, `capacitor.config.json`, or native ad SDK setup — web layer only.
 
-**Monetization rules:**
-- Title starts with `[monetization]`
-- Never suggest changes that hurt player experience more than they help revenue
-- Reference specific files and line numbers where ad config lives
-- Stay under 50-line body
-- Do NOT touch `android/`, `capacitor.config.json`, or native ad SDK setup — only web-layer config
-- If no ad integration exists in a game, skip it and note "no ad integration found"
-- **Observation routing — mandatory** (see §Observation routing at the top of this file; applies to every agent).
+```bash
+gh label create monetization-data --color 0d7a3f 2>/dev/null || true; gh label create monetization-strategy --color 0d7a3f 2>/dev/null || true
+```
 
 ### Step 6 — Content agent
 
-Run inline (no subagent). For each game in the portfolio:
+For each game: skip if open `build-request` count ≥ 10. Read 20 most-recent issue titles for dedup. Read game's content/level files. File up to 5 `[content]` build-requests:
 
-1. Check open `build-request` count: `gh issue list --repo <repo> --label build-request --state open --json number --jq 'length'`. If >= 10, skip (queue is full).
-2. Get the 20 most recent issue titles for dedup: `gh issue list --repo <repo> --state all --limit 20 --json number,title,state`
-3. Read the game repo's content/level files to understand the existing structure.
-4. File up to 5 new issues with labels `build-request` + `content-agent`:
-   ```bash
-   gh label create content-agent --repo <repo> --color 0075ca --description "Filed by the content agent" 2>/dev/null || true
-   gh issue create --repo <repo> --label "build-request" --label "content-agent" \
-     --title "[content] <specific idea>" --body "<body following build-request template>"
-   ```
+```bash
+gh label create content-agent --color 0075ca 2>/dev/null || true
+gh issue create --repo <repo> --label build-request --label content-agent --milestone <G-stage> \
+  --title "[content] <idea>" --body "<What / Where / How body, ≤50 lines>"
+```
 
-**Content rules:**
-- Title starts with `[content]`
-- Body follows the `build-request` template: What / Where / How / Anything else
-- Body stays under 50 lines
-- Reference specific files in the codebase — read the game's CLAUDE.md and explore its content/level system first
-- Be concrete and game-appropriate — the idea must fit the game's existing architecture
-- Do NOT duplicate any of the 20 recent issues
-- Tailor themes to each game's genre (puzzle levels for puzzle games, multiplayer modes for social games, etc.)
-- **Observation routing — mandatory** (see §Observation routing at the top of this file; applies to every agent).
+Rules: concrete + game-genre-appropriate + matches existing architecture. Reference specific files. No duplicates against the recent 20.
 
 ### Step 7 — Competitor agent
 
-Run inline (no subagent). Covers all games in one pass.
+Covers all games in one pass.
 
-1. Use WebSearch to research:
-   - Top trending puzzle games on Apple App Store and Google Play this week
-   - Notable new mechanics in casual/puzzle games in the last 30 days
-   - Daily challenge / speed run / endless mode / meta-progression patterns
-2. For each game, propose exactly 3 specific mechanic adaptations:
-   - Cite the trending game that inspired it
-   - Reference specific files in our codebase
-   - Small enough for one PR (50-line issue body)
-   - No new dependencies, no touching `packages/`, `android/`, `capacitor.config.json`
-3. File one `market-intel` issue per game + one portfolio summary on the factory repo:
-   ```bash
-   gh label create market-intel --repo <repo> --color 5319e7 --description "Market intelligence from competitor agent" 2>/dev/null || true
-   gh issue create --repo <game-repo> --label "market-intel" \
-     --title "[market-intel] Week of <date> — 3 mechanics from trending games" --body "<suggestions>"
-   gh issue create --repo sahilmodi1965/stratos-games-factory --label "market-intel" \
-     --title "[market-intel] Portfolio scan — week of <date>" --body "<cross-portfolio themes>"
-   ```
+1. WebSearch: top trending puzzle games this week (App Store + Play); notable new mechanics in casual/puzzle in last 30d; daily-challenge / speed-run / endless / meta-progression patterns.
+2. For each game, propose 3 specific mechanic adaptations citing the trending game + our codebase files. ≤50-line bodies. No deps, no `packages/`/`android/`/`capacitor.config.json` edits.
+3. File one `[market-intel]` per game + one portfolio summary on the factory repo.
 
-**Competitor rules:**
-- Cite real games by name. Never invent.
-- Prefer 3 sharp suggestions over 10 vague ones.
-- If web searches return nothing credible, file zero issues and say so honestly.
-- These issues are triaged by humans, NOT auto-built.
-- **Observation routing — mandatory** (see §Observation routing at the top of this file; applies to every agent).
+```bash
+gh label create market-intel --color 5319e7 2>/dev/null || true
+```
 
-### Step 8 — UA agent (user acquisition)
+Rules: cite real games by name. 3 sharp > 10 vague. Honest "no signal" if web returns nothing. Human-triaged, NOT auto-built.
 
-Run inline (no subagent). Generates store listing assets for app store submissions.
+### Step 8 — UA agent
 
-**Triggered when:** a `ship-it` label was recently applied to a game, OR no `ua-assets` issue has been filed in the past 30 days, OR Sahil says "run UA prep".
+Triggered by `ship-it` label, no `ua-assets` issue in 30d, or `run UA prep`.
 
-**Pre-flight distribution check (factory-improvement #49):** Before generating store listing assets, verify the game is actually packageable for stores. Check for: `capacitor.config.json` (native wrapper exists), `android/` or `ios/` directory (native projects generated), ad SDK integration (AdMob grep), analytics integration (Firebase/gtag grep). Report the distribution status:
-- **Capacitor + native projects + AdMob + analytics** → generate full store listing variants (descriptions, ASO keywords, screenshot compositions)
-- **Capacitor present but native SDKs missing** → generate listing variants BUT prefix with a note: "These listings are ready to use once AdMob/Firebase are integrated. Do not submit to stores without ads + analytics live."
-- **No Capacitor wrapper** → do NOT generate store listing variants. Instead, file a `build-request` issue for the Capacitor wrap (the prerequisite). Title: `[G2] feat: wrap <game> with Capacitor for Android + iOS`. Note: "UA agent cannot generate actionable store listings for a web-only game — native packaging must ship first."
+**Distribution pre-flight (#49):** `capacitor.config.json`, `android/`/`ios/` projects, AdMob, Firebase.
 
-**For each game that passes the distribution check:**
-1. Read the game's current features, mechanics, and visual style from the codebase and CLAUDE.md.
-2. Read the latest release tag and changelog (if any): `git tag --list 'v*' --sort=-version:refname | head -1`
-3. Generate all of the following in a single issue:
+- **Strategy mode (G1+, no Capacitor).** File `[G2] feat: wrap with Capacitor for Android + iOS` build-request (skip if open). Plus one `[ua-strategy]` advisory per game per 30d: pre-launch positioning (target audience, ASO angle, competitor names to displace, store-listing tone).
+- **Data mode (G2+, Capacitor + native projects).** Generate `[ua] Store listing assets` issue: 5 description variants (different angles, 80-char short + 4000-char full each), 5 ASO keyword sets (100 chars / iOS limit each, mix broad + long-tail, competitor names where appropriate), 10 screenshot compositions ordered by impact. If ad SDK / analytics missing, prefix listing with: "Ready to use once SDKs land — do not submit to stores without ads + analytics live."
 
-   **App Store / Play Store description** (5 variants):
-   - Each variant takes a different angle (gameplay-first, visual-first, challenge-first, casual-first, social-first)
-   - Short description (80 chars) + full description (4000 chars max) for each
-   - Written for the target audience (casual puzzle gamers)
+Rules: title `[ua]` or `[ua-strategy]`. All copy truthful (real features only). Casual mobile-gamer audience. Localization notes flag terms needing translation. Human-reviewed — Sahil/Ripon picks variants.
 
-   **ASO keyword sets** (5 variants):
-   - Each set of 100 characters (iOS keyword field limit)
-   - Mix of high-volume broad terms and low-competition long-tail terms
-   - Include competitor game names where appropriate
-   - Note estimated search volume/difficulty if inferable
-
-   **Screenshot compositions** (suggestions, not images):
-   - One suggestion per App Store screenshot slot (up to 10)
-   - Each describes: what game state to capture, what caption text to overlay, what feature it highlights
-   - Ordered by impact (most compelling screenshot first)
-
-4. File as a single issue per game:
-   ```bash
-   gh label create ua-assets --repo <repo> --color e3b341 --description "Store listing assets from UA agent" 2>/dev/null || true
-   gh issue create --repo <repo> --label "ua-assets" \
-     --title "[ua] Store listing assets — <date>" \
-     --body "<all variants, keywords, and screenshot suggestions>"
-   ```
-
-**UA rules:**
-- Title starts with `[ua]`
-- All copy must be truthful — describe features that actually exist in the game
-- Never invent features the game doesn't have
-- Write for the casual mobile gamer audience
-- Include localization notes (flag terms that need translation attention)
-- These issues are for human review — Ripon/Sahil picks the best variants
-- **Observation routing — mandatory** (see §Observation routing at the top of this file; applies to every agent).
+```bash
+gh label create ua-assets --color e3b341 2>/dev/null || true; gh label create ua-strategy --color e3b341 2>/dev/null || true
+```
 
 ### Step 9 — Council review
 
@@ -555,26 +420,15 @@ Run inline (no subagent). Review the factory's own performance.
    - **"Architecture decision"** → COUNCIL.md entry only. These are audit-trail decisions, not actionable work.
 5. Commit and push COUNCIL.md changes **and the new tracked artifacts** in the same commit (or note them clearly if they live in different repos).
 6. If the week was uneventful, say so honestly — don't invent recommendations. **But also check `runs.jsonl` for the `factory_delta` field across the past 7 days**: if zero passes contributed back to the factory (no memory writes, no brain edits, no factory-improvement issues filed by builders/inline agents), that itself is a "Known issue" — sessions are consuming the factory without paying back.
-7. **Brain-vs-game ratio aggregation (factory-improvement #48).** Read `arbitration_decision` from every `runs.jsonl` row in the last 50 passes (or all rows if fewer):
-   ```bash
-   tail -50 council/runs.jsonl | jq -r '.arbitration_decision // "unset"' | sort | uniq -c
-   ```
-   Compute the percentage of passes tagged `"brain"` vs `"game"` vs `"mixed"` vs `"review"` (treat `"mixed"` as half-brain for the ratio calculation). **Healthy band: 15-40% brain work.** Act on drift:
-   - **<15% brain** — file a factory-improvement noting the factory may be shipping without encoding (self-improvement debt clause leaking). Title format: `council: brain contribution rate dropped to X% over last 50 passes — potential debt-clause leak`.
-   - **>40% brain** — file a factory-improvement noting the factory may be refactoring instead of shipping (F4-trap, building the factory while F1 slips). Title format: `council: brain contribution rate rose to X% over last 50 passes — potential F4-drift`.
-   - **15-40%** — healthy. Note the ratio in the weekly review and move on.
-   Include the top 3 `arbitration_reason` values by frequency so the council can identify which decision-tree branches are firing most often — a persistent "branch 1: unencoded gap from prior pass" pattern means encoding is always one pass late; a persistent "branch 3: compounding ROI" pattern means you're burning through the factory-improvement backlog (good).
-8. **Decomposition trip-rate aggregation (factory-improvement #47).** Read `decomposition_rule_fired` from every `runs.jsonl` row in the last 50 passes:
-   ```bash
-   trips=$(tail -50 council/runs.jsonl | jq -r '.decomposition_rule_fired // [] | length' | awk '{s+=$1} END {print s}')
-   prs=$(tail -50 council/runs.jsonl | jq -r '[.games[]?.prs] | add // 0' | awk '{s+=$1} END {print s}')
-   echo "decomposition trips=$trips over $prs shipped PRs"
-   ```
-   Compute the trip rate as `trips / prs`. **Healthy band: 10-30%** of shipped build-requests in user-facing surfaces trigger the decomposition rule. Act on drift:
-   - **<10%** — the rule may not be firing often enough. Either issue-writing is pre-splitting cleanly (good, verify by reading the 10 most recent `build-request` issue bodies) OR the detection heuristic in Step 3 is missing real splits (bad, file a factory-improvement to tighten the heuristic). Determine which by sampling.
-   - **>30%** — the issue-writing process is producing too many bundled issues. File a factory-improvement to strengthen `templates/build-request.md` with a pre-splitting checkbox ("is this purely mechanical? purely subjective? or both?") so writers declare upfront and the swarm doesn't have to split at build time.
-   - **10-30%** — healthy. Surface the latest 5 `decomposition_rule_fired` entries in the COUNCIL.md weekly review section so the reasoning is auditable: which issues split, into which children, did both children ship?
-9. **Note on data quality with thin `runs.jsonl` history** (~30 rows as of 2026-04-15): the council's pattern recognition is intuitive (Claude-style synthesis), not statistical, until ~50+ rows accumulate. Expected behavior at this stage of the factory's life — do not invent statistical patterns or imagine recurring failures from a single occurrence. The arbitration and decomposition aggregations above are reliable once the 50-row window fills; treat earlier numbers as directional, not decisive.
+7. **Brain-vs-game ratio (#48).** `tail -50 council/runs.jsonl | jq -r '.arbitration_decision // "unset"' | sort | uniq -c`. Compute % brain (treat `mixed` as half-brain). **Healthy band: 15-40%.**
+   - <15% brain → file factory-improvement: `council: brain contribution dropped to X% — debt-clause leak`.
+   - >40% brain → file factory-improvement: `council: brain contribution rose to X% — F4-drift`.
+   - 15-40% → healthy. Note ratio + top 3 `arbitration_reason` values by frequency (reveals which decision-tree branches fire most).
+8. **Decomposition trip rate (#47).** `trips=$(tail -50 council/runs.jsonl | jq -r '.decomposition_rule_fired // [] | length' | awk '{s+=$1} END {print s}'); prs=$(tail -50 council/runs.jsonl | jq -r '[.games[]?.prs] | add // 0' | awk '{s+=$1} END {print s}'); echo "$trips/$prs"`. **Healthy band: 10-30%.**
+   - <10% → sample 10 most recent build-request bodies. If pre-split cleanly, fine. If heuristic missed real splits, file factory-improvement to tighten.
+   - >30% → file factory-improvement to add a pre-splitting checkbox to `templates/build-request.md`.
+   - 10-30% → healthy. Surface the latest 5 `decomposition_rule_fired` entries in the weekly review (which split, did both ship?).
+9. **Thin-history caveat:** until `runs.jsonl` has 50+ rows, treat aggregation numbers as directional. Don't invent statistical patterns from single occurrences.
 
 ### Step 10 — Report + log the run
 
@@ -596,13 +450,15 @@ After all agents complete:
 {"ts":"<ISO8601>","scope":"<go_scope>","agents":["builder","content"],"games":{"arrow-puzzle":{"issues":3,"prs":3,"failed":0,"skipped":0},"bloxplode":{"issues":0,"prs":0,"failed":0,"skipped":0}},"swarm_state_seen":[6,32],"decomposition_rule_fired":[{"original":136,"structure":137,"polish":138,"smoked":true}],"arbitration_decision":"game","arbitration_reason":"No unencoded brain debt; no brain rule required by prior pass; open F1 game work with direct F1 outcome ROI.","factory_delta":{"memory_writes":["feedback_xyz"],"brain_edits":["CLAUDE.md"],"factory_issues_filed":[36,37,38],"observations_routed":4},"notes":"<one-line human note>"}
 ```
 
-**`arbitration_decision`** is one of `"brain"` (pass was primarily brain work), `"game"` (pass was primarily game work), `"mixed"` (both shipped in meaningful quantities), `"review"` (pass ran inline agents / council only — no builds). **`arbitration_reason`** is one sentence naming which branch of the arbitration decision tree matched (see the "Brain-vs-game arbitration" section between Observation routing and Swarm mode). Both fields are **mandatory** — the Step 9 council aggregates them weekly for drift detection.
+**`arbitration_decision`** ∈ `"brain"` / `"game"` / `"mixed"` / `"review"`. **`arbitration_reason`** is one sentence naming the matching branch (see Brain-vs-game arbitration section). Both **mandatory** — Step 9 aggregates weekly.
 
-The `factory_delta` block is **mandatory** and is how the council weekly review (Step 9) detects whether sessions are paying back into the factory or just consuming from it. Fill it honestly, even with empty arrays — `"factory_delta":{"memory_writes":[],"brain_edits":[],"factory_issues_filed":[],"observations_routed":0}` is a valid (and revealing) value. A pass with all-empty `factory_delta` is a pass that consumed without contributing — the council will surface this as a "Known issue" if it persists.
+The `factory_delta` block is **mandatory** with all 5 keys present (`memory_writes`, `brain_edits`, `factory_issues_filed`, `factory_issues_closed`, `observations_routed`). Empty arrays are valid; missing keys are not. All-empty = pass consumed without contributing (Step 9 surfaces persistent emptiness as a Known issue).
+
+**Mandatory-field enforcement (#50):** before appending the row, verify the JSON parses AND contains `arbitration_decision` + `arbitration_reason` + a complete `factory_delta`. Do NOT commit a row missing these — the row is the council's only data source. Once `scripts/log-run.sh` lands (#50), use it; until then, eyeball the row before `>>`.
 
 Append with:
 ```bash
-echo '<one-line json>' >> council/runs.jsonl
+row='{...}'; echo "$row" | jq -e '.arbitration_decision and .arbitration_reason and (.factory_delta | has("memory_writes") and has("brain_edits") and has("factory_issues_filed") and has("factory_issues_closed") and has("observations_routed"))' >/dev/null && echo "$row" >> council/runs.jsonl || echo "ROW REJECTED — missing mandatory fields"
 ```
 
 **3. Audit observation routing before committing the row.** Walk back through this pass: did any agent (you, a subagent, an inline agent) observe a gap, regression, or behavioral lesson and *not* file the appropriate tracked artifact per the routing matrix at the top of this file? If yes, route it now — file the issue, save the memory file, write the swarm-state note — then update the `factory_delta` block to reflect the routed artifacts. **Never let an observation die in the conversation log.**

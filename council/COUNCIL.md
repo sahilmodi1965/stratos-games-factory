@@ -346,3 +346,75 @@ real build cycle should have happened.
 puppeteer/playwright/vision-QA infrastructure this week. The seeded
 architecture decision explicitly deferred them pending data, and the
 data doesn't yet justify them.
+
+---
+
+# Weekly review — 2026-04-16
+
+Window covers 6 days since the last review (Apr 10 → Apr 16). 34 rows in `runs.jsonl`, ~24 of them in this window. F1 was declared 2026-04-14 — most of the week was active F1 work. Strong signal: ~12 factory-improvement issues closed, the decomposition rule fired 3 times (10.3% trip rate), wayfinding stub + smoke runtime fidelity rules added in response to real incidents (#131/#139), and the inline-agent SDK pre-flight (#49) shipped. Sahil reviewed 1-1 with Ripon and confirmed: real games shipping, monetization stack mapped per game, factory direction is right.
+
+But the same window also surfaced three structural issues worth surfacing:
+
+### Lesson learned — schema-mandated fields don't enforce themselves (2026-04-16)
+
+`arbitration_decision` was declared mandatory in CLAUDE.md Step 10 schema v3 on 2026-04-15. Across the 34-row history, **only 3 rows actually carry it** — all written immediately after the rule landed. The next 4 unscoped passes either omitted it entirely or filled it once and forgot. Pattern: a schema field marked "MANDATORY" in CLAUDE.md prose does not produce compliance unless the writer of `runs.jsonl` (the main thread, end of pass) has a checklist that physically lists each field and refuses to commit until present.
+
+**Council guidance for Claude**: when adding a new schema field, also add it to the literal jq command or one-liner used to build the row. Prose-mandates without a mechanical check are wishes. Filed: factory-improvement #50.
+
+### Lesson learned — brain regrew 14k chars in 2 days (2026-04-16)
+
+CLAUDE.md was trimmed from 41.4k → 39.3k on 2026-04-15. By 2026-04-16 it was back to 54.3k — a regrowth of 15k chars in 2 days. Cause: each new rule added (#43 smoke fidelity, #44 wayfinding, #46 polish-PR routing, #47 council aggregation, #48 arbitration) was added BOTH as a numbered rule in the Step 3 subagent prompt template AND as a standalone prose paragraph in the surrounding Step 3 section. Each duplication is plausible in isolation; collectively, they restore exactly the bloat the previous trim removed.
+
+**Council guidance for Claude**: when adding a rule to CLAUDE.md, pick ONE canonical place. If the rule is for the subagent → it goes in the template. If the rule is for the main thread → it goes in section prose. Never both. The template body is what the subagent reads; main-thread prose duplicating template rules is dead weight.
+
+### Lesson learned — inline agents skip silently when their preconditions miss (2026-04-16)
+
+Product agent fires only on `analytics-data` issues — none of the three games have any → product never fires. Monetization agent has the `#49` SDK pre-flight that skips games without ad SDKs → only fires on Bloxplode. UA agent skips games without Capacitor → fires on no game. Result: three of five inline agents have produced near-zero F1-relevant output across the entire factory lifetime. They become useful only AFTER the game crosses G2 — which means they cannot HELP a game cross G2.
+
+This is the gap factory-improvement #30 has been tracking unfunded for 3+ days. The fix is the G1 strategy mode being shipped this pass: every inline agent fires from G1 onward in advisory mode, files prerequisite issues for its own data mode, and contributes a strategy doc even before data exists. Documented in this pass's brain edit; #30 closed.
+
+### Architecture decision — Sahil-as-floodgates is the design, not a bottleneck (2026-04-16)
+
+Sahil has confirmed in 2026-04-16 1-1 notes that he is intentionally the PR-review choke point until the factory has proven itself end-to-end on F1. Factory-improvement #23 (auto-merge trust ladder) is therefore **not urgent** and stays F2-tagged. The factory should respect Sahil's review pace: when the auto-PR backlog reaches ~3 open PRs across the portfolio, **stop generating new game work** until they drain. The factory's job in those windows is brain-fix, factory-improvement closure, and council/observation-routing review — not more game PRs.
+
+This decision binds Step 1 assess: include "auto-PR backlog ≥ 3" as a signal that this pass should be brain-focused, not game-focused.
+
+### Architecture decision — inline agents fire from G1 in two modes (2026-04-16)
+
+Each of product / monetization / UA agents now operates in two modes:
+
+- **Strategy mode** (G1+): no upstream data required. Files (a) the prerequisite integration issue (`[G2] feat: integrate Firebase Analytics` etc.) and (b) one strategy advisory issue per game per ~30 days documenting the agent's plan for when data lands.
+- **Data mode** (G2+): the existing behavior — pulls real data, files data-backed optimization issues.
+
+Each agent picks the mode based on whether its data source exists. Strategy-mode artifacts build the knowledge base BEFORE the game ships, so when data arrives the agent already knows where to deploy it. Encoded in CLAUDE.md Steps 4/5/8 in this pass's brain edit. Closes factory-improvement #30 (inactive agent audit).
+
+### Improvement suggestion — secure key-sharing pattern for Ripon (2026-04-16)
+
+Ripon will execute store submissions, ad SDK setup, MMP integrations — all of which require API keys, signing certs, store credentials. The factory has zero defined mechanism for sharing these securely. Sahil's 2026-04-16 directive #5 surfaces this as an F1 blocker for any game that needs to actually cross G2. Filed: factory-improvement #51.
+
+### Improvement suggestion — runs.jsonl row-builder helper (2026-04-16)
+
+Today the runs.jsonl row is hand-written at the end of every pass. The mandatory-field problem above (arbitration_decision missing on 91% of rows) is a symptom — there's no helper that prompts for each schema field. Proposal: a `scripts/log-run.sh` that takes named args and emits a schema-compliant JSON row, refusing to write if any required field is absent. Folded into factory-improvement #50.
+
+### Decomposition rule trips — last 5 (2026-04-16)
+
+3 trips over 29 shipped PRs in the 50-row window = **10.3%, bottom edge of healthy band (10-30%)**. Trips:
+
+- arrow-puzzle #136 → #137 + #138 — both shipped, smoke green
+- arrow-puzzle #88 → structure + polish — both shipped
+- (one earlier trip prior to schema v3, not detailed)
+
+Healthy. Sample of 10 most recent build-request issue bodies (not split by the rule) suggests issue-writing is pre-splitting cleanly rather than the heuristic missing real splits. No action.
+
+### Brain-vs-game ratio — directional only (2026-04-16)
+
+Of the 3 rows that carry `arbitration_decision`: 1 brain, 1 game, 1 mixed. With "mixed" counted as half-brain, that's 50% brain — above the healthy band. But 3 rows is too thin to act on; until ~15 rows carry the field, treat as directional only. Factory-improvement #50 (mandatory-field enforcement) is the prerequisite for this aggregation to become decisive.
+
+### `factory_delta` rollup — last 7 days (2026-04-16)
+
+Filed factory-improvements: 9 (#34-49 range). Closed: ~12. Memory writes: 8. Brain edits: 9. Net: factory IS contributing back to itself, healthily. The rule "if factory_delta is empty across the window, sessions are consuming without paying back" is satisfied — every working day this week added at least one tracked artifact.
+
+---
+
+End of 2026-04-16 review. Next review window: 2026-04-23.
+
