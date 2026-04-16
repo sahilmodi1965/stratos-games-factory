@@ -396,12 +396,19 @@ Run inline (no subagent). Analyzes player behavior data and files data-backed im
 
 Run inline (no subagent). Reviews ad placement configuration and files optimization issues.
 
-**For each game (currently Bloxplode only — skip games with no ad integration):**
+**Pre-flight SDK check (factory-improvement #49):** Before reviewing a game's ad config, verify the game has an ad SDK integrated at all. Run: `grep -riE 'admob|adsense|interstitial|rewarded|banner' <game_dir>/` (for Capacitor games, search `www/`). Also check for LinkRunner MMP (`grep -riE 'linkrunner|mmp' <game_dir>/`) and AppLovin MAX (`grep -riE 'applovin|max.*mediation' <game_dir>/`). Report the SDK status in your output:
+- **AdMob present + LinkRunner present + AppLovin present** → full monetization stack, review ad placement AND mediation config
+- **AdMob present, others missing** → review ad placement only, flag missing LinkRunner/AppLovin as G3 blockers
+- **No ad SDK** → skip the game, note "no ad integration found — monetization agent cannot contribute until AdMob is integrated (G2 prerequisite)"
+
+**For each game with ad integration (currently Bloxplode — skip games without):**
 1. Read the game's codebase looking for ad integration code:
    - AdMob config, ad unit IDs, placement triggers
    - Interstitial frequency/timing logic
    - Rewarded video placement and reward values
    - Banner ad positioning
+   - LinkRunner MMP event forwarding (if present)
+   - AppLovin MAX adapter config (if present)
 2. Cross-reference with casual game monetization best practices:
    - **Interstitials**: not more than once per 2-3 minutes of gameplay, never mid-action, always at natural break points (level complete, game over)
    - **Rewarded video**: offered at moments of player need (extra life, hint, skip level), never forced
@@ -483,7 +490,12 @@ Run inline (no subagent). Generates store listing assets for app store submissio
 
 **Triggered when:** a `ship-it` label was recently applied to a game, OR no `ua-assets` issue has been filed in the past 30 days, OR Sahil says "run UA prep".
 
-**For each game:**
+**Pre-flight distribution check (factory-improvement #49):** Before generating store listing assets, verify the game is actually packageable for stores. Check for: `capacitor.config.json` (native wrapper exists), `android/` or `ios/` directory (native projects generated), ad SDK integration (AdMob grep), analytics integration (Firebase/gtag grep). Report the distribution status:
+- **Capacitor + native projects + AdMob + analytics** → generate full store listing variants (descriptions, ASO keywords, screenshot compositions)
+- **Capacitor present but native SDKs missing** → generate listing variants BUT prefix with a note: "These listings are ready to use once AdMob/Firebase are integrated. Do not submit to stores without ads + analytics live."
+- **No Capacitor wrapper** → do NOT generate store listing variants. Instead, file a `build-request` issue for the Capacitor wrap (the prerequisite). Title: `[G2] feat: wrap <game> with Capacitor for Android + iOS`. Note: "UA agent cannot generate actionable store listings for a web-only game — native packaging must ship first."
+
+**For each game that passes the distribution check:**
 1. Read the game's current features, mechanics, and visual style from the codebase and CLAUDE.md.
 2. Read the latest release tag and changelog (if any): `git tag --list 'v*' --sort=-version:refname | head -1`
 3. Generate all of the following in a single issue:
