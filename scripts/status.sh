@@ -45,6 +45,23 @@ age_days() {
   echo $(( (now_epoch - ts) / 86400 ))
 }
 
+# Read the current G-pointer for a game from council/G-POINTERS.
+# Maps local_dir (from daemon/config.sh) to the slug used in G-POINTERS.
+# Returns empty string if no pointer is recorded.
+g_pointer_for_game() {
+  local local_dir="$1"
+  local slug
+  case "$local_dir" in
+    arrow-puzzle-testing) slug="arrow-puzzle" ;;
+    Bloxplode-Beta)       slug="bloxplode" ;;
+    house-mafia)           slug="house-mafia" ;;
+    *)                     slug="$local_dir" ;;
+  esac
+  grep -E "^${slug}: " "$FACTORY_DIR/council/G-POINTERS" 2>/dev/null \
+    | head -1 \
+    | sed -E 's/^[^:]+:[[:space:]]+([^[:space:]]+).*/\1/'
+}
+
 echo
 echo "$(bold "Stratos Games Factory — swarm dashboard")"
 echo "$(dim "$(date)")"
@@ -118,7 +135,12 @@ for entry in "${GAME_REPOS[@]}"; do
     continue
   fi
 
-  echo "$(cyan "▸ $repo")  $(dim "($kind, $branch)")"
+  g_ptr="$(g_pointer_for_game "$local_dir")"
+  if [[ -n "$g_ptr" ]]; then
+    echo "$(cyan "▸ $repo")  $(dim "($kind, $branch, currently at") $(bold "$g_ptr")$(dim ")")"
+  else
+    echo "$(cyan "▸ $repo")  $(dim "($kind, $branch)")"
+  fi
 
   # --- Open auto/* PRs with age and warning labels ----------------------
   prs_json="$(gh pr list --repo "$repo" --state open \

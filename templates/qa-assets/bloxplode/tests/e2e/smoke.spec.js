@@ -31,8 +31,15 @@ test('www/ loads without console errors', async ({ page }) => {
   const title = await page.title();
   expect(title.trim(), 'page title must not be empty').not.toBe('');
 
-  // Bloxplode may use any of these as its game container; we accept any.
+  // Bloxplode root menu (www/index.html) renders #main-menu with #menu-buttons-layer
+  // + #stratos-splash. Gameplay screens use #level-grid-structure. Candidate list
+  // accepts the menu selectors first (most PRs test from the root) and falls back
+  // to generic game-container selectors for future-proofing.
   const candidates = [
+    '#main-menu',
+    '#menu-buttons-layer',
+    '#stratos-splash',
+    '#level-grid-structure',
     '#app',
     '#game',
     '#game-container',

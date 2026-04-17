@@ -1,0 +1,20 @@
+# council/G-POINTERS — per-game G-stage pointer
+#
+# Format: one line per game, "<game>: G<n>  # <one-line state description>"
+# Read by scripts/status.sh to surface "currently at G<n>" per game.
+# Updated by council Step 9 when a game's stage advances.
+#
+# Why this file exists (factory-improvement #53):
+# Ripon gets confused when issue queues mix G-milestones without the game's
+# current G-pointer inline. This file is the structured source of truth.
+# The factory brain surfaces "$game is at Gn" inline whenever referencing a
+# G-milestone in Ripon-facing contexts (issue bodies, PR comments, chat).
+#
+# Per-game G-stage content is NOT universal — each game customizes what its
+# stages mean based on genre, architecture, and entry state. See memory
+# feedback_g_stages_per_game_scaffold.md. The gate holds (don't build future
+# stages), the content per stage is per-game.
+
+arrow-puzzle: G1  # web-only, pre-Capacitor wrap; G2 entry blocked on Ripon [secret-onboarding] #164 (Firebase) + issue #150 (Capacitor wrap)
+bloxplode: G3     # live on Google Play, Apple approval pending; [secret-onboarding] #29 open to complete tier-2 inventory (MMP, mediation, signing, APNS); #25 split into #32/#33/#34
+house-mafia: G1   # dev mode solo stable, multiplayer realtime stabilizing (PR #117 cascade/host-migration fixes pending review); pre-Capacitor, pre-ads
