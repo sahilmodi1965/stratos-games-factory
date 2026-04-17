@@ -491,5 +491,6 @@ Commit `council/runs.jsonl` as part of the pass (or separately if no other chang
 - **Failure is loud.** If something breaks, the swarm comments on the issue. Silence means success.
 - **Zero infrastructure.** GitHub Pages + GitHub Actions + Claude Code on a Mac.
 - **Subagents bound by Step 3 prompt template.** Rules for builder subagents live in the Step 3 spawn template above (read game CLAUDE.md first, only do what issue asks, conventional commits, forbidden paths, build command, observation routing mandatory). There is no separate "subagent rules" section — Step 3 is the contract.
+- **The brain never handles secrets.** No production key, token, signing cert, or credential ever materializes in this session's context — not in chat, not in memory files, not in a file Claude reads. Code references secrets structurally (`process.env.X`, `${{ secrets.X }}`); the factory writes those references, Ripon sets the values via `gh secret set`. Full operational spec at `council/SECRETS.md`; per-game onboarding template at `templates/secret-onboarding-issue.md`. If a secret value ever appears in Claude's context, stop work immediately, rotate the key, file a swarm-state note.
 
 Human-facing onboarding docs (cost model, how to add a new game, file tree, system diagram) live in `README.md`, not here. This brain file is for operational rules only.
