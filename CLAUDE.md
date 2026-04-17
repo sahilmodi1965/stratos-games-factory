@@ -8,11 +8,13 @@ Humans should start at `README.md`, then come here.
 
 Stratos Games Factory is a **meta-repo**. It does not ship a game. It is the autonomous build pipeline that turns human play-test feedback into shipped game changes for every game in the Stratos Games portfolio.
 
-The model:
+**Humans test + ship, machines build.** Sahil opens Claude Code in the factory and says **"go"** → the swarm assesses, builds every pending issue, fires inline agents (product / monetization / UA / content / competitor), runs council when due, reports.
 
-> **Humans test and document. Machines build. Humans review and ship.**
+## Roles
 
-A human (Ripon) plays a game, finds something to fix or improve, and files a GitHub Issue against the *game* repo with the `build-request` label. Sahil opens Claude Code in this directory and says **"go"**. The swarm assesses what needs doing, builds every pending issue, generates content ideas, scans the competition, reviews the week — then reports what it did. Sahil reviews PRs and merges.
+- **Sahil** — strategist / orchestrator / brain-keeper. Runs `go`. Edits `CLAUDE.md` + `council/*`. Closes factory-improvement issues. Milestone + architecture calls. Takes ad-hoc tasks. **Does NOT review or merge game PRs, does NOT play-test by default** — only when specifically needed.
+- **Ripon** — operator / quality gate / executor. Plays games on real devices. Files game issues. **Reviews and merges all auto/\* PRs** after real-device testing. Runs `[secret-onboarding]` end-to-end on every game via his own Claude Code session. Handles store submissions, SDK debugging, MMP attribution. **The factory respects Ripon's review pace:** ≥3 open auto-PRs across the portfolio → swarm pauses new game work until his backlog drains.
+- **Factory** (this Claude Code session, any subagent) — reads issues, writes code, opens PRs, reports via `runs.jsonl`. Never handles secrets, never merges its own PRs, never files game issues without user direction.
 
 ## Game portfolio
 
@@ -484,6 +486,6 @@ Commit `council/runs.jsonl` as part of the pass (or separately if no other chang
 - **Failure is loud.** If something breaks, the swarm comments on the issue. Silence means success.
 - **Zero infrastructure.** GitHub Pages + GitHub Actions + Claude Code on a Mac.
 - **Subagents bound by Step 3 prompt template.** Rules for builder subagents live in the Step 3 spawn template above (read game CLAUDE.md first, only do what issue asks, conventional commits, forbidden paths, build command, observation routing mandatory). There is no separate "subagent rules" section — Step 3 is the contract.
-- **The brain never handles secrets.** No key/token/cert/credential in Claude's context — ever. Code references secrets structurally (`process.env.X` / `${{ secrets.X }}`); Ripon sets values via `gh secret set` from his own session. Spec: `council/SECRETS.md`. Per-game issue template: `templates/secret-onboarding-issue.md`. Any secret value in context → stop, rotate, file swarm-state note.
+- **Brain never handles secrets.** Code references secrets structurally (`process.env.X` / `${{ secrets.X }}`); Ripon sets values via `gh secret set`. Spec: `council/SECRETS.md`; per-game issue template: `templates/secret-onboarding-issue.md`. Any secret value in context → stop, rotate, swarm-state note.
 
 Human-facing onboarding docs (cost model, how to add a new game, file tree, system diagram) live in `README.md`, not here. This brain file is for operational rules only.

@@ -418,3 +418,24 @@ Filed factory-improvements: 9 (#34-49 range). Closed: ~12. Memory writes: 8. Bra
 
 End of 2026-04-16 review. Next review window: 2026-04-23.
 
+---
+
+# Correction entries — 2026-04-17
+
+### Architecture decision — review-gate ownership is Ripon's, not Sahil's (2026-04-17, supersedes 2026-04-16 "Sahil-as-floodgates")
+
+Sahil clarified on 2026-04-17 that the 2026-04-16 "Sahil-as-floodgates" entry misread his role. **Sahil does NOT review or merge any auto/\* PR** — that gate is entirely Ripon's. Sahil's role is strategist / orchestrator / brain-keeper: he runs `go`, edits CLAUDE.md + `council/*`, closes factory-improvement issues, makes milestone + architecture calls, and takes ad-hoc tasks when specifically needed.
+
+**Operational consequences:**
+
+1. The PR-backlog pause rule still applies (≥3 open auto-PRs → swarm pauses new game work), but the bottleneck is explicitly **Ripon's review pace**, not Sahil's. This is not a constraint to engineer around; it's the quality gate Ripon personally plays-tests before merging.
+2. Sahil's concurrent work (brain-fix, factory-improvement closure, council review, ad-hoc) is **not gated** by the PR backlog. He can ship factory-improvements while Ripon's review queue drains.
+3. Auto-merge trust ladder (factory-improvement #23) remains F2-deferred — **because Ripon wants manual review during F1 prove-out**, not because Sahil is the bottleneck. The bottleneck framing was wrong.
+4. The brain + memory are updated to reflect this: new `CLAUDE.md` Roles section (Sahil / Ripon / Factory), updated `user_sahil.md` memory, new `user_ripon.md` memory.
+
+**Why the earlier entry was wrong:** the 2026-04-16 entry inferred Sahil's role from his earlier "hands-off" description, then conflated that with the PR-review gate. Both inferences were mine, not Sahil's. The actual division is: Sahil = strategy + brain; Ripon = ops including PR merge. The `factory_delta` audit didn't catch this because role-ownership wasn't a tracked schema field.
+
+### Lesson learned — don't infer role boundaries from indirect signals (2026-04-17)
+
+The council entry naming the wrong person as review-gate owner cost no production time (Ripon was already reviewing in practice), but it did cost one incorrect action-plan table handed to Sahil before he corrected the model. Future lesson: when the brain writes an architecture decision about **who does what**, verify with the relevant person before committing the entry. Role boundaries aren't inferrable from workflow evidence alone — confirm them explicitly.
+
