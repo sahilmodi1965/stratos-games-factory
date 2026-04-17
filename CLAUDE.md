@@ -132,7 +132,7 @@ This is the single mechanism that makes the factory self-learning without requir
 Every pass picks brain work (slow now, fast forever) vs game work (slow each time, no compounding). Walk this tree at the start of Step 3 — pick the first branch that matches, log the choice in `runs.jsonl` as `arbitration_decision` + `arbitration_reason`:
 
 1. **Unencoded F1 gap from prior pass?** Check the last 3 `runs.jsonl` rows for `factory_issues_filed` entries NOT in `brain_edits`/`memory_writes`. If yes → encode now, even if small.
-2. **Prior pass shipped game work that needs a new brain rule to not regress?** (e.g., shipped polish without tunables convention; shipped structure without smoke; shipped wayfinding violation.) → Encode now.
+2. **Prior pass shipped game work needing a new brain rule to not regress?** → Encode now (examples: tunables convention, structure smoke, wayfinding stub).
 3. **Open F1 factory-improvement that saves >30 min per future pass?** Compounding-ROI check: 30 min × 50 future passes = 25 hours recovered. If factory-improvement wins vs single-shot game PR → build it now.
 4. **Open F1 game build-requests?** Build per Step 3 prioritization. Default branch for most passes once brain debt is current.
 5. **Nothing pending?** Inline agents (Steps 4-8) + council (Step 9).
@@ -175,30 +175,21 @@ tail -3 council/runs.jsonl 2>/dev/null | jq -r '"  \(.ts | split("T")[0]) \(.sco
 
 Report these three rows at the top of your state summary as **"Prior runs"** — this is the swarm's self-check:
 
-- If `runs.jsonl` is empty → this is the first structured-log run, note it and move on.
-- If the latest row is from > 7 days ago → flag it; the swarm has been idle.
-- If a row says `"failed":` with a non-zero number → surface the failure before doing new work; don't silently re-attempt.
-- If a row's `notes` mentions `decomposition rule fired` → confirm on the next pass that the split-issues produced PRs; don't lose track.
+- Empty `runs.jsonl` → first structured-log run, move on.
+- Latest row >7d ago → flag idle swarm.
+- `"failed"` non-zero → surface before new work, don't re-attempt silently.
+- `decomposition rule fired` in notes → confirm split-issues produced PRs on next pass.
 
-Sahil does not review PRs on the factory repo — this feedback loop is how drift becomes visible without code review. **Do not skip this.** If the loop itself is broken (e.g., `runs.jsonl` missing), that IS the signal that something regressed — report it loudly.
+Factory-repo PRs aren't the review surface — this loop is. **Don't skip.** Loop itself broken (missing `runs.jsonl`) IS the regression signal.
 
-**Read the current milestone:**
+**Milestone + council-staleness (always, even scoped):**
 
 ```bash
 cat council/MILESTONE 2>/dev/null || echo "UNDECLARED"
-```
-
-State the current milestone aloud at the top of your assess summary, alongside the north-star statement: *"Factory is in F1 — ship one real game across web/iOS/Android with ads, UA, and compliance."* If `MILESTONE` is missing or returns `UNDECLARED`, **stop the swarm** and ask Sahil to declare a milestone before any other work. The milestone gate (Step 2) cannot run without a declared milestone.
-
-**Check council staleness — ALWAYS, even on scoped passes:**
-
-```bash
 find council/COUNCIL.md -mtime +7 -print 2>/dev/null | grep -q . && echo "STALE" || echo "fresh"
 ```
 
-If `COUNCIL.md` is >7 days old, **Step 9 council review is mandatory this pass and runs FIRST, before Step 2**, regardless of scope. The self-learning loop cannot lie dormant — if the council has not distilled `runs.jsonl` into lessons in over a week, the next pass MUST run it before anything else. This prevents the factory from forgetting what it learned.
-
-If `COUNCIL.md` is fresh (<7 days), Step 9 fires only at its normal Step 2 priority. Surface the staleness state in your assess summary (e.g., `council: 4 days old (fresh)` or `council: 12 days STALE — running Step 9 first`).
+State the milestone aloud with north-star framing. `UNDECLARED` → **stop**, ask Sahil to declare. `STALE` (>7d) → **Step 9 runs FIRST before Step 2, regardless of scope** — self-learning loop can't lie dormant. Fresh (<7d) → Step 9 at normal priority. Surface state (e.g., `council: 12d STALE — running Step 9 first`).
 
 ### Step 2 — Prioritize
 
@@ -325,6 +316,8 @@ if echo "$body" | grep -qiE "$keywords" && ! echo "$body" | grep -qE "$paths"; t
 Manual override: any issue tagged `polish-iteration` → route A. Create label on first use per repo: `gh label create polish-iteration --color a371f7`.
 
 **Inline-agent preamble (Steps 4-8).** All inline agents apply observation routing per `council/ROUTING.md` (no per-step repetition). Three of them (product / monetization / UA) operate in **two modes per game** — strategy mode (G1+, no upstream data needed; files prerequisite issues + a strategy advisory) and data mode (G2+, existing data-driven flow). Strategy mode is the rule that keeps these agents productive from G1 onward — they BUILD the conditions for their own data mode, not skip silently waiting for them. Closes factory-improvement #30.
+
+**Paired `[secret-onboarding]` issue (#52).** Any strategy-mode agent filing a G2/G3 integration build-request requiring tier-2 secrets (AdMob / Firebase / LinkRunner / AppLovin / Capacitor-signing — anything per `council/SECRETS.md`) MUST also file the paired `[secret-onboarding] <game>` issue on the same game repo using `templates/secret-onboarding-issue.md`. Skip only if an open-or-closed one exists: `gh issue list --label secret-onboarding --state all --repo <repo>`. **G-pointer cannot advance past G2 until `[secret-onboarding]` has closed** — Step 9 council surfaces violations.
 
 ### Step 4 — Product agent
 
@@ -491,6 +484,6 @@ Commit `council/runs.jsonl` as part of the pass (or separately if no other chang
 - **Failure is loud.** If something breaks, the swarm comments on the issue. Silence means success.
 - **Zero infrastructure.** GitHub Pages + GitHub Actions + Claude Code on a Mac.
 - **Subagents bound by Step 3 prompt template.** Rules for builder subagents live in the Step 3 spawn template above (read game CLAUDE.md first, only do what issue asks, conventional commits, forbidden paths, build command, observation routing mandatory). There is no separate "subagent rules" section — Step 3 is the contract.
-- **The brain never handles secrets.** No production key, token, signing cert, or credential ever materializes in this session's context — not in chat, not in memory files, not in a file Claude reads. Code references secrets structurally (`process.env.X`, `${{ secrets.X }}`); the factory writes those references, Ripon sets the values via `gh secret set`. Full operational spec at `council/SECRETS.md`; per-game onboarding template at `templates/secret-onboarding-issue.md`. If a secret value ever appears in Claude's context, stop work immediately, rotate the key, file a swarm-state note.
+- **The brain never handles secrets.** No key/token/cert/credential in Claude's context — ever. Code references secrets structurally (`process.env.X` / `${{ secrets.X }}`); Ripon sets values via `gh secret set` from his own session. Spec: `council/SECRETS.md`. Per-game issue template: `templates/secret-onboarding-issue.md`. Any secret value in context → stop, rotate, file swarm-state note.
 
 Human-facing onboarding docs (cost model, how to add a new game, file tree, system diagram) live in `README.md`, not here. This brain file is for operational rules only.
