@@ -230,9 +230,26 @@ if [[ -f "$FACTORY_DIR/council/runs.jsonl" ]]; then
 fi
 echo
 
+# ---------------------------------------------------------------- backlog gate (#54)
+# Hard rule from CLAUDE.md Step 1: when ≥3 auto/* PRs are open across the
+# portfolio, swarm pauses new game work. This block makes the gate visible
+# and unmistakable. The brain reads these lines and obeys.
+echo "$(cyan "▸ Backlog gate")"
+if [[ "$total_open_prs" -ge 3 ]]; then
+  echo "    $(red "⏸ BACKLOG PAUSE")  $(dim "$total_open_prs auto-PRs open across portfolio (threshold: 3)")"
+  echo "    $(red "Steps 3–8 SKIPPED this pass. Arbitration locked to \"brain\".")"
+  echo "    $(dim "Override only via explicit \"go force\" / \"go despite-backlog\".")"
+else
+  echo "    $(green "clear")  $(dim "$total_open_prs auto-PRs open (threshold: 3)")"
+fi
+echo
+
 # ---------------------------------------------------------------- focus
 echo "$(cyan "▸ Suggested focus")"
-if [[ -n "$focus_text" ]]; then
+if [[ "$total_open_prs" -ge 3 ]]; then
+  echo "    drain backlog — ping Ripon on green-mergeable PRs, strip stale [DRAFT] titles,"
+  echo "    close abandoned auto-PRs (>14d), brain work only (factory-improvements / memory / council)"
+elif [[ -n "$focus_text" ]]; then
   echo "    $focus_text"
 elif [[ "$ss_count" -gt 0 ]]; then
   echo "    $(dim "no pending work — review swarm-state notes and factory-improvement queue")"

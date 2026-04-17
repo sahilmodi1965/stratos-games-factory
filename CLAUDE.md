@@ -193,6 +193,31 @@ find council/COUNCIL.md -mtime +7 -print 2>/dev/null | grep -q . && echo "STALE"
 
 State the milestone aloud with north-star framing. `UNDECLARED` → **stop**, ask Sahil to declare. `STALE` (>7d) → **Step 9 runs FIRST before Step 2, regardless of scope** — self-learning loop can't lie dormant. Fresh (<7d) → Step 9 at normal priority. Surface state (e.g., `council: 12d STALE — running Step 9 first`).
 
+**Portfolio backlog gate — the hard rule that protects review pace (#54):**
+
+The factory's review bottleneck is Ripon. When ≥3 `auto/*` PRs are open across the entire portfolio, the swarm PAUSES new game work until backlog drains. This is not advisory — it is a mechanical gate that overrides "suggested focus" lines. The prior session opened 3 more PRs despite 4 already open (7 total) because the rule was advisory only. That is the failure mode this gate prevents.
+
+Compute the count at the start of Step 1, after status.sh runs:
+
+```bash
+total_auto_prs=0
+for repo_slug in $(awk -F'|' '/^  "/ { gsub(/^  "/,""); print $1 }' daemon/config.sh); do
+  c=$(gh pr list --repo "$repo_slug" --state open --search "head:auto/" --json number --jq 'length' 2>/dev/null || echo 0)
+  total_auto_prs=$((total_auto_prs + c))
+done
+echo "portfolio auto-PRs open: $total_auto_prs"
+```
+
+- `total_auto_prs < 3` → proceed to Step 2 normally.
+- `total_auto_prs ≥ 3` → **BACKLOG PAUSE active**. Surface `⏸ BACKLOG PAUSE — $total_auto_prs open auto-PRs` at the top of the first response. Steps 3–8 (builder + every inline agent that files build-requests or opens PRs) are **SKIPPED** this pass. Arbitration decision is locked to `"brain"`. `runs.jsonl` row for this pass sets `backlog_pause_triggered: true`. Step 9 still runs if stale. The response focuses on:
+  - Identifying green-mergeable unblocker PRs (>3h old) and pinging Ripon on each.
+  - Stripping stale title markers (`[DRAFT]` when `isDraft=false`, `[WIP]` etc.) via `gh pr edit`.
+  - Closing/rebasing clearly-abandoned auto-PRs (>14d old, failing, no reviewer comments).
+  - Brain-only work (CLAUDE.md edits, factory-improvement issues, memory writes, council review).
+- **User override.** If Sahil explicitly says `go force`, `go despite-backlog`, or `override backlog`, the gate opens for that pass only. Log `arbitration_reason: "user-override: backlog gate — <reason>"` in `runs.jsonl`. No silent overrides.
+
+Never self-override this gate with reasoning like "my PR is small" or "this one is quick" or "status.sh suggested building". The gate exists *because* those rationalizations are how the 4→7 violation happened. Read the integer; obey the integer.
+
 ### Step 2 — Prioritize
 
 **Apply the milestone gate before ranking agents.** For the factory repo and every game repo, fetch open issues and filter to those whose milestone matches the current `council/MILESTONE` value, OR which carry no milestone at all. Issues tagged with future milestones (e.g. F2/F3/F4 when current is F1, or G3/G4/G5 when the game's pointer is at G1) are **invisible** to this pass — do not list them, do not build them, do not plan around them.
