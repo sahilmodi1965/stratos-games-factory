@@ -24,7 +24,7 @@ Currently operated on by the factory:
 |---|---|---|---|
 | Arrow Puzzle | `mody-sahariar1/arrow-puzzle-testing` | Vanilla JS + Vite, GitHub Pages | live |
 | Bloxplode | `mody-sahariar1/Bloxplode-Beta` | Capacitor (web → Android), `www/` | beta |
-| House Mafia | `sahilmodi1965/house-mafia` | Vanilla JS + Vite + Supabase Realtime, GitHub Pages | dev |
+| House Mafia | `mody-sahariar1/house-mafia` | Vanilla JS + Vite + Supabase Realtime, GitHub Pages | dev |
 
 Adding a new game is a one-shot: `bash scripts/add-game.sh owner/repo "description"`.
 
