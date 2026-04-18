@@ -223,7 +223,16 @@ For **each game** independently:
 
 Never self-override this gate with reasoning like "my PR is small" or "this one is quick" or "status.sh suggested building". The gate exists *because* those rationalizations are how the 4→7 portfolio violation happened. Read the per-game integer; obey the per-game integer.
 
-**Sequential build mode for a single game.** When you DO have headroom on a game, default to **one open PR at a time per game** — open the next PR only after Ripon merges the previous. This keeps the per-game queue at 1, eliminates rebase churn (each new branch starts from a fresh main), and lets Ripon's merges pull naturally through the queue. Useful especially on a freshly-graduated G-stage where many issues are tagged but the architecture has interlocking dependencies. The per-game gate (≥3 = pause) is the safety net; sequential mode (≥1 = wait) is the preferred default.
+**Sequential build mode for a single game.** When you DO have headroom on a game, default to **one open PR at a time per game** — open the next PR only after Ripon merges the previous. This keeps the per-game queue at 1, eliminates rebase churn (each new branch starts from a fresh main), and lets Ripon's merges pull naturally through the queue. Useful for in-stage incremental feature additions. The per-game gate (≥3 = pause) is the safety net; sequential mode (≥1 = wait) is the preferred default.
+
+**Omnibus PR for G-stage graduation.** When a game graduates a G-stage and there's a wave of interlocking issues all tagged for the new stage, the right shape is **one omnibus PR carrying all wave issues as commits on a single branch** — not a sequential train of small PRs. Ripon plays the integrated stage surface end-to-end on real devices; bugs and feature gaps surfaced become the next G-stage's backlog (filed as fresh build-requests, NOT amendments to the omnibus). Codified after Sahil's 2026-04-18 directive on arrow-puzzle G2: "build all g2 into one pr, that's ideal way to go forward — Ripon will test all g2 features in one pr and raise bugs and issues and new features." Both omnibus and sequential are valid; pick based on the work shape:
+
+| Pattern | When to use | Example |
+|---|---|---|
+| Sequential (one PR / one issue at a time) | In-stage incremental features; bug fixes; polish iterations; isolated additions | Mid-G2 single-feature build-request after omnibus has merged |
+| Omnibus (one PR / all stage issues bundled) | G-stage graduation wave (G1→G2, G2→G3 etc.); interlocking native dependencies; integrated test surface needed | Arrow-puzzle G2 graduation, PR #166 carrying #160+#161+#151+#157+#158+#159+#162+#150 |
+
+Omnibus PR: keep the same branch across all subagent commits, refresh PR body as each commit lands (issue table moves from ⏳ → ✅), final body summarizes the integrated changes. Per-game gate still applies (the omnibus is one PR open, well under threshold 3).
 
 ### Step 2 — Prioritize
 
