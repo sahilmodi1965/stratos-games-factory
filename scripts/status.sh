@@ -125,12 +125,18 @@ total_pending=0
 focus_text=""
 focus_score=0
 
+# Per-game gate state collected for the gate block + suggested-focus logic.
+# bash 3.2 has no associative arrays — use newline-delimited "repo|count|state".
+PER_GAME_GATE=""
+PER_GAME_THRESHOLD=3
+
 for entry in "${GAME_REPOS[@]}"; do
   IFS='|' read -r repo local_dir kind branch _build <<< "$entry"
 
   pause_ref="$(lookup_paused "$repo" || true)"
   if [[ -n "$pause_ref" ]]; then
     echo "$(cyan "▸ $repo")  $(yellow "⏸ PAUSED") $(dim "per $pause_ref — skipped")"
+    PER_GAME_GATE+="${repo}|0|swarm-state-paused"$'\n'
     echo
     continue
   fi
@@ -149,8 +155,18 @@ for entry in "${GAME_REPOS[@]}"; do
   pr_count="$(echo "$auto_prs" | jq 'length')"
   total_open_prs=$((total_open_prs + pr_count))
 
+  # --- Per-game gate state ----------------------------------------------
+  if [[ "$pr_count" -ge "$PER_GAME_THRESHOLD" ]]; then
+    gate_state="paused"
+  elif [[ "$pr_count" -ge 1 ]]; then
+    gate_state="sequential-busy"
+  else
+    gate_state="open"
+  fi
+  PER_GAME_GATE+="${repo}|${pr_count}|${gate_state}"$'\n'
+
   if [[ "$pr_count" -eq 0 ]]; then
-    echo "    open auto PRs:          $(green "0")"
+    echo "    open auto PRs:          $(green "0")  $(dim "[gate: open]")"
   else
     oldest_iso="$(echo "$auto_prs" | jq -r 'sort_by(.createdAt) | .[0].createdAt')"
     oldest_days=$(age_days "$oldest_iso")
@@ -159,10 +175,15 @@ for entry in "${GAME_REPOS[@]}"; do
     extras=""
     [[ "$needs_rebase" -gt 0 ]] && extras+=", ${needs_rebase} needs-rebase"
     [[ "$ci_red" -gt 0 ]] && extras+=", ${ci_red} ci-red"
+    case "$gate_state" in
+      paused)           gate_label="$(red "[gate: PAUSED]")" ;;
+      sequential-busy)  gate_label="$(yellow "[gate: sequential-busy — wait for merge]")" ;;
+      *)                gate_label="$(green "[gate: open]")" ;;
+    esac
     if [[ "$pr_count" -ge 10 ]]; then
-      printf "    open auto PRs:          %s  %s\n" "$(red "$pr_count")" "$(dim "(oldest ${oldest_days}d${extras})")"
+      printf "    open auto PRs:          %s  %s  %s\n" "$(red "$pr_count")" "$(dim "(oldest ${oldest_days}d${extras})")" "$gate_label"
     else
-      printf "    open auto PRs:          %s  %s\n" "$(yellow "$pr_count")" "$(dim "(oldest ${oldest_days}d${extras})")"
+      printf "    open auto PRs:          %s  %s  %s\n" "$(yellow "$pr_count")" "$(dim "(oldest ${oldest_days}d${extras})")" "$gate_label"
     fi
     echo "$auto_prs" | jq -r 'sort_by(.createdAt) | .[] | "      #\(.number)  \(.title)"' | head -5
     [[ "$pr_count" -gt 5 ]] && echo "      $(dim "(+ $((pr_count - 5)) more)")"
@@ -230,25 +251,48 @@ if [[ -f "$FACTORY_DIR/council/runs.jsonl" ]]; then
 fi
 echo
 
-# ---------------------------------------------------------------- backlog gate (#54)
-# Hard rule from CLAUDE.md Step 1: when ≥3 auto/* PRs are open across the
-# portfolio, swarm pauses new game work. This block makes the gate visible
-# and unmistakable. The brain reads these lines and obeys.
-echo "$(cyan "▸ Backlog gate")"
-if [[ "$total_open_prs" -ge 3 ]]; then
-  echo "    $(red "⏸ BACKLOG PAUSE")  $(dim "$total_open_prs auto-PRs open across portfolio (threshold: 3)")"
-  echo "    $(red "Steps 3–8 SKIPPED this pass. Arbitration locked to \"brain\".")"
-  echo "    $(dim "Override only via explicit \"go force\" / \"go despite-backlog\".")"
-else
-  echo "    $(green "clear")  $(dim "$total_open_prs auto-PRs open (threshold: 3)")"
+# ---------------------------------------------------------------- backlog gate (#54, refined #57)
+# Per-game gate: each game has an independent open/sequential-busy/paused state.
+# Ripon reviews per-game (drains one game at a time), so portfolio-aggregate
+# was the wrong radius. Open games proceed normally; paused games skip game-side
+# steps; sequential-busy means "you have 1-2 PRs open here, wait for merge
+# before opening another" (preferred default for clean queues).
+echo "$(cyan "▸ Backlog gate (per-game)")"
+any_paused=0
+any_sequential=0
+all_open=1
+while IFS='|' read -r repo count state; do
+  [[ -z "$repo" ]] && continue
+  case "$state" in
+    paused)
+      echo "    $(red "⏸ PAUSED")    $repo  $(dim "($count auto-PRs open, threshold $PER_GAME_THRESHOLD)")"
+      any_paused=1
+      all_open=0
+      ;;
+    sequential-busy)
+      echo "    $(yellow "◐ busy")     $repo  $(dim "($count auto-PR open — sequential mode: wait for merge)")"
+      any_sequential=1
+      all_open=0
+      ;;
+    swarm-state-paused)
+      echo "    $(yellow "⏸ swarm-state pause") $repo"
+      all_open=0
+      ;;
+    *)
+      echo "    $(green "✓ open")    $repo  $(dim "(0 auto-PRs)")"
+      ;;
+  esac
+done <<< "$PER_GAME_GATE"
+if [[ "$any_paused" -eq 1 ]]; then
+  echo "    $(dim "Override paused game via explicit \"go force <game>\" / \"override backlog <game>\".")"
 fi
 echo
 
 # ---------------------------------------------------------------- focus
 echo "$(cyan "▸ Suggested focus")"
-if [[ "$total_open_prs" -ge 3 ]]; then
-  echo "    drain backlog — ping Ripon on green-mergeable PRs, strip stale [DRAFT] titles,"
-  echo "    close abandoned auto-PRs (>14d), brain work only (factory-improvements / memory / council)"
+if [[ "$any_paused" -eq 1 ]]; then
+  echo "    drain backlog on paused game(s) — ping Ripon on green-mergeable PRs,"
+  echo "    strip stale [DRAFT] titles, close abandoned auto-PRs (>14d). Open games proceed normally."
 elif [[ -n "$focus_text" ]]; then
   echo "    $focus_text"
 elif [[ "$ss_count" -gt 0 ]]; then

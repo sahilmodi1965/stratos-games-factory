@@ -15,6 +15,6 @@
 # feedback_g_stages_per_game_scaffold.md. The gate holds (don't build future
 # stages), the content per stage is per-game.
 
-arrow-puzzle: G1  # web-only, pre-Capacitor wrap; G2 entry blocked on Ripon [secret-onboarding] #164 (Firebase) + issue #150 (Capacitor wrap)
+arrow-puzzle: G2  # graduated 2026-04-18 by Sahil; G2 build train sequential — see swarm-state for ordering. Ripon [secret-onboarding] #164 (Firebase) in flight, does not gate G-pointer; Capacitor wrap #150 is first PR of the train
 bloxplode: G3     # live on Google Play, Apple approval pending; [secret-onboarding] #29 open to complete tier-2 inventory (MMP, mediation, signing, APNS); #25 split into #32/#33/#34
 house-mafia: G1   # dev mode solo stable, multiplayer realtime stabilizing (PR #117 cascade/host-migration fixes pending review); pre-Capacitor, pre-ads
