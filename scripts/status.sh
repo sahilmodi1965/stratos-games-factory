@@ -205,6 +205,20 @@ for entry in "${GAME_REPOS[@]}"; do
       done <<< "$stale_titles"
     fi
 
+    # --- Merge plan (factory-improvement #64) ---------------------------
+    # When ≥2 auto-PRs are open, show the ordered chain + independents so
+    # Ripon can merge in the rebase-avoiding order. Script is detection-only
+    # in dry-run mode; swarm runs --post in Step 1 to upsert comments on
+    # every PR in the game.
+    if [[ "$pr_count" -ge 2 ]]; then
+      plan_output="$(bash "$SCRIPT_DIR/merge-plan.sh" --dry-run "$repo" 2>/dev/null || true)"
+      if [[ -n "$plan_output" ]] && ! echo "$plan_output" | grep -q "^  (no "; then
+        echo "    $(cyan "⚙ merge plan:")"
+        echo "$plan_output" | sed 's/^  /      /'
+        echo "      $(dim "post comments: bash scripts/merge-plan.sh --post $repo")"
+      fi
+    fi
+
     # --- Green-unblocker detector (factory-improvement #56) -------------
     # Auto-PRs that are mergeable + not draft + no failing checks + >3h
     # old are high-leverage merge targets. Surface them so Step 1 can ping

@@ -216,6 +216,7 @@ For **each game** independently:
 - `per_game_auto_prs < 3` → that game is **OPEN** for new work this pass (build-requests can be filed, PRs can be opened).
 - `per_game_auto_prs ≥ 3` → that game is **PAUSED** for new game-side work this pass. Surface `⏸ PAUSED <game>` in the response. Steps 3–8 skip that specific game (builder + inline agents that file build-requests or PRs). Other games proceed normally. Arbitration for paused games is locked to `"brain"` (e.g. close stale PRs, ping Ripon on green-mergeables). The response for any paused game focuses on:
   - Identifying green-mergeable unblocker PRs (>3h old) and pinging Ripon on each.
+  - **Posting the merge-order plan** on every PR in the paused game via `bash scripts/merge-plan.sh --post <repo>` (factory-improvement #64). Detection-idempotent — the script skips when content is unchanged, PATCH-edits in place when the chain shifts, never spams. Tells Ripon "merge #A first, then #B, then #C; #D and #E are independent" on every PR so he sees the plan wherever he opens one.
   - Stripping stale title markers (`[DRAFT]` when `isDraft=false`, `[WIP]` etc.) via `gh pr edit`.
   - Closing/rebasing clearly-abandoned auto-PRs (>14d old, failing, no reviewer comments).
   - Brain-only work that improves that game's pipeline (CLAUDE.md edits, factory-improvement issues, memory writes).
@@ -338,6 +339,7 @@ RULES:
 6. Update labels: `gh issue edit <N> --repo <owner/repo> --remove-label building --add-label done`
 7. Comment on issue: `gh issue comment <N> --repo <owner/repo> --body "Built → <PR URL>"`
 8. Reset back: `cd ~/stratos-games-factory/` and `git checkout <default_branch>` in the game repo.
+9. **Refresh the merge plan (#64).** `bash scripts/merge-plan.sh --post <owner/repo>`. A new PR changed the chain — every existing factory-merge-plan comment on that game's other PRs must update so Ripon sees the new order wherever he lands. Idempotent; skips when unchanged.
 
 **If the subagent produced no changes:** comment on the issue with the subagent's explanation, remove `building` label, move on.
 
