@@ -102,17 +102,63 @@ GitHub secrets and service IAM both scale at $0/month incremental. No per-game c
 
 ## Rotation
 
-**Rotating a single secret:**
-1. Generate new value in the source service (AdMob, Firebase, etc.)
-2. `gh secret set X --repo <game> < new-value.txt`
-3. Invalidate old value in the source service
-4. Re-run any workflow that caches (rare — GH Actions doesn't cache secrets)
+### Planned rotation (no incident)
 
-**Rotating after a suspected leak:**
-1. Immediately: rotate the leaked key in its source service
-2. Update `gh secret set` for every repo that used it
-3. File a `swarm-state` note documenting the incident + remediation
-4. Review git history for the leak — if a value was committed, `git filter-branch` or BFG is the remediation (painful)
+A clean, scheduled rotation — nothing is known to be leaked.
+
+1. Generate new value in the source service (AdMob, Firebase, AppLovin, LinkRunner, etc.)
+2. `gh secret set X --repo <game> < new-value.txt` on every repo that references the secret
+3. Invalidate the old value in the source service (revoke / delete the old credential)
+4. Re-trigger any workflow that uses the secret (`gh workflow run release-dry-run.yml`) and confirm green
+5. No git history action — nothing was committed
+
+### Emergency rotation (suspected or confirmed leak)
+
+Follow this in order. Do not shortcut.
+
+**Step 1 — Contain (within 15 minutes of detection).**
+- Decide: **rotate** (preferred) or **restrict** (fallback). Rotation invalidates the leaked value entirely; restriction scopes the leaked value so it's useless without matching context.
+- **Firebase Web API keys** — GCP allows scoping to bundle ID + HTTP referrer via *APIs & Services → Credentials → API restrictions*. A restricted Firebase Web API key is safe even when public (Google explicitly treats these as client-safe when restricted). **Prefer restriction over rotation for Firebase Web API keys** — rotation cascades to every client build.
+- **Service account JSON, signing keystores, `.p8` keys, MMP tokens, AppLovin SDK keys** — **always rotate**, never restrict. These are true bearer credentials.
+- **AdMob API secret, LinkRunner token** — **always rotate**.
+
+**Step 2 — Propagate (within 30 minutes).**
+- List every repo referencing the secret: `for r in $(git config --get remote.origin.url 2>/dev/null; ls ~/stratos-games-factory/*/); do grep -l "<SECRET_NAME>" ...; done` or consult `daemon/config.sh` for the portfolio list.
+- `gh secret set <SECRET_NAME> --repo <each-repo> < new-value.txt`
+- Verify: `gh secret list --repo <each-repo> | grep <SECRET_NAME>` shows updated `Updated` timestamp.
+
+**Step 3 — Verify (within 60 minutes).**
+- Re-run the canonical workflow that uses the secret (`gh workflow run <name>.yml`). Wait for green.
+- Spot-check one real build (Android signing, iOS upload) — rotation breaks builds silently if any workflow step references an un-updated secret name.
+
+**Step 4 — Scrub git history (only if committed).**
+- If the value landed in a commit: `git filter-repo --replace-text <(echo '<value>==><REDACTED>')` + force-push. This is disruptive (rewrites history, breaks open PRs, invalidates all local clones). Prefer accepting the rotation cost over filter-repo unless the value was pushed to a public repo.
+- If the value was only pasted in an issue/PR body/comment on GitHub: `gh api --method DELETE` the comment, then rotate anyway (cached in webhook deliveries, Search index, notification emails).
+
+**Step 5 — Document (always).**
+- File a `swarm-state` note on `sahilmodi1965/stratos-games-factory` labeled `swarm-state` with body:
+  - **Filed:** ISO date
+  - **Incident:** what leaked, how it was discovered
+  - **Action taken:** rotated / restricted / scrubbed
+  - **Why this note exists:** future-self must see the pattern on the next incident
+  - **When to close:** 30 days post-rotation with no recurrence
+- The note is durable incident memory — future-Claude reads it at the start of every assess pass.
+
+### Which secrets map to which response
+
+| Secret class | On leak: rotate or restrict? | Cascade cost |
+|---|---|---|
+| Firebase Web API key (`apiKey` in web config) | **Restrict** (GCP scope to bundle/referrer) | Low — no client rebuild |
+| Firebase SA JSON (`FIREBASE_SA_JSON`) | **Rotate** | Medium — re-run CI |
+| Android signing keystore (`ANDROID_SIGNING_*`) | **Rotate** — but coordinate; a rotated signing key means Play Store upload key rotation via App Signing by Google Play (otherwise next update is rejected) | High — coordinate with Play Console |
+| App Store Connect `.p8` (`APP_STORE_CONNECT_KEY_P8`) | **Rotate** — generate new in App Store Connect | Medium |
+| AdMob API secret (`ADMOB_API_SECRET`) | **Rotate** | Low |
+| LinkRunner API token (`LINKRUNNER_API_TOKEN`) | **Rotate** | Low |
+| AppLovin SDK key (`APPLOVIN_MAX_SDK_KEY`) | **Rotate** | Medium — client rebuild required |
+
+### Historical precedent
+
+Arrow Puzzle Firebase Web API key was once committed to the game repo. Restricted via GCP *API restrictions* (bundle ID + HTTPS referrer) rather than rotated, on the reasoning that restricted Firebase Web API keys are documented as client-safe. That response is the pattern codified above for this key class. Source: arrow-puzzle issue #151 (Firebase Analytics integration, G2 omnibus PR #166). The key itself still appears in git history — accepted cost, given the restriction makes the value inert.
 
 ---
 

@@ -150,7 +150,7 @@ for entry in "${GAME_REPOS[@]}"; do
 
   # --- Open auto/* PRs with age and warning labels ----------------------
   prs_json="$(gh pr list --repo "$repo" --state open \
-    --json number,title,headRefName,labels,createdAt --limit 100 2>/dev/null || echo '[]')"
+    --json number,title,headRefName,labels,createdAt,isDraft,mergeable,statusCheckRollup --limit 100 2>/dev/null || echo '[]')"
   auto_prs="$(echo "$prs_json" | jq '[.[] | select(.headRefName | startswith("auto/"))]')"
   pr_count="$(echo "$auto_prs" | jq 'length')"
   total_open_prs=$((total_open_prs + pr_count))
@@ -187,6 +187,45 @@ for entry in "${GAME_REPOS[@]}"; do
     fi
     echo "$auto_prs" | jq -r 'sort_by(.createdAt) | .[] | "      #\(.number)  \(.title)"' | head -5
     [[ "$pr_count" -gt 5 ]] && echo "      $(dim "(+ $((pr_count - 5)) more)")"
+
+    # --- Stale PR-title marker sweeper (factory-improvement #55) --------
+    # isDraft=false but title contains [DRAFT]/[WIP]/[DO NOT MERGE]/[HOLD].
+    # Surfaces the exact gh pr edit commands so Step 1 Assess can execute
+    # them. Detection-only here; the swarm (Claude Code) runs the edits
+    # so that `bash scripts/status.sh` from a human terminal remains
+    # read-only. PR #117 3-day [DRAFT] rot was the motivating incident.
+    stale_titles="$(echo "$auto_prs" \
+      | jq -r '.[] | select(.isDraft == false and (.title | test("\\[(DRAFT|WIP|DO NOT MERGE|HOLD)\\]"; "i"))) | "\(.number)\t\(.title)"')"
+    if [[ -n "$stale_titles" ]]; then
+      while IFS=$'\t' read -r pr_num pr_title; do
+        [[ -z "$pr_num" ]] && continue
+        clean_title="$(echo "$pr_title" | sed -E 's/ *\[(DRAFT|WIP|DO NOT MERGE|HOLD)\] *//gI' | sed -E 's/  +/ /g; s/^ +//; s/ +$//')"
+        echo "    $(yellow "⚠ stale marker") #${pr_num}: '${pr_title}'"
+        echo "      $(dim "gh pr edit ${pr_num} --repo ${repo} --title '${clean_title}'")"
+      done <<< "$stale_titles"
+    fi
+
+    # --- Green-unblocker detector (factory-improvement #56) -------------
+    # Auto-PRs that are mergeable + not draft + no failing checks + >3h
+    # old are high-leverage merge targets. Surface them so Step 1 can ping
+    # Ripon before opening new work. The 3h threshold matches #56 spec.
+    green_unblockers="$(echo "$auto_prs" \
+      | jq -r --argjson now "$now_epoch" '
+          .[]
+          | select(.isDraft == false)
+          | select(.mergeable == "MERGEABLE")
+          | select(([.statusCheckRollup[]? | select(.conclusion == "FAILURE" or .conclusion == "TIMED_OUT" or .conclusion == "CANCELLED" or .conclusion == "STARTUP_FAILURE")] | length) == 0)
+          | select(([.statusCheckRollup[]? | select(.status == "IN_PROGRESS" or .status == "QUEUED" or .status == "PENDING")] | length) == 0)
+          | select(($now - (.createdAt | fromdateiso8601)) > 10800)
+          | "\(.number)\t\(.title)\t\((($now - (.createdAt | fromdateiso8601)) / 3600) | floor)"
+        ' 2>/dev/null)"
+    if [[ -n "$green_unblockers" ]]; then
+      while IFS=$'\t' read -r pr_num pr_title pr_hours; do
+        [[ -z "$pr_num" ]] && continue
+        echo "    $(green "🟢 UNBLOCKER") #${pr_num} green ${pr_hours}h — ping Ripon to merge"
+        echo "      $(dim "gh pr comment ${pr_num} --repo ${repo} --body 'Green + mergeable ${pr_hours}h — ready for review @mody-sahariar1'")"
+      done <<< "$green_unblockers"
+    fi
   fi
 
   # --- Pending build-request issues (open, not `done`, not `building`) --

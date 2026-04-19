@@ -21,8 +21,8 @@ LOCKFILE="${LOCKFILE:-$FACTORY_DIR/.daemon.lock}"
 
 # ---------------------------------------------------------------- game registry
 GAME_REPOS=(
-  "mody-sahariar1/arrow-puzzle-testing|arrow-puzzle-testing|web|main|npm run build|docs:packages:prototypes"
-  "mody-sahariar1/Bloxplode-Beta|Bloxplode-Beta|capacitor|main||android:capacitor.config.json:package-lock.json"
+  "mody-sahariar1/arrow-puzzle-testing|arrow-puzzle-testing|web|main|npm run build|docs:packages:prototypes:android:ios:capacitor.config.json"
+  "mody-sahariar1/Bloxplode-Beta|Bloxplode-Beta|capacitor|main||android:ios:capacitor.config.json:package-lock.json"
   "mody-sahariar1/house-mafia|house-mafia|web|main|npm run build|docs:node_modules:dist"
 )
 

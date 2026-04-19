@@ -47,6 +47,9 @@ These ship in the app and are safe in the repo. Paste the values as PR comments 
 - [ ] You can log in to every tier-1 dashboard and see the game
 - [ ] Close this issue with a comment linking to the verification workflow run
 
+## On leak — rotation / restriction playbook
+If any secret above is ever exposed (committed to git, posted in a screenshot, leaked in a log, pasted in chat), follow the emergency rotation steps in [`council/SECRETS.md`](../council/SECRETS.md#emergency-rotation-suspected-or-confirmed-leak) — 5-step protocol (contain → propagate → verify → scrub → document). The "Which secrets map to which response" table tells you whether to rotate or restrict for each key class. Always file a `swarm-state` note on the factory repo as the final step so the incident is durable across sessions.
+
 ## Anti-checklist — do NOT do any of these
 - [ ] Paste a real secret value into this issue, a PR body, a commit message, or chat
 - [ ] Share secrets with the factory Claude Code session (Sahil's main brain) via copy-paste
