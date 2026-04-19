@@ -78,7 +78,7 @@ Ripon runs this once per game when it enters G2 prep. Files as a `[secret-onboar
 
 **Verification the onboarding worked:**
 - [ ] `gh secret list --repo <game-repo>` shows all tier-2 secrets present
-- [ ] A trivial workflow (e.g. `release-dry-run.yml`) that reads each secret and logs its length (NEVER the value) succeeds
+- [ ] **`secret-validator.yml` workflow green** — Ripon fires `gh workflow run secret-validator.yml --repo <game-repo> -f onboarding_issue=<N>`. Workflow checks every tier-2 secret slot is populated, logs LENGTHS not values, and posts a per-slot ✅/❌ table as a comment on the `[secret-onboarding]` issue. Factory-improvement #65; template at `templates/workflows-<game>/secret-validator.yml`. V1 = presence checks; V2 will add SDK round-trips (filed separately).
 - [ ] Ripon can sign in to every tier-1 dashboard and see the game
 
 ---

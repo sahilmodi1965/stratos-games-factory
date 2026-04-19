@@ -43,9 +43,16 @@ These ship in the app and are safe in the repo. Paste the values as PR comments 
 
 ## Verification
 - [ ] `gh secret list --repo <owner/repo>` shows all tier-2 entries present
-- [ ] `release-dry-run.yml` (or equivalent) workflow passes, logging secret *lengths* not values
+- [ ] **Run `secret-validator.yml` and let the robot confirm** — after every `gh secret set`, fire:
+      ```bash
+      gh workflow run secret-validator.yml \
+        --repo <owner/repo> \
+        -f onboarding_issue=<THIS_ISSUE_NUMBER>
+      ```
+      The workflow will comment on this issue with `✅ present (length N)` / `❌ MISSING` per secret. Values are never logged, only lengths. Workflow exits red if any slot is missing.
+- [ ] Every tier-2 secret above shows ✅ in the validator's comment before proceeding
 - [ ] You can log in to every tier-1 dashboard and see the game
-- [ ] Close this issue with a comment linking to the verification workflow run
+- [ ] Close this issue with a comment linking to the green validator run
 
 ## On leak — rotation / restriction playbook
 If any secret above is ever exposed (committed to git, posted in a screenshot, leaked in a log, pasted in chat), follow the emergency rotation steps in [`council/SECRETS.md`](../council/SECRETS.md#emergency-rotation-suspected-or-confirmed-leak) — 5-step protocol (contain → propagate → verify → scrub → document). The "Which secrets map to which response" table tells you whether to rotate or restrict for each key class. Always file a `swarm-state` note on the factory repo as the final step so the incident is durable across sessions.
