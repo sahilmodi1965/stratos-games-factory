@@ -193,47 +193,32 @@ find council/COUNCIL.md -mtime +7 -print 2>/dev/null | grep -q . && echo "STALE"
 
 State the milestone aloud with north-star framing. `UNDECLARED` → **stop**, ask Sahil to declare. `STALE` (>7d) → **Step 9 runs FIRST before Step 2, regardless of scope** — self-learning loop can't lie dormant. Fresh (<7d) → Step 9 at normal priority. Surface state (e.g., `council: 12d STALE — running Step 9 first`).
 
-**Per-game backlog gate — the hard rule that protects review pace (#54, refined #58):**
+**Per-game PR housekeeping — no cap, every pass (2026-04-20 per Ripon):**
 
-The factory's review bottleneck is Ripon — but Ripon reviews **per game**, not portfolio-wide. He picks a game, drains its open auto-PRs, then moves to the next game. So the gate that protects his review pace is **per-game**, not portfolio-aggregate. A queue of 4 PRs on Bloxplode does NOT block new work on Arrow Puzzle when Arrow Puzzle has zero open PRs — those queues drain independently.
+Ripon reviews per-game, sequencing merges at his end. On 2026-04-20 he directed the factory to **file N separate PRs so each can be tested and merged cleanly**, rather than bundling. **There is no cap on open auto-PRs per game.** The prior per-game backlog gate (#54/#58 — ≥3 = paused; 1-2 = sequential-busy) and sequential-one-at-a-time default are **removed**. Review pace is not the bottleneck those rules modeled it as; more open PRs is fine as long as each is independently testable.
 
-The original portfolio-aggregate gate (#54) was over-broad: it stalled work on a clean game whenever any other game's queue spiked. Refined to per-game on 2026-04-18 after Sahil clarified Ripon's actual review pattern. The mechanical-not-advisory part of #54 still holds — the gate is still a stop sign, not a yield sign — but the radius shrinks from portfolio to per-game.
-
-Compute per-game counts at the start of Step 1, after status.sh runs:
+Per-game PR counts are still collected at the start of Step 1 for dashboard awareness, but they never gate new work:
 
 ```bash
-declare -A gate_open
 for entry in "${GAME_REPOS[@]}"; do
   IFS='|' read -r repo _rest <<< "$entry"
   c=$(gh pr list --repo "$repo" --state open --search "head:auto/" --json number --jq 'length' 2>/dev/null || echo 0)
-  gate_open["$repo"]=$c
   echo "$repo: $c open auto-PR(s)"
 done
 ```
 
-For **each game** independently:
+Every pass, on every game, run this housekeeping regardless of queue depth:
 
-- `per_game_auto_prs < 3` → that game is **OPEN** for new work this pass (build-requests can be filed, PRs can be opened).
-- `per_game_auto_prs ≥ 3` → that game is **PAUSED** for new game-side work this pass. Surface `⏸ PAUSED <game>` in the response. Steps 3–8 skip that specific game (builder + inline agents that file build-requests or PRs). Other games proceed normally. Arbitration for paused games is locked to `"brain"` (e.g. close stale PRs, ping Ripon on green-mergeables). The response for any paused game focuses on:
-  - Identifying green-mergeable unblocker PRs (>3h old) and pinging Ripon on each.
-  - **Posting the merge-order plan** on every PR in the paused game via `bash scripts/merge-plan.sh --post <repo>` (factory-improvement #64). Detection-idempotent — the script skips when content is unchanged, PATCH-edits in place when the chain shifts, never spams. Tells Ripon "merge #A first, then #B, then #C; #D and #E are independent" on every PR so he sees the plan wherever he opens one.
-  - Stripping stale title markers (`[DRAFT]` when `isDraft=false`, `[WIP]` etc.) via `gh pr edit`.
-  - Closing/rebasing clearly-abandoned auto-PRs (>14d old, failing, no reviewer comments).
-  - Brain-only work that improves that game's pipeline (CLAUDE.md edits, factory-improvement issues, memory writes).
-- **User override.** If Sahil explicitly says `go force`, `go despite-backlog`, or `override backlog` (optionally scoped: `override backlog bloxplode`), the gate opens for the named game (or all games if unscoped) for that pass only. Log `arbitration_reason: "user-override: per-game backlog gate <game> — <reason>"` in `runs.jsonl`. No silent overrides.
+- **Post/refresh the merge-order plan** on every open PR via `bash scripts/merge-plan.sh --post <repo>` (factory-improvement #64). Idempotent — skips unchanged content, PATCH-edits in place when the chain shifts. Tells Ripon "merge #A first, then #B, then #C; #D and #E are independent" wherever he lands.
+- **Strip stale title markers** (`[DRAFT]` when `isDraft=false`, `[WIP]` etc.) via `gh pr edit`.
+- **Close/rebase clearly-abandoned auto-PRs** (>14d old, failing, no reviewer comments).
+- **Ping Ripon on green-mergeable unblocker PRs** (>3h old).
 
-Never self-override this gate with reasoning like "my PR is small" or "this one is quick" or "status.sh suggested building". The gate exists *because* those rationalizations are how the 4→7 portfolio violation happened. Read the per-game integer; obey the per-game integer.
+Games paused via a `swarm-state` note (dormant/paused body text) continue to be skipped — those are strategic pauses unrelated to PR queue depth.
 
-**Sequential build mode for a single game.** When you DO have headroom on a game, default to **one open PR at a time per game** — open the next PR only after Ripon merges the previous. This keeps the per-game queue at 1, eliminates rebase churn (each new branch starts from a fresh main), and lets Ripon's merges pull naturally through the queue. Useful for in-stage incremental feature additions. The per-game gate (≥3 = pause) is the safety net; sequential mode (≥1 = wait) is the preferred default.
+**One PR per build-request — no bundling.** Each `build-request` issue becomes its own branch and its own PR. Do **not** bundle multiple issues into a single omnibus PR, even at G-stage graduation. Ripon prefers testing and merging each feature independently so failures isolate to a single PR instead of a fat integrated branch. The "omnibus PR for G-stage graduation" pattern codified 2026-04-18 is **removed**.
 
-**Omnibus PR for G-stage graduation.** When a game graduates a G-stage and there's a wave of interlocking issues all tagged for the new stage, the right shape is **one omnibus PR carrying all wave issues as commits on a single branch** — not a sequential train of small PRs. Ripon plays the integrated stage surface end-to-end on real devices; bugs and feature gaps surfaced become the next G-stage's backlog (filed as fresh build-requests, NOT amendments to the omnibus). Codified after Sahil's 2026-04-18 directive on arrow-puzzle G2: "build all g2 into one pr, that's ideal way to go forward — Ripon will test all g2 features in one pr and raise bugs and issues and new features." Both omnibus and sequential are valid; pick based on the work shape:
-
-| Pattern | When to use | Example |
-|---|---|---|
-| Sequential (one PR / one issue at a time) | In-stage incremental features; bug fixes; polish iterations; isolated additions | Mid-G2 single-feature build-request after omnibus has merged |
-| Omnibus (one PR / all stage issues bundled) | G-stage graduation wave (G1→G2, G2→G3 etc.); interlocking native dependencies; integrated test surface needed | Arrow-puzzle G2 graduation, PR #166 carrying #160+#161+#151+#157+#158+#159+#162+#150 |
-
-Omnibus PR: keep the same branch across all subagent commits, refresh PR body as each commit lands (issue table moves from ⏳ → ✅), final body summarizes the integrated changes. Per-game gate still applies (the omnibus is one PR open, well under threshold 3).
+Wave-based filing is still fine — a G2 graduation can produce a wave of 8 build-request issues — but build each as its own PR. Ripon pulls them through his review queue in the order `merge-plan.sh` computes.
 
 ### Step 2 — Prioritize
 
