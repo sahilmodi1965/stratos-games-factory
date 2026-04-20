@@ -113,77 +113,56 @@ ordered_json="$(echo "$graph_json" | jq '
     }
 ')"
 
-# The above jq has an issue with walking chains (reduce is awkward for variable-length
-# DAG traversal). Fall back to a bash loop for chain-walking — more readable, 2-level
-# stacks are the common case.
-#
-# Strategy:
-#   1. Build parent->children map in jq → JSON object {parent_num: [child_nums]}
-#   2. Bash loop: for each root that has children, walk children in breadth order
-#   3. Independents = roots with no children
+# ---------------------------------------------------------------- build DAG view
+# Fix for factory-improvement #67: the prior chain walker picked only the first
+# child of each parent (`.[0]`), dropping any non-first branches silently. A PR
+# with two stacked descendants on different branches (common in G-stage splits)
+# left 4-of-8 PRs missing from the plan. Replacement strategy: skip chain walking
+# entirely — render a DAG-aware table, one row per auto-PR, sorted by PR number.
+# Every relationship is stated explicitly so Ripon sees the full graph regardless
+# of topology.
 
-children_map="$(echo "$graph_json" | jq '
+# Flat list of every auto-PR's number (ascending) — iteration target below.
+all_pr_nums="$(echo "$graph_json" | jq -r '[.[] | .num] | sort | .[]')"
+
+# Count children per parent, so foundations with stacked descendants get an
+# explicit "has N stacked descendants" hint.
+child_count_map="$(echo "$graph_json" | jq '
   reduce .[] as $p ({};
     if $p.parent != null then
-      .[$p.parent | tostring] = ((.[$p.parent | tostring] // []) + [$p.num])
+      .[$p.parent | tostring] = ((.[$p.parent | tostring] // 0) + 1)
     else . end)
 ')"
 
-roots="$(echo "$graph_json" | jq -r '.[] | select(.parent == null) | .num')"
-
-chains=()        # each element is a space-separated chain: "35 40 41"
-independents=()
-
-for root in $roots; do
-  # Does this root have any children?
-  has_child="$(echo "$children_map" | jq --argjson r "$root" 'has(($r | tostring))')"
-  if [[ "$has_child" == "true" ]]; then
-    # Walk the chain depth-first (single-parent, usually linear).
-    chain_nodes=("$root")
-    current="$root"
-    for _ in 1 2 3 4 5 6 7 8 9 10; do
-      next="$(echo "$children_map" | jq -r --argjson c "$current" '.[$c | tostring] // [] | .[0] // empty')"
-      [[ -z "$next" ]] && break
-      chain_nodes+=("$next")
-      current="$next"
-    done
-    chains+=("${chain_nodes[*]}")
-  else
-    independents+=("$root")
-  fi
-done
-
 # ---------------------------------------------------------------- render plan
 render_plan() {
-  local chain_text=""
-  local step=1
+  local table=""
+  table+="| PR | Stacks on | Order hint |"$'\n'
+  table+="|---|---|---|"$'\n'
 
-  # Ordered chains first.
-  if [[ "${#chains[@]}" -gt 0 ]]; then
-    for chain in "${chains[@]}"; do
-      local first=1
-      for pr_num in $chain; do
-        if [[ "$first" -eq 1 ]]; then
-          chain_text+="${step}. Merge **#${pr_num}** first (foundation — standalone)"$'\n'
-          first=0
-        else
-          chain_text+="${step}. Then **#${pr_num}** (stacks on previous; auto-rebases after merge)"$'\n'
-        fi
-        step=$((step + 1))
-      done
-    done
-  fi
+  while IFS= read -r pr_num; do
+    [[ -z "$pr_num" ]] && continue
+    local parent
+    parent="$(echo "$graph_json" | jq -r --argjson n "$pr_num" '.[] | select(.num == $n) | .parent // empty')"
+    local kids
+    kids="$(echo "$child_count_map" | jq -r --argjson n "$pr_num" '.[$n | tostring] // 0')"
 
-  # Independents after.
-  if [[ "${#independents[@]}" -gt 0 ]]; then
-    for pr_num in "${independents[@]}"; do
-      [[ -z "$pr_num" ]] && continue
-      chain_text+="${step}. **#${pr_num}** — independent, merge anytime"$'\n'
-      step=$((step + 1))
-    done
-  fi
+    local stacks_cell hint_cell
+    if [[ -z "$parent" ]]; then
+      stacks_cell="— (root)"
+      if [[ "$kids" -gt 0 ]]; then
+        hint_cell="foundation — ${kids} stacked descendant$([[ "$kids" -gt 1 ]] && echo "s") wait on this merging first"
+      else
+        hint_cell="independent — merge anytime"
+      fi
+    else
+      stacks_cell="#${parent}"
+      hint_cell="merge after #${parent} (GitHub auto-rebases onto main)"
+    fi
+    table+="| #${pr_num} | ${stacks_cell} | ${hint_cell} |"$'\n'
+  done <<< "$all_pr_nums"
 
-  echo "$chain_text"
+  echo "$table"
 }
 
 plan_body="$(render_plan)"
@@ -197,36 +176,17 @@ fi
 
 # ---------------------------------------------------------------- dry-run output
 if [[ "$MODE" == "--dry-run" ]]; then
-  if [[ "${#chains[@]}" -gt 0 ]]; then
-    for chain in "${chains[@]}"; do
-      chain_arr=($chain)
-      printf '  Chain: '
-      chain_first=1
-      for pr_num in "${chain_arr[@]}"; do
-        if [[ "$chain_first" -eq 1 ]]; then
-          printf '#%s' "$pr_num"
-          chain_first=0
-        else
-          printf ' → #%s' "$pr_num"
-        fi
-      done
-      echo
-    done
-  fi
-  if [[ "${#independents[@]}" -gt 0 ]]; then
-    printf '  Independent: '
-    ind_first=1
-    for pr_num in "${independents[@]}"; do
-      [[ -z "$pr_num" ]] && continue
-      if [[ "$ind_first" -eq 1 ]]; then
-        printf '#%s' "$pr_num"
-        ind_first=0
-      else
-        printf ', #%s' "$pr_num"
-      fi
-    done
-    echo
-  fi
+  # Compact edge list — one line per non-root PR, plus an "Independent" line
+  # for roots with no stacked descendants. Multi-child parents are natural.
+  while IFS= read -r pr_num; do
+    [[ -z "$pr_num" ]] && continue
+    parent="$(echo "$graph_json" | jq -r --argjson n "$pr_num" '.[] | select(.num == $n) | .parent // empty')"
+    [[ -n "$parent" ]] && echo "  Stacks: #${parent} → #${pr_num}"
+  done <<< "$all_pr_nums"
+  roots_no_kids="$(echo "$graph_json" | jq -r --argjson cc "$child_count_map" '
+    [.[] | select(.parent == null) | select(($cc[.num | tostring] // 0) == 0) | .num] | sort | map("#" + tostring) | join(", ")
+  ')"
+  [[ -n "$roots_no_kids" && "$roots_no_kids" != "" ]] && echo "  Independent: $roots_no_kids"
   exit 0
 fi
 
@@ -238,18 +198,11 @@ comment_body="${MARKER}
 ${plan_body}
 <sub>Computed from PR body \"stacks on #N\" markers. Re-posted every swarm pass. Edit in place — no spam.</sub>"
 
-# Collect all PR numbers (chains + independents) to post on.
+# Collect all auto-PR numbers to post on (DAG-aware: every PR, no exceptions).
 all_prs=()
-if [[ "${#chains[@]}" -gt 0 ]]; then
-  for chain in "${chains[@]}"; do
-    for pr_num in $chain; do all_prs+=("$pr_num"); done
-  done
-fi
-if [[ "${#independents[@]}" -gt 0 ]]; then
-  for pr_num in "${independents[@]}"; do
-    [[ -n "$pr_num" ]] && all_prs+=("$pr_num")
-  done
-fi
+while IFS= read -r pr_num; do
+  [[ -n "$pr_num" ]] && all_prs+=("$pr_num")
+done <<< "$all_pr_nums"
 
 posted=0
 patched=0
