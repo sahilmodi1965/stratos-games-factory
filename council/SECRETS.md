@@ -68,7 +68,9 @@ Ripon runs this once per game when it enters G2 prep. Files as a `[secret-onboar
 - [ ] `APP_STORE_CONNECT_KEY_ID` + `APP_STORE_CONNECT_ISSUER_ID` + `APP_STORE_CONNECT_KEY_P8` (the .p8 contents)
 - [ ] `FIREBASE_SA_JSON` — full service account JSON (base64 or raw — workflow decides)
 - [ ] `ADMOB_API_SECRET` (if using AdMob reporting API)
-- [ ] `LINKRUNNER_API_TOKEN`
+- [ ] `LINKRUNNER_PROJECT_TOKEN` — maps to gradle `LR_TOKEN` in game's `android/local.properties`
+- [ ] `LINKRUNNER_SECRET_KEY` — maps to gradle `LR_SECRET_KEY` in game's `android/local.properties`
+- [ ] `LINKRUNNER_SECRET_ID` — maps to gradle `LR_KEY_ID` in game's `android/local.properties`
 - [ ] `APPLOVIN_MAX_SDK_KEY` (this one is arguably tier 3 — ships in app, but safer in a secret)
 
 **Public-ish IDs that go in code (tier 3):**
@@ -153,7 +155,7 @@ Follow this in order. Do not shortcut.
 | Android signing keystore (`ANDROID_SIGNING_*`) | **Rotate** — but coordinate; a rotated signing key means Play Store upload key rotation via App Signing by Google Play (otherwise next update is rejected) | High — coordinate with Play Console |
 | App Store Connect `.p8` (`APP_STORE_CONNECT_KEY_P8`) | **Rotate** — generate new in App Store Connect | Medium |
 | AdMob API secret (`ADMOB_API_SECRET`) | **Rotate** | Low |
-| LinkRunner API token (`LINKRUNNER_API_TOKEN`) | **Rotate** | Low |
+| LinkRunner project token + secret key + secret id (`LINKRUNNER_PROJECT_TOKEN` / `LINKRUNNER_SECRET_KEY` / `LINKRUNNER_SECRET_ID`) | **Rotate** | Low |
 | AppLovin SDK key (`APPLOVIN_MAX_SDK_KEY`) | **Rotate** | Medium — client rebuild required |
 
 ### Historical precedent

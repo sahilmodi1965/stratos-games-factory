@@ -30,7 +30,9 @@ Sahil provides values via 1Password / direct handoff. You set each via `gh secre
 - [ ] `APP_STORE_CONNECT_ISSUER_ID`
 - [ ] `APP_STORE_CONNECT_KEY_P8`
 - [ ] `FIREBASE_SA_JSON`
-- [ ] `LINKRUNNER_API_TOKEN`
+- [ ] `LINKRUNNER_PROJECT_TOKEN`
+- [ ] `LINKRUNNER_SECRET_KEY`
+- [ ] `LINKRUNNER_SECRET_ID`
 - [ ] `APPLOVIN_MAX_SDK_KEY`
 - [ ] _(additional per-game secrets, listed by Sahil in the comment below)_
 
