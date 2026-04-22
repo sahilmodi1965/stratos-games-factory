@@ -19,31 +19,63 @@ The runtime entry differs by game kind. Pick the pattern that matches:
 
 ### Single-player canvas/DOM game (arrow-puzzle, Bloxplode)
 
+**Object-count + density assertions depend on what the game's "object" actually is.** Two patterns:
+
+#### (a) Single-cell objects (one arrow = one cell)
+
+If each game object occupies exactly one board cell, density `= objects / (width × height)` is meaningful and should approach the configured fill ratio for the tier.
+
 ```js
 // scripts/smoke-runtime.js (Node-executable)
 import { generateLevel, getDifficulty } from '../src/level/level-loader.js';
 
-const level = 20;                              // pick a mid-range level
-const tier = getDifficulty(level);             // runtime-computed, not hard-coded
+const level = 20;
+const tier = getDifficulty(level);
 const board = generateLevel(level, tier);
 
 if (!board || !Array.isArray(board.arrows)) {
   console.error('smoke: generateLevel returned no board');
   process.exit(1);
 }
-if (board.arrows.length < 15) {
-  console.error(`smoke: arrow count ${board.arrows.length} < 15 (generator regressed)`);
+if (board.arrows.length < EXPECTED_MIN) {  // tune per game's tier output
+  console.error(`smoke: object count ${board.arrows.length} < ${EXPECTED_MIN} (generator regressed)`);
   process.exit(1);
 }
 
 const density = board.arrows.length / (board.width * board.height);
-if (density < 0.9) {
-  console.error(`smoke: density ${density.toFixed(2)} < 0.9 (sparse/degenerate board)`);
+if (density < EXPECTED_DENSITY_FLOOR) {  // typically 0.85+ for fill-based generators
+  console.error(`smoke: density ${density.toFixed(2)} < ${EXPECTED_DENSITY_FLOOR} (sparse/degenerate)`);
+  process.exit(1);
+}
+```
+
+#### (b) Multi-cell objects (snake-grower arrows, polyominoes, paths)
+
+If each "object" occupies multiple cells (e.g. arrow-puzzle's snake-grower arrows have 2-8 segments each, Bloxplode's tetrominoes have 4 cells), `objects / (width × height)` underreports actual board fill. Use **segment-fill density** instead:
+
+```js
+// scripts/smoke-runtime.js — for multi-cell objects
+const totalCells = board.width * board.height;
+const filledCells = board.arrows.reduce((sum, a) => sum + a.segments.length, 0);
+// (or whatever cell-count property the game's object has — count cells, not objects)
+
+if (board.arrows.length < EXPECTED_OBJECT_COUNT_MIN) {
+  // object-count regression guard
+  console.error(`smoke: object count ${board.arrows.length} < ${EXPECTED_OBJECT_COUNT_MIN}`);
   process.exit(1);
 }
 
-console.log(`smoke OK: L${level} (${tier}) → ${board.arrows.length} arrows, density ${density.toFixed(2)}`);
+const fillDensity = filledCells / totalCells;
+if (fillDensity < EXPECTED_FILL_DENSITY) {
+  // genuine "is the board mostly filled?" check — typically 0.85+ for dense levels
+  console.error(`smoke: fill density ${fillDensity.toFixed(2)} < ${EXPECTED_FILL_DENSITY} (sparse/degenerate board)`);
+  process.exit(1);
+}
+
+console.log(`smoke OK: L${level} (${tier}) ${board.arrows.length} objects / ${filledCells} cells / density ${fillDensity.toFixed(2)}`);
 ```
+
+**How to tell which pattern applies:** does each object have an `arrowCount`/`length`/`segments` property > 1, or a `width × height` shape? If yes, use (b). Reference: arrow-puzzle PR #193 (issue #169) — first single-player smoke in the factory. Subagent had to deviate from this spec's pre-2026-04-22 single-formula version because the literal `arrows.length / (board.width * board.height)` returned 0.29 on snake-grower output, not the `>= 0.9` the spec asserted. Per-kind formula is now the canonical guidance.
 
 ### Multiplayer realtime game (house-mafia)
 
