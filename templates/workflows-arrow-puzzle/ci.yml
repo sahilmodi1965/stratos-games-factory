@@ -31,5 +31,13 @@ jobs:
       - name: Install
         run: npm install
 
+      - name: Validate
+        # Runs scripts/validate.js — the AP-side gate chain (paths +
+        # difficulty schema + smoke-runtime + smoke-share-image). Catches
+        # generator/regression bugs that pure `npm run build` would miss.
+        # Issue #69 — was missing on AP main 2026-04-20 → #184/#185 went
+        # red on direct push because no CI step exercised the validators.
+        run: npm run validate
+
       - name: Build
         run: npm run build

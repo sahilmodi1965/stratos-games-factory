@@ -43,7 +43,10 @@ jobs:
         run: npm run build
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        # Install both chromium AND webkit because playwright.config.js
+        # has mobile-iphone-13 (webkit) + mobile-pixel-5 (chromium) projects
+        # in addition to the desktop chromium project. Issue #200.
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Run smoke test
         id: playwright
