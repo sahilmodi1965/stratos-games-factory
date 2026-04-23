@@ -371,7 +371,8 @@ gh label create product-data --color 1d76db 2>/dev/null || true; gh label create
 
 - **Strategy mode (G1+, no ad SDK).** File:
   - `[G2] feat: integrate AdMob` build-request (skip if open).
-  - `[G3] feat: integrate LinkRunner MMP` and `[G3] feat: integrate AppLovin MAX mediation` (G3 prerequisites).
+  - `[G3] feat: integrate LinkRunner MMP` build-request per [`templates/linkrunner-integration.md`](templates/linkrunner-integration.md) — the 8-step onboarding pattern (native init + JS SDK + signup event + revenue capture). Build-request body MUST explicitly include signup event in acceptance criteria (guide §3 — most-missed step). Omits mediation; that lands separately.
+  - `[G3] feat: integrate AppLovin MAX mediation` (deferred until LinkRunner + AdMob prove out).
   - One `[monetization-strategy]` advisory per game per 30d: ad placement plan in this game's loop (interstitial trigger points, rewarded-video opportunities, banner positioning).
 - **Data mode (G2+, ad SDK present).** Read existing ad config. Cross-reference best practices: interstitials ≤1/2-3 min at natural break points; rewarded at moments of need; banner bottom only, hidden during play; first impression after 2+ min. File up to 3 `[monetization]` build-requests with current config + citation + concrete change.
 
