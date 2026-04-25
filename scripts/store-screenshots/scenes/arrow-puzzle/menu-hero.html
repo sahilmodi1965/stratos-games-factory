@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-theme="default">
+<head>
+<meta charset="utf-8">
+<title>AP — Menu Hero</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .menu-stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 32px;
+  }
+  .wordmark {
+    font-size: 92px;
+    font-weight: 900;
+    line-height: 0.94;
+    letter-spacing: -0.04em;
+    text-align: center;
+    margin-bottom: 32px;
+    color: var(--ink);
+  }
+  .tagline {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 56px;
+  }
+  .play {
+    width: 280px;
+    padding: 22px 24px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    text-align: center;
+    box-shadow:
+      0 16px 30px rgba(232, 93, 58, 0.4),
+      0 4px 8px rgba(0,0,0,0.1);
+    margin-bottom: 18px;
+  }
+  .play .label {
+    font-size: 28px; font-weight: 800;
+    line-height: 1.05;
+  }
+  .play .sub {
+    font-size: 16px; font-weight: 600; opacity: 0.92;
+    margin-top: 4px;
+  }
+  .secondary {
+    width: 220px;
+    padding: 16px 24px;
+    border-radius: 999px;
+    background: var(--button-bg);
+    color: var(--ink);
+    border: 0;
+    font-size: 22px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .streak-badge {
+    position: absolute;
+    top: 28px;
+    right: 22px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(232, 93, 58, 0.12);
+    color: #c44a2c;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+  .streak-badge .fire { width: 18px; height: 18px; }
+  .gear {
+    position: absolute;
+    bottom: 28px;
+    left: 50%; transform: translateX(-50%);
+    color: var(--ink-soft);
+  }
+  .float-arrows {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.08;
+  }
+  .float-arrows svg { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+  <div class="float-arrows" aria-hidden="true">
+    <svg viewBox="0 0 414 896">
+      <defs>
+        <marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="3" markerHeight="3" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/>
+        </marker>
+      </defs>
+      <g stroke="var(--ink)" stroke-width="6" stroke-linecap="round" fill="none" marker-end="url(#m1)">
+        <polyline points="40,80 100,80"/>
+        <polyline points="320,140 380,140"/>
+        <polyline points="60,800 60,860"/>
+        <polyline points="350,760 350,820"/>
+        <polyline points="20,500 80,500"/>
+        <polyline points="340,420 340,480"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="streak-badge">
+    <svg class="fire" viewBox="0 0 24 24" fill="#ff7a30"><path d="M13.5 1c.5 4-2 5-2 8s2 4 2 6c0 4-3 7-7 7-3.5 0-6-2.5-6-6 0-3 2-5 4-7-.5 2 0 3 1 4 0-3 2-6 5-9 1 2.5 3 4 3 7-.5-1-1.5-2-2-2 .5-2 .5-5 2-8z"/></svg>
+    <span>Streak 12</span>
+  </div>
+
+  <div class="menu-stage">
+    <div class="wordmark">Arrow<br>Puzzle</div>
+    <div class="tagline">Free every arrow</div>
+    <button class="play">
+      <div class="label">Play</div>
+      <div class="sub">Level 35</div>
+    </button>
+    <button class="secondary">Daily</button>
+    <button class="secondary">Levels</button>
+  </div>
+
+  <div class="gear">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </div>
+</body>
+</html>

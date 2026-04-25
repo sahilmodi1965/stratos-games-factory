@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-theme="ocean">
+<head>
+<meta charset="utf-8">
+<title>AP — Daily Challenge (Day 10, Streak 7)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .daily-stage {
+    position: absolute;
+    inset: 84px 0 22px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 32px;
+  }
+  .daily-day {
+    font-size: 76px;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    line-height: 1;
+    margin-bottom: 18px;
+  }
+  .daily-streak {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 36px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .daily-streak .fire {
+    width: 32px; height: 32px;
+    filter: drop-shadow(0 2px 4px rgba(255,122,48,0.4));
+  }
+  .play-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 220px;
+    padding: 22px 56px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    border: 0;
+    box-shadow:
+      0 14px 28px rgba(26, 163, 156, 0.45),
+      0 4px 8px rgba(0,0,0,0.12);
+  }
+  .countdown {
+    margin-top: 28px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .seed-board {
+    position: absolute;
+    top: 200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    height: 220px;
+    opacity: 0.18;
+    z-index: 0;
+  }
+  .seed-board svg { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <button class="icon-btn" aria-label="Back">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="title">Daily Challenge</div>
+    <span></span>
+  </header>
+
+  <div class="seed-board" aria-hidden="true">
+    <svg viewBox="0 0 280 220">
+      <defs>
+        <marker id="dh" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="3" markerHeight="3" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/>
+        </marker>
+      </defs>
+      <g stroke="var(--ink)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" marker-end="url(#dh)">
+        <polyline points="30,30 90,30"/>
+        <polyline points="120,30 120,80 180,80"/>
+        <polyline points="220,30 220,90"/>
+        <polyline points="40,90 40,140"/>
+        <polyline points="80,130 130,130 130,170"/>
+        <polyline points="170,140 230,140"/>
+        <polyline points="60,180 110,180"/>
+        <polyline points="180,180 240,180"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="daily-stage">
+    <div class="daily-day">Day 10</div>
+    <div class="daily-streak">
+      <span>Streak: 7</span>
+      <svg class="fire" viewBox="0 0 24 24" fill="#ff7a30"><path d="M13.5 1c.5 4-2 5-2 8s2 4 2 6c0 4-3 7-7 7-3.5 0-6-2.5-6-6 0-3 2-5 4-7-.5 2 0 3 1 4 0-3 2-6 5-9 1 2.5 3 4 3 7-.5-1-1.5-2-2-2 .5-2 .5-5 2-8z"/></svg>
+    </div>
+    <button class="play-btn">Play</button>
+    <div class="countdown">Next puzzle · 14h 22m</div>
+  </div>
+</body>
+</html>

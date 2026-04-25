@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-theme="default">
+<head>
+<meta charset="utf-8">
+<title>AP — Levels Grid (Progression)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .grid-stage {
+    position: absolute;
+    inset: 84px 0 22px 0;
+    padding: 16px 28px 0;
+    overflow: hidden;
+  }
+  .tier-pill {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: var(--button-bg);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+  }
+  .tier-pill.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .tier-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .lvl {
+    aspect-ratio: 1;
+    border-radius: 18px;
+    background: var(--button-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-weight: 800;
+    color: var(--ink);
+    position: relative;
+  }
+  .lvl .num { font-size: 22px; line-height: 1; }
+  .lvl .stars { display: flex; gap: 1px; }
+  .lvl .stars svg { width: 11px; height: 11px; color: #f0b400; }
+  .lvl.completed { background: rgba(232, 93, 58, 0.1); }
+  .lvl.completed .num { color: var(--accent); }
+  .lvl.current {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(232, 93, 58, 0.45);
+  }
+  .lvl.current .num { color: #fff; }
+  .lvl.current .stars svg { color: #fff; opacity: 0.5; }
+  .lvl.locked { opacity: 0.4; }
+  .lvl.locked .num { color: var(--ink-faint); }
+  .star-icon { fill: currentColor; }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <button class="icon-btn" aria-label="Back">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="title">Levels</div>
+    <span></span>
+  </header>
+
+  <div class="grid-stage">
+    <div class="tier-row">
+      <span class="tier-pill">Baseline</span>
+      <span class="tier-pill">Easy</span>
+      <span class="tier-pill active">Moderate</span>
+      <span class="tier-pill">Hard</span>
+      <span class="tier-pill">Expert</span>
+    </div>
+    <div class="grid">
+      <!-- Row 1: completed (3 stars) -->
+      <div class="lvl completed"><div class="num">41</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">42</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">43</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">44</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">45</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <!-- Row 2 -->
+      <div class="lvl completed"><div class="num">46</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">47</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">48</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">49</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">50</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <!-- Row 3 -->
+      <div class="lvl completed"><div class="num">51</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">52</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">53</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">54</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="lvl completed"><div class="num">55</div><div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <!-- Row 4 -->
+      <div class="lvl completed"><div class="num">56</div></div>
+      <div class="lvl completed"><div class="num">57</div></div>
+      <div class="lvl completed"><div class="num">58</div></div>
+      <div class="lvl completed"><div class="num">59</div></div>
+      <div class="lvl current"><div class="num">60</div></div>
+      <!-- Row 5 (locked) -->
+      <div class="lvl locked"><div class="num">61</div></div>
+      <div class="lvl locked"><div class="num">62</div></div>
+      <div class="lvl locked"><div class="num">63</div></div>
+      <div class="lvl locked"><div class="num">64</div></div>
+      <div class="lvl locked"><div class="num">65</div></div>
+    </div>
+  </div>
+</body>
+</html>

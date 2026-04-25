@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>marketing frame</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  :root {
+    --bg-1: #0a0020;
+    --bg-2: #2a0858;
+    --bg-3: #8a1ab5;
+    --bg-4: #ff3da3;
+    --accent: #ff66cc;
+    --device-radius: 64px;
+    --device-border: 14px;
+    --hero-size: 168px;
+    --sub-size: 38px;
+    --brand-size: 28px;
+    --pad-top: 9%;
+    --pad-side: 5.5%;
+    --pad-bottom: 7%;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    color: #fff;
+    background: var(--bg-1);
+    position: relative;
+  }
+
+  .bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 70% 45% at 50% 50%, rgba(255,255,255,0.16), transparent 70%),
+      radial-gradient(ellipse 100% 60% at 18% 95%, var(--bg-4) 0%, transparent 55%),
+      radial-gradient(ellipse 100% 60% at 82% 85%, var(--bg-3) 0%, transparent 60%),
+      radial-gradient(ellipse 80% 50% at 50% 12%, rgba(255,255,255,0.10), transparent 70%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 60%, var(--bg-3) 100%);
+    z-index: 0;
+  }
+  .bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 88px 88px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 90%);
+    pointer-events: none;
+  }
+  .bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 12% 22%, rgba(255,255,255,0.7) 1.5px, transparent 3px),
+      radial-gradient(circle at 88% 18%, rgba(255,255,255,0.55) 1.5px, transparent 3px),
+      radial-gradient(circle at 75% 8%, rgba(255,255,255,0.5) 1.5px, transparent 3px),
+      radial-gradient(circle at 22% 80%, rgba(255,255,255,0.55) 1.5px, transparent 3px),
+      radial-gradient(circle at 60% 72%, rgba(255,255,255,0.5) 1.5px, transparent 3px),
+      radial-gradient(circle at 38% 38%, rgba(255,255,255,0.45) 1.5px, transparent 3px),
+      radial-gradient(circle at 92% 60%, rgba(255,255,255,0.4) 1px, transparent 2px),
+      radial-gradient(circle at 8% 60%, rgba(255,255,255,0.4) 1px, transparent 2px);
+    pointer-events: none;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--pad-top) var(--pad-side) var(--pad-bottom);
+    z-index: 1;
+  }
+
+  .copy {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 4%;
+  }
+
+  .hero {
+    font-weight: 900;
+    font-size: var(--hero-size);
+    line-height: 0.92;
+    letter-spacing: -0.045em;
+    background: linear-gradient(180deg, #ffffff 0%, #ffd6f3 60%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter:
+      drop-shadow(0 0 26px rgba(255, 102, 204, 0.55))
+      drop-shadow(0 8px 18px rgba(0,0,0,0.45));
+    white-space: pre-line;
+    margin: 0 auto 2.4%;
+    max-width: 92%;
+  }
+
+  .sub {
+    font-weight: 600;
+    font-size: var(--sub-size);
+    line-height: 1.25;
+    color: rgba(255,255,255,0.94);
+    max-width: 88%;
+    margin: 0 auto;
+    text-shadow: 0 2px 14px rgba(0,0,0,0.55);
+    letter-spacing: -0.005em;
+  }
+
+  .device-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .device-wrap::before {
+    content: '';
+    position: absolute;
+    width: 110%;
+    height: 70%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse 60% 50% at 50% 50%, var(--accent) 0%, transparent 65%);
+    opacity: 0.5;
+    filter: blur(10px);
+    pointer-events: none;
+  }
+
+  .device {
+    position: relative;
+    border-radius: var(--device-radius);
+    background: linear-gradient(135deg, #2a2a35, #060611);
+    padding: var(--device-border);
+    box-shadow:
+      0 0 0 2px rgba(255, 102, 204, 0.4),
+      0 0 90px rgba(255, 102, 204, 0.5),
+      0 0 140px rgba(138, 26, 181, 0.35),
+      0 50px 120px rgba(0,0,0,0.65),
+      0 14px 28px rgba(0,0,0,0.45);
+  }
+  .device::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 50%; transform: translateX(-50%);
+    width: 38%; height: 6px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+    z-index: 2;
+  }
+  .device-screen {
+    border-radius: calc(var(--device-radius) - var(--device-border));
+    overflow: hidden;
+    background: #fff;
+    display: block;
+    line-height: 0;
+    position: relative;
+  }
+  .device-screen iframe {
+    border: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+  }
+
+  .brand {
+    position: relative;
+    margin-top: 4%;
+    text-align: center;
+    font-weight: 700;
+    font-size: var(--brand-size);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.85);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    z-index: 2;
+  }
+  .brand .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: var(--accent);
+    border-radius: 50%;
+    margin: 0 18px 6px;
+    box-shadow: 0 0 14px var(--accent), 0 0 28px var(--accent);
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="stage">
+  <div class="copy">
+    <h1 class="hero" id="hero">Tap.<br>Flip.<br>Solve.</h1>
+    <p class="sub" id="sub">400+ procedural levels. No paywalls. No timers.</p>
+  </div>
+  <div class="device-wrap">
+    <div class="device" id="device">
+      <div class="device-screen" id="device-screen">
+        <iframe id="scene" title="scene" sandbox="allow-same-origin allow-scripts" scrolling="no"></iframe>
+      </div>
+    </div>
+  </div>
+  <div class="brand" id="brand"><span>Arrow Puzzle</span><span class="dot"></span><span>Stratos Games</span></div>
+</div>
+
+<script>
+  function applyShot(s) {
+    if (!s) return;
+    if (s.caption) document.getElementById('hero').textContent = s.caption;
+    if (s.sub)     document.getElementById('sub').textContent = s.sub;
+    if (s.brand_name) {
+      const b = document.getElementById('brand');
+      b.innerHTML = '<span>' + s.brand_name + '</span><span class="dot"></span><span>' + (s.brand_tagline || 'Stratos Games') + '</span>';
+    }
+    if (s.gradient && s.gradient.length >= 3) {
+      const r = document.documentElement.style;
+      r.setProperty('--bg-1', s.gradient[0]);
+      r.setProperty('--bg-2', s.gradient[1]);
+      r.setProperty('--bg-3', s.gradient[2]);
+      r.setProperty('--bg-4', s.gradient[3] || s.gradient[2]);
+    }
+    if (s.accent) document.documentElement.style.setProperty('--accent', s.accent);
+    if (s.hero_size) document.documentElement.style.setProperty('--hero-size', s.hero_size);
+
+    // Compute device dimensions: keep aspect of scene viewport.
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const aspect = (s.scene_aspect && s.scene_aspect.length === 2) ? s.scene_aspect[0]/s.scene_aspect[1] : 414/896;
+    let dW = Math.round(vw * 0.72);
+    let dH = Math.round(dW / aspect);
+    const maxH = Math.round(vh * 0.62);
+    if (dH > maxH) { dH = maxH; dW = Math.round(dH * aspect); }
+    const ds = document.getElementById('device-screen');
+    ds.style.width = dW + 'px';
+    ds.style.height = dH + 'px';
+    if (s.scene_url) {
+      const f = document.getElementById('scene');
+      // Scene authored at native scene_aspect — scale via transform so it
+      // fills the device-screen exactly without inner scrolling/letterbox.
+      const sceneW = (s.scene_aspect && s.scene_aspect[0]) || 414;
+      const sceneH = (s.scene_aspect && s.scene_aspect[1]) || 896;
+      const scale = dW / sceneW;
+      f.style.width = sceneW + 'px';
+      f.style.height = sceneH + 'px';
+      f.style.transformOrigin = '0 0';
+      f.style.transform = 'scale(' + scale + ')';
+      f.src = s.scene_url;
+    }
+  }
+  applyShot(window.__SHOT || null);
+  window.__applyShot = applyShot;
+</script>
+</body>
+</html>
