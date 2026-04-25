@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="ocean">
+<html lang="en" data-theme="default">
 <head>
 <meta charset="utf-8">
 <title>AP — Daily Challenge (Day 10, Streak 7)</title>
@@ -67,7 +67,7 @@
     transform: translateX(-50%);
     width: 280px;
     height: 220px;
-    opacity: 0.18;
+    opacity: 0.22;
     z-index: 0;
   }
   .seed-board svg { width: 100%; height: 100%; }
@@ -83,23 +83,7 @@
   </header>
 
   <div class="seed-board" aria-hidden="true">
-    <svg viewBox="0 0 280 220">
-      <defs>
-        <marker id="dh" viewBox="0 0 14 6" refX="0" refY="3" markerUnits="strokeWidth" markerWidth="2.6" markerHeight="2" orient="auto">
-          <path d="M0,0 L14,3 L0,6 Z" fill="var(--ink)"/>
-        </marker>
-      </defs>
-      <g stroke="var(--ink)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" marker-end="url(#dh)">
-        <polyline points="30,30 90,30"/>
-        <polyline points="120,30 120,80 180,80"/>
-        <polyline points="220,30 220,90"/>
-        <polyline points="40,90 40,140"/>
-        <polyline points="80,130 130,130 130,170"/>
-        <polyline points="170,140 230,140"/>
-        <polyline points="60,180 110,180"/>
-        <polyline points="180,180 240,180"/>
-      </g>
-    </svg>
+    <svg id="daily-seed" viewBox="0 0 280 220" preserveAspectRatio="xMidYMid meet"></svg>
   </div>
 
   <div class="daily-stage">
@@ -111,5 +95,16 @@
     <button class="play-btn">Play</button>
     <div class="countdown">Next puzzle · 14h 22m</div>
   </div>
+
+  <script src="arrows.js"></script>
+  <script src="_boards.js"></script>
+  <script>
+    renderArrowPuzzleArrows({
+      svgId: 'daily-seed',
+      cellPx: 22,
+      offsetX: 12, offsetY: 12,
+      arrows: window.AP_BOARDS.daily_compact,
+    });
+  </script>
 </body>
 </html>

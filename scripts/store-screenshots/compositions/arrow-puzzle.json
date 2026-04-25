@@ -11,7 +11,7 @@
   "compositions": [
     {
       "id": "01-mid-expert",
-      "title": "Mid-Expert Puzzle (Level 80)",
+      "title": "Mid-Expert Puzzle (Level 53)",
       "scene": "arrow-puzzle/mid-expert.html",
       "caption": "Tap.\nFlip.\nSolve.",
       "sub": "400+ procedural levels. No paywalls. No timers.",
@@ -32,12 +32,21 @@
       "title": "Dark Theme",
       "scene": "arrow-puzzle/dark-theme.html",
       "caption": "Pick\nyour vibe.",
-      "sub": "Default · Dark · Ocean — three hand-tuned palettes.",
+      "sub": "Three hand-tuned palettes — Default, Dark, Ocean.",
       "gradient": ["#1a0040", "#5a0aa0", "#aa00ff", "#dd55ff"],
       "accent": "#dd55ff"
     },
     {
-      "id": "04-menu-hero",
+      "id": "04-ocean-theme",
+      "title": "Ocean Theme",
+      "scene": "arrow-puzzle/ocean-theme.html",
+      "caption": "Ocean\nmode.",
+      "sub": "Mint-cream surface, white arrows, teal accents.",
+      "gradient": ["#003344", "#006677", "#00b3a4", "#3fe0c8"],
+      "accent": "#3fe0c8"
+    },
+    {
+      "id": "05-menu-hero",
       "title": "Menu Hero — Streak + Daily + Levels",
       "scene": "arrow-puzzle/menu-hero.html",
       "caption": "A puzzle\nfor every\nminute.",
@@ -46,7 +55,7 @@
       "accent": "#ff66cc"
     },
     {
-      "id": "05-levels-grid",
+      "id": "06-levels-grid",
       "title": "Levels Grid — Progressive Difficulty",
       "scene": "arrow-puzzle/levels-grid.html",
       "caption": "400+\nlevels.\nFive tiers.",
