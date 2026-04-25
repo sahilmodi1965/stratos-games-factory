@@ -1,0 +1,58 @@
+{
+  "game": "house-mafia",
+  "scene_aspect": [414, 896],
+  "brand": {
+    "name": "House Mafia",
+    "tagline": "by Stratos Games",
+    "primary_gradient": ["#0a0a14", "#2a0830", "#ff2d7b", "#00f0ff"],
+    "accent_glow": "#ff2d7b",
+    "font_family": "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+  },
+  "compositions": [
+    {
+      "id": "01-title",
+      "title": "Title hero — Create / Join / Pass & Play",
+      "scene": "house-mafia/title.html",
+      "caption": "Find\nthe Mafia.",
+      "sub": "4-8 friends. 3-minute rounds. No setup.",
+      "gradient": ["#0a0a14", "#2a0830", "#ff2d7b", "#ff5cb8"],
+      "accent": "#ff2d7b"
+    },
+    {
+      "id": "02-lobby",
+      "title": "Lobby — Room code XKCD",
+      "scene": "house-mafia/lobby.html",
+      "caption": "One code.\nFive friends.\nThirty seconds.",
+      "sub": "Share the code. Everyone joins. Game starts.",
+      "gradient": ["#0a0a14", "#1a1a3e", "#3a2a80", "#ffe156"],
+      "accent": "#ffe156"
+    },
+    {
+      "id": "03-role-reveal",
+      "title": "Role reveal — Mafia card",
+      "scene": "house-mafia/role-reveal.html",
+      "caption": "Pass\nthe phone.\nKeep secrets.",
+      "sub": "Each player sees their role · privately · in turn.",
+      "gradient": ["#0a0a14", "#3a0820", "#ff2d7b", "#ff5cb8"],
+      "accent": "#ff2d7b"
+    },
+    {
+      "id": "04-night-action",
+      "title": "Night phase — Mafia picks target",
+      "scene": "house-mafia/night-action.html",
+      "caption": "Night\nfalls.\nChoose.",
+      "sub": "Mafia picks. Detective investigates. Doctor saves.",
+      "gradient": ["#0a0a14", "#2a0820", "#5a0a30", "#ff2d7b"],
+      "accent": "#ff2d7b"
+    },
+    {
+      "id": "05-game-over",
+      "title": "Game over — Guests win",
+      "scene": "house-mafia/game-over.html",
+      "caption": "Cheers.\nReshuffle.\nRematch.",
+      "sub": "All roles revealed. Re-deal in one tap.",
+      "gradient": ["#0a0a14", "#0a2030", "#0099cc", "#00f0ff"],
+      "accent": "#00f0ff"
+    }
+  ]
+}

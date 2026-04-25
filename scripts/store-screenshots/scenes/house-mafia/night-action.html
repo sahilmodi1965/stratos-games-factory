@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HM — Night action (Mafia picks target)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background:
+      radial-gradient(ellipse 90% 50% at 50% 40%, rgba(255, 45, 123, 0.18), transparent 70%),
+      linear-gradient(180deg, #0a0a0f 0%, #1a0a18 100%);
+  }
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 70px 24px 24px;
+  }
+  .phase-pill {
+    align-self: center;
+    background: rgba(255, 45, 123, 0.18);
+    border: 1px solid var(--pink);
+    color: var(--pink);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .phase-h {
+    text-align: center;
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+  }
+  .phase-h .h { color: var(--pink); text-shadow: 0 0 22px var(--pink); }
+  .phase-sub {
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 22px;
+  }
+
+  .target-card {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255, 45, 123, 0.1), transparent 70%),
+      var(--surface);
+    border: 2px solid var(--pink);
+    border-radius: 22px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 0 30px rgba(255, 45, 123, 0.25);
+  }
+  .target-card .label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .selected-target {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+    background: rgba(255, 45, 123, 0.1);
+    border-radius: 12px;
+  }
+  .selected-target .av {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: linear-gradient(135deg, #ffe156, #f9a825);
+    box-shadow: 0 0 24px rgba(255, 225, 86, 0.4);
+  }
+  .selected-target .name {
+    font-weight: 800;
+    font-size: 18px;
+    flex: 1;
+  }
+  .selected-target .crosshair {
+    font-size: 22px;
+    filter: drop-shadow(0 0 10px var(--pink));
+  }
+
+  .other-players {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .player .av {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .player .av.a { background: linear-gradient(135deg, #00f0ff, #0099cc); }
+  .player .av.b { background: linear-gradient(135deg, #69f0ae, #00bfa5); }
+  .player .av.c { background: linear-gradient(135deg, #b388ff, #7c4dff); }
+  .player .av.d { background: linear-gradient(135deg, #ff2d7b, #c2185b); }
+  .player .name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-soft);
+  }
+
+  .secrecy {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 14px;
+  }
+  .secrecy-icon {
+    font-size: 20px;
+  }
+  .secrecy-text {
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.4;
+    flex: 1;
+  }
+  .secrecy-text .h { color: var(--pink); font-weight: 800; }
+
+  .confirm-cta {
+    margin-top: auto;
+    background: linear-gradient(135deg, var(--pink), #c2185b);
+    color: #fff;
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    box-shadow: 0 0 24px rgba(255, 45, 123, 0.5);
+  }
+  .timer-hud {
+    align-self: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .timer-hud .num { color: var(--pink); margin-left: 6px; font-feature-settings: 'tnum'; }
+</style>
+</head>
+<body>
+  <div class="topbar-min"><div class="tiny-mark">House Mafia · Night 2</div></div>
+
+  <div class="stage">
+    <div class="phase-pill">🌙 Night · Mafia turn</div>
+    <div class="phase-h">Choose your <span class="h">target</span></div>
+    <div class="phase-sub">Tap the player you want to eliminate tonight</div>
+    <div class="timer-hud">⏱ <span class="num">00:24</span> left</div>
+
+    <div class="target-card">
+      <div class="label">Selected</div>
+      <div class="selected-target">
+        <div class="av">🦉</div>
+        <div class="name">Anika</div>
+        <div class="crosshair">🎯</div>
+      </div>
+    </div>
+
+    <div class="other-players">
+      <div class="player"><div class="av a">🦊</div><div class="name">Sahil</div></div>
+      <div class="player"><div class="av b">🐯</div><div class="name">Jay</div></div>
+      <div class="player"><div class="av c">🦋</div><div class="name">Mei</div></div>
+      <div class="player"><div class="av d">🐺</div><div class="name">You</div></div>
+    </div>
+
+    <div class="secrecy">
+      <div class="secrecy-icon">🤫</div>
+      <div class="secrecy-text">Your role is <span class="h">secret</span>. Other players see only that "the mafia is choosing".</div>
+    </div>
+
+    <div class="confirm-cta">Eliminate Anika</div>
+  </div>
+</body>
+</html>

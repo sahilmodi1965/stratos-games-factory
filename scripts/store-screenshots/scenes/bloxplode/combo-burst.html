@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BX — Combo burst</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background:
+      radial-gradient(circle at 50% 45%, rgba(255,255,255,0.4) 0%, rgba(0,229,255,0.4) 6%, rgba(213,0,249,0.5) 16%, rgba(255,87,34,0.4) 28%, transparent 55%),
+      linear-gradient(180deg, #1a2050 0%, #3E50A4 100%);
+  }
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .mega-combo {
+    font-weight: 900;
+    text-align: center;
+    line-height: 0.9;
+    transform: rotate(-4deg);
+    margin-bottom: 32px;
+  }
+  .mega-combo .x {
+    font-size: 80px;
+    color: var(--yellow);
+    text-shadow:
+      0 0 24px var(--yellow),
+      0 0 60px var(--orange),
+      6px 6px 0 rgba(0,0,0,0.4);
+    display: block;
+  }
+  .mega-combo .word {
+    font-size: 124px;
+    background: linear-gradient(180deg, #fff 30%, #FFCA28 60%, #FF1744 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-stroke: 4px #000;
+    text-stroke: 4px #000;
+    filter: drop-shadow(0 0 30px var(--cyan)) drop-shadow(0 0 60px var(--magenta));
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    display: block;
+  }
+  .points {
+    font-weight: 900;
+    font-size: 64px;
+    color: var(--cyan);
+    text-shadow: 0 0 30px var(--cyan), 0 4px 0 rgba(0,0,0,0.4);
+    margin-top: 12px;
+    letter-spacing: -0.02em;
+  }
+  .points .plus { color: var(--ink); }
+
+  .rays {
+    position: absolute;
+    inset: 0;
+    background:
+      conic-gradient(from 0deg at 50% 45%,
+        transparent 0deg, rgba(255,255,255,0.12) 12deg, transparent 24deg,
+        transparent 36deg, rgba(0,229,255,0.12) 48deg, transparent 60deg,
+        transparent 72deg, rgba(255,255,255,0.12) 84deg, transparent 96deg,
+        transparent 108deg, rgba(213,0,249,0.12) 120deg, transparent 132deg,
+        transparent 144deg, rgba(255,255,255,0.12) 156deg, transparent 168deg,
+        transparent 180deg, rgba(255,202,40,0.12) 192deg, transparent 204deg,
+        transparent 216deg, rgba(255,255,255,0.12) 228deg, transparent 240deg,
+        transparent 252deg, rgba(255,87,34,0.12) 264deg, transparent 276deg,
+        transparent 288deg, rgba(255,255,255,0.12) 300deg, transparent 312deg,
+        transparent 324deg, rgba(0,229,255,0.12) 336deg, transparent 348deg);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blast-blocks {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .blast-blocks .b {
+    position: absolute;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25), inset 0 2px 0 rgba(255,255,255,0.2), 0 0 16px currentColor;
+  }
+  .stage > * { z-index: 2; position: relative; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="wordmark">BLOX<span class="accent">PLODE</span></div>
+  </div>
+
+  <div class="rays" aria-hidden="true"></div>
+
+  <div class="blast-blocks" aria-hidden="true">
+    <div class="b" style="background: linear-gradient(180deg, #4ee5ff, #00b8d4); color:#00E5FF; top:160px; left:50px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #ff5dba, #c2185b); color:#D500F9; top:200px; right:60px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #ffb74d, #f57c00); color:#FFA726; top:120px; right:120px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #b388ff, #7c4dff); color:#7C4DFF; top:710px; left:40px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #69f0ae, #1de9b6); color:#1DE9B6; top:740px; right:80px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #ffd54f, #f9a825); color:#FFCA28; top:680px; left:160px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #ff8a80, #ff1744); color:#FF1744; top:780px; right:160px"></div>
+  </div>
+
+  <div class="stage">
+    <div class="mega-combo">
+      <span class="x">×8</span>
+      <span class="word">MEGA</span>
+    </div>
+    <div class="points"><span class="plus">+</span>12,400</div>
+  </div>
+</body>
+</html>

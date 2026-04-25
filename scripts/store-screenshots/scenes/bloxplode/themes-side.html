@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BX — Daily challenge</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background:
+      radial-gradient(ellipse 70% 40% at 50% 25%, rgba(213, 0, 249, 0.2), transparent 60%),
+      linear-gradient(180deg, #2a0840 0%, #3E50A4 70%, #1a2050 100%);
+  }
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 100px 28px 40px;
+  }
+  .pill-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .day-pill {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .day-pill.today {
+    background: var(--magenta);
+    color: #fff;
+    border-color: var(--magenta);
+    box-shadow: 0 0 24px rgba(213, 0, 249, 0.6);
+  }
+  .heading {
+    font-weight: 900;
+    font-size: 44px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    text-align: center;
+    margin-bottom: 8px;
+    text-shadow: 0 0 30px var(--magenta);
+  }
+  .heading .accent { color: var(--magenta); }
+  .sub-line {
+    text-align: center;
+    font-size: 14px;
+    color: var(--ink-soft);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 32px;
+  }
+  .target-card {
+    background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.6));
+    border: 2px solid var(--magenta);
+    border-radius: 24px;
+    padding: 28px 24px;
+    box-shadow: 0 0 40px rgba(213, 0, 249, 0.3);
+    margin-bottom: 24px;
+  }
+  .target-card .label {
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .target-card .num {
+    font-size: 64px;
+    font-weight: 900;
+    text-align: center;
+    line-height: 1;
+    color: var(--cyan);
+    text-shadow: 0 0 24px var(--cyan);
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+  .progress-track {
+    height: 12px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    width: 67%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--magenta));
+    border-radius: 999px;
+    box-shadow: 0 0 18px var(--cyan);
+  }
+  .progress-text {
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 700;
+    text-align: center;
+  }
+  .reward-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .reward-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--yellow), var(--orange));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 0 18px rgba(255, 202, 40, 0.5);
+  }
+  .reward-text .t {
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .reward-text .d {
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+  }
+  .play-cta {
+    margin-top: auto;
+    background: linear-gradient(180deg, #4FC3F7, #0288D1);
+    border-radius: 18px;
+    padding: 18px 24px;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(2, 136, 209, 0.45), inset 0 -4px 0 rgba(0,0,0,0.2);
+  }
+  .play-cta .label {
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .streak-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--yellow);
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="wordmark">BLOX<span class="accent">PLODE</span></div>
+  </div>
+
+  <div class="stage">
+    <div class="streak-row">🔥 12-Day Streak</div>
+    <div class="pill-row">
+      <div class="day-pill">Mon</div>
+      <div class="day-pill">Tue</div>
+      <div class="day-pill">Wed</div>
+      <div class="day-pill today">Thu</div>
+      <div class="day-pill">Fri</div>
+      <div class="day-pill">Sat</div>
+      <div class="day-pill">Sun</div>
+    </div>
+    <div class="heading">Daily<span class="accent"> Challenge</span></div>
+    <div class="sub-line">One puzzle · Same seed · World leaderboard</div>
+
+    <div class="target-card">
+      <div class="label">Target score</div>
+      <div class="num">50,000</div>
+      <div class="progress-track">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="progress-text">33,510 / 50,000 · 67%</div>
+    </div>
+
+    <div class="reward-card">
+      <div class="reward-icon">🏆</div>
+      <div class="reward-text">
+        <div class="t">3 stars on completion</div>
+        <div class="d">Unlocks Neon theme + 500 coins</div>
+      </div>
+    </div>
+
+    <div class="play-cta">
+      <div class="label">▶ Resume run</div>
+    </div>
+  </div>
+</body>
+</html>
