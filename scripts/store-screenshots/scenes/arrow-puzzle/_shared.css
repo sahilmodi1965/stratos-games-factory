@@ -1,39 +1,46 @@
-/* Shared scene styles. Each scene imports this and adds its own theme + layout. */
+/* Arrow Puzzle shared scene styles. Theme palettes match the real AP themes
+ * exactly per `games/arrow-puzzle/src/styles/themes.css` so the marketing
+ * screenshots are faithful to what players see in-game. */
 
 :root {
   --vw: 414px;
   --vh: 896px;
-  /* default theme */
-  --bg: #f4ede0;
-  --ink: #2a2620;
-  --ink-soft: rgba(42, 38, 32, 0.55);
-  --ink-faint: rgba(42, 38, 32, 0.18);
-  --accent: #e85d3a;
-  --accent-on: #ffffff;
+  /* default theme — warm beige/brown */
+  --bg: #F5F0E8;
+  --bg-card: #FFFFFF;
+  --ink: #2D2A26;            /* text-primary */
+  --ink-soft: rgba(45, 42, 38, 0.55);
+  --ink-faint: rgba(45, 42, 38, 0.18);
+  --accent: #E8734A;
+  --arrow-color: #3D3831;    /* real AP --arrow-color */
   --heart: #ee5a72;
-  --grid-dot: rgba(42, 38, 32, 0.18);
-  --button-bg: rgba(42, 38, 32, 0.06);
+  --grid-dot: rgba(61, 56, 49, 0.18);
+  --button-bg: rgba(45, 42, 38, 0.06);
 }
 
 html[data-theme="dark"] {
-  --bg: #14141c;
-  --ink: #f0e8d8;
-  --ink-soft: rgba(240, 232, 216, 0.65);
-  --ink-faint: rgba(240, 232, 216, 0.18);
-  --accent: #ff7a4f;
-  --grid-dot: rgba(240, 232, 216, 0.18);
-  --button-bg: rgba(240, 232, 216, 0.08);
+  --bg: #14161A;
+  --bg-card: #1E2128;
+  --ink: #F3F4F7;
+  --ink-soft: rgba(243, 244, 247, 0.65);
+  --ink-faint: rgba(243, 244, 247, 0.18);
+  --accent: #FFB347;
+  --arrow-color: #F3F4F7;
+  --grid-dot: rgba(243, 244, 247, 0.16);
+  --button-bg: rgba(243, 244, 247, 0.08);
 }
 
 html[data-theme="ocean"] {
-  --bg: #dceeea;
-  --ink: #0a3a3a;
-  --ink-soft: rgba(10, 58, 58, 0.6);
-  --ink-faint: rgba(10, 58, 58, 0.18);
-  --accent: #1aa39c;
+  --bg: #E6F4F3;
+  --bg-card: #FFFFFF;
+  --ink: #0E3B3A;
+  --ink-soft: rgba(14, 59, 58, 0.6);
+  --ink-faint: rgba(14, 59, 58, 0.18);
+  --accent: #0FA3A0;
+  --arrow-color: #FFFFFF;
   --heart: #ee5a72;
-  --grid-dot: rgba(10, 58, 58, 0.18);
-  --button-bg: rgba(10, 58, 58, 0.06);
+  --grid-dot: rgba(14, 59, 58, 0.18);
+  --button-bg: rgba(14, 59, 58, 0.06);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -131,20 +138,4 @@ body {
 }
 .board-svg {
   width: 100%; height: 100%;
-}
-
-/* Dot-grid backdrop drawn into svg via .dot-grid pattern.
- * arrow-stroke uses linecap: butt (NOT round) so the stroke terminates cleanly
- * at the path endpoint and the marker's sharp triangular apex shows without
- * a rounded-cap bulge behind it. Sahariar 2026-04-25 review on PR #89 flagged
- * the previous round-cap rendering as "soft / blunt" arrowheads. */
-.arrow-stroke {
-  stroke: var(--ink);
-  stroke-width: 6;
-  stroke-linecap: butt;
-  stroke-linejoin: round;
-  fill: none;
-}
-.arrow-head {
-  fill: var(--ink);
 }
