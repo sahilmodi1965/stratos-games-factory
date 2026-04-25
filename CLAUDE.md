@@ -423,6 +423,25 @@ Rules: title `[ua]` or `[ua-strategy]`. All copy truthful (real features only). 
 gh label create ua-assets --color e3b341 2>/dev/null || true; gh label create ua-strategy --color e3b341 2>/dev/null || true
 ```
 
+**Marketing-scene fidelity rules (2026-04-25, Sahil v3 review).** Every PR that touches `scripts/store-screenshots/scenes/<game>/*.html`, the marketing template, or composition JSON MUST satisfy all of:
+
+1. **Canonical renderer per game.** Every board scene file imports the canonical renderer (`arrows.js` for AP, equivalent for BX/HM). No file mixes the legacy `<polyline ... marker-end="url(#head-...)"/>` fallback. Pre-merge: `grep -lE 'marker-end=|<polyline ' scenes/<game>/*.html` returns no matches. (Memory: `feedback_ap_renderer_all_scenes_must_use_faithful.md`.)
+2. **Token consistency.** Every `var(--*)` referenced in scene files exists in the game's real `themes.css` (or equivalent token file). `var(--ink)` → fail. `var(--arrow-color)` → pass. The renderer reads the same names the game reads.
+3. **Theme coverage.** Every theme defined in the game's `themes.css` has at least one corresponding scene shot. AP `themes.css` defines default/dark/ocean → comp set MUST include all 3. Missing the third theme is a regression even if the two present ones look fine. (Memory: `feedback_ap_renderer_all_scenes_must_use_faithful.md`.)
+4. **Curated showroom boards, not random procgen.** Board shots use hand-picked high-density boards from `scenes/<game>/boards.json` (≥75% cell occupancy for AP, ≥80% for BX). Never call live `generateLevel(N)` for marketing — the runtime generator tunes for play balance, not visual sales. The screenshot's job is to convert browsers to installers; thin boards undersell the game. (Memory: `feedback_marketing_boards_curated_showroom.md`.)
+5. **iPad scenes are iPad-native.** `scenes/<game>/ipad-*.html` is its own file (not a phone scene scaled up): wider board (12-col AP / 10-col BX / 8-slot HM lobby), tablet UX (settings overlay shown wide, not stacked), home-indicator/no-notch chrome, density floor bumped (≥30 AP arrows / ≥80 BX blocks). If a game has no iPad-native UX yet, file `[G2] feat: iPad-native UI` first and ship phone shots only. App Store 2.3.3 rejects misleading shots. (Memory: `feedback_ipad_shots_must_be_ipad_native.md`.)
+6. **Safe-area inset.** Title/wordmark text bounding box stays within the safe-area inset (1100×1750 for play-1080x1920, equivalent insets per other targets). The BX `04-menu-hero` v3 wordmark clip is the canonical failure case.
+7. **Density floor.** Board shots assert minimum shape count (AP ≥15 phone / ≥30 iPad arrows; BX ≥40 phone / ≥80 iPad blocks; HM ≥6 player slots).
+
+The renderer-fidelity smoke (`scripts/store-screenshots/smoke.mjs` — ship as factory-improvement) enforces 1-3, 6, 7 mechanically. 4-5 are PR-review checks until the smoke covers them. (Memory: `feedback_scene_renderer_smoke_gate.md`.)
+
+**Screenshot refresh on user-visible feature ship (2026-04-25, Sahil v3 review).** When a game `build-request` PR merges and the diff is **user-visible**, the swarm files a paired `[ua-assets] screenshot refresh — <feature>` build-request on the same game in Step 3 close-out. (Memory: `feedback_screenshot_refresh_on_feature_ship.md`.)
+
+- **User-visible diff classifier:** touches any of `src/ui/`, `src/rendering/`, `src/styles/`, `src/screens/`, `src/components/`, theme files, level/difficulty config, copy strings, icon SVGs, win/lose flows. Not user-visible: tests, build config, internal refactors with no rendered diff, deps, CI, README, comments.
+- **Debounce:** skip if a `[ua-assets] screenshot refresh` for the same scene set is already open within 7d on the game.
+- **Body template:** `templates/screenshot-refresh-issue.md` (file as factory-improvement to create); fields = merged-PR-#, what-changed-visually (one sentence), scene files needing update, compositions needing re-render, acceptance = re-run `bash scripts/store-screenshots/run.sh <game>` and attach before/after diff to the issue.
+- **Filed by main thread, not subagent** — subagents shouldn't file meta-issues about their own work.
+
 ### Step 9 — Council review
 
 Run inline (no subagent). Review the factory's own performance.
