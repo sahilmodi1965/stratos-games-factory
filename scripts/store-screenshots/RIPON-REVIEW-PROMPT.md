@@ -18,32 +18,38 @@ You're helping me (Ripon — operator at Stratos Games) review 30 store-listing 
 
 The **brain itself** is in DRAFT on factory PR https://github.com/sahilmodi1965/stratos-games-factory/pull/89 — it's gated on my review before merge. The same brain produced all 30 screenshots, so my feedback shapes every game's listing at once.
 
-### Where the PNGs live
+### Where the PNGs live (brain v2 — 2026 store-spec compliant)
 
 | Game | Repo | Where |
 |---|---|---|
-| Arrow Puzzle | `mody-sahariar1/arrow-puzzle-testing` | `main` branch, `store-assets/ios-6.5/` + `store-assets/play-1080x2400/` (PR #222 auto-merged via CI before draft conversion — that's fine, it's still review-only until brain merges) |
-| Bloxplode | `mody-sahariar1/Bloxplode-Beta` | DRAFT PR #71, `store-assets/ios-6.5/` + `store-assets/play-1080x2400/` |
-| house-mafia | `mody-sahariar1/house-mafia` | DRAFT PR #125, `store-assets/ios-6.5/` + `store-assets/play-1080x2400/` |
+| Arrow Puzzle | `mody-sahariar1/arrow-puzzle-testing` | DRAFT PR **#223** (v2 — replaces #222), `store-assets/{ios-6.9, ipad-13, play-1080x1920}/` |
+| Bloxplode | `mody-sahariar1/Bloxplode-Beta` | DRAFT PR **#71** (force-pushed to v2), same paths |
+| house-mafia | `mody-sahariar1/house-mafia` | DRAFT PR **#125** (force-pushed to v2), same paths |
+
+3 sizes per game × 5 comps = 15 PNGs per game, 45 total.
+
+- `ios-6.9/` — iPhone 1290×2796 (current App Store primary; auto-scales to all smaller iPhones)
+- `ipad-13/` — iPad 2064×2752 (mandatory for iPad-supporting apps; AP + BX wrap with Capacitor universal)
+- `play-1080x1920/` — Android 1080×1920 (16:9 compliant with Google's ≤2:1 aspect cap)
 
 ### What I need you to do — start here
 
 **Step 1.** Ask me: "Where are your local clones? Default is `~/stratos-games-factory/{arrow-puzzle-testing, Bloxplode-Beta, house-mafia}/`. Confirm or tell me the actual paths."
 
-**Step 2.** For each game in order (AP → BX → HM), pull latest:
+**Step 2.** For each game in order (AP → BX → HM), pull the v2 review branch:
 
 ```bash
-# AP (already on main)
-cd <ap-clone> && git fetch origin --quiet && git checkout main --quiet && git pull --quiet
+# AP — DRAFT PR #223 (v2)
+cd <ap-clone> && git fetch origin --quiet && gh pr checkout 223 --repo mody-sahariar1/arrow-puzzle-testing
 
-# BX (draft review PR #71)
+# BX — DRAFT PR #71 (force-pushed to v2)
 cd <bx-clone> && git fetch origin --quiet && gh pr checkout 71 --repo mody-sahariar1/Bloxplode-Beta
 
-# HM (draft review PR #125)
+# HM — DRAFT PR #125 (force-pushed to v2)
 cd <hm-clone> && git fetch origin --quiet && gh pr checkout 125 --repo mody-sahariar1/house-mafia
 ```
 
-**Step 3.** Walk me through all 30 shots. For each game, show iOS 6.5" first (5 shots), then Play 1080×2400 (5 shots). Use your `Read` tool on the PNG path so I see the image inline. After each shot, ask me these 4 questions and capture my answers:
+**Step 3.** Walk me through all 45 shots. For each game in this order — `ios-6.9/` (5 shots) → `ipad-13/` (5 shots) → `play-1080x1920/` (5 shots). Use your `Read` tool on the PNG path so I see the image inline. After each shot, ask me these 4 questions and capture my answers:
 
 1. **Visual quality** — 1 to 5. (1 = reject, 5 = "this could ship today as a paid ad")
 2. **Per-store compliance** — anything Apple App Store or Google Play reviewers might reject? Examples: text obscured by safe-area, fake screenshots that aren't real functionality, copy that promises features the app doesn't have, padding/margins outside store-mandated zones, anything misleading.
@@ -73,7 +79,7 @@ cd <hm-clone> && git fetch origin --quiet && gh pr checkout 125 --repo mody-saha
 #### 02 Daily streak (iOS 6.5")
 ...
 
-(repeat for each of the 30 shots — all 5 iOS + all 5 Play per game)
+(repeat for each of the 45 shots — 5 ios-6.9 + 5 ipad-13 + 5 play-1080x1920 per game)
 
 ### Bloxplode (10 shots)
 ...

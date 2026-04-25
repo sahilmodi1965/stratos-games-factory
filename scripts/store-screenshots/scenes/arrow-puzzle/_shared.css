@@ -133,11 +133,15 @@ body {
   width: 100%; height: 100%;
 }
 
-/* Dot-grid backdrop drawn into svg via .dot-grid pattern */
+/* Dot-grid backdrop drawn into svg via .dot-grid pattern.
+ * arrow-stroke uses linecap: butt (NOT round) so the stroke terminates cleanly
+ * at the path endpoint and the marker's sharp triangular apex shows without
+ * a rounded-cap bulge behind it. Sahariar 2026-04-25 review on PR #89 flagged
+ * the previous round-cap rendering as "soft / blunt" arrowheads. */
 .arrow-stroke {
   stroke: var(--ink);
   stroke-width: 6;
-  stroke-linecap: round;
+  stroke-linecap: butt;
   stroke-linejoin: round;
   fill: none;
 }

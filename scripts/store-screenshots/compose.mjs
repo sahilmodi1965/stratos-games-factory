@@ -19,15 +19,30 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// Store viewports (2026 spec — Sahariar review on PR #89, brain v2):
+// - Apple: 6.9" iPhone (1290×2796) is the current submission size — auto-scales
+//   to all smaller iPhones. iPad 13" (2064×2752) is MANDATORY for any app that
+//   supports iPad (AP + BX wrap with Capacitor universal → both submit iPad).
+// - Google Play: aspect ratio must be 16:9 ≤ ratio ≤ 9:16. 1080×1920 (clean
+//   16:9 — actually 9:16 portrait, 0.5625) is compliant. 1080×2400 (the old
+//   default) is 2.22:1 and violates the cap.
+// Older spec sizes (ios-6.5, play-1080x2400) kept here as deprecated aliases
+// only so legacy commands don't break — not in the default render set.
 const SIZES = {
-  'ios-6.5':         { width: 1284, height: 2778, label: 'iOS 6.5"' },
-  'ios-5.5':         { width: 1242, height: 2208, label: 'iOS 5.5"' },
-  'play-1080x2400':  { width: 1080, height: 2400, label: 'Play 1080×2400' },
-  'play-1080x1920':  { width: 1080, height: 1920, label: 'Play 1080×1920' }
+  'ios-6.9':         { width: 1290, height: 2796, label: 'iPhone 6.9" (App Store primary)' },
+  'ios-6.7':         { width: 1320, height: 2868, label: 'iPhone 6.7" (App Store alt)' },
+  'ipad-13':         { width: 2064, height: 2752, label: 'iPad 13" (App Store iPad primary)' },
+  'play-1080x1920':  { width: 1080, height: 1920, label: 'Google Play phone (16:9 compliant)' },
+  'play-tablet-7':   { width: 1200, height: 1920, label: 'Google Play 7" tablet' },
+  'play-tablet-10':  { width: 1600, height: 2560, label: 'Google Play 10" tablet' },
+  // deprecated — pre-2026 sizes, kept for backward-compat with older commands
+  'ios-6.5':         { width: 1284, height: 2778, label: 'iOS 6.5" (DEPRECATED — use ios-6.9)' },
+  'ios-5.5':         { width: 1242, height: 2208, label: 'iOS 5.5" (DEPRECATED)' },
+  'play-1080x2400':  { width: 1080, height: 2400, label: 'Play 1080×2400 (DEPRECATED — violates Play aspect cap)' }
 };
 
 function parseArgs(argv) {
-  const out = { game: null, sizes: ['ios-6.5', 'play-1080x2400'], comps: null };
+  const out = { game: null, sizes: ['ios-6.9', 'ipad-13', 'play-1080x1920'], comps: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--sizes') out.sizes = argv[++i].split(',').map(s => s.trim());
