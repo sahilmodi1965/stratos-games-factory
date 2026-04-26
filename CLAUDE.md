@@ -423,6 +423,10 @@ Rules: title `[ua]` or `[ua-strategy]`. All copy truthful (real features only). 
 gh label create ua-assets --color e3b341 2>/dev/null || true; gh label create ua-strategy --color e3b341 2>/dev/null || true
 ```
 
+**ASO brain canonical location (2026-04-26 — read this first).** All ASO (App Store / Play Store screenshot carousel) work is governed by [`brain/aso/README.md`](brain/aso/README.md) — single-purpose charter, operating principles, pipeline, success metrics. The four ASO subagents (`game-introspector`, `state-reacher`, `hook-designer`, `carousel-composer`) are specced under [`agents/aso/`](agents/aso/README.md). The v7 → v8 upgrade plan (introspection-driven brain) is documented at [`brain/aso/V8-INTROSPECTION-PROPOSAL.md`](brain/aso/V8-INTROSPECTION-PROPOSAL.md).
+
+**The rules below (v3 → v7) are kept in CLAUDE.md as historical reference + operational fallback while v8 ships.** New ASO work goes to `brain/aso/` first.
+
 **Marketing screenshot fidelity rules (2026-04-26, v6 — Sahil + council architectural pivot).**
 
 The earlier "scenes-as-HTML" rules (#1-#7 below, marked DEPRECATED) failed Ripon's 2026-04-26 review because they enforced fidelity at the renderer layer while fabrication happened at the content layer. Apple App Store 2.3.3 + Google Play misleading-claims policies require screenshots to "show the app in use" — fabricated UI inside the device frame violates by construction. Memory: `feedback_real_game_capture_over_fabricated_scenes.md`, `project_v6_screenshot_brain_pivot.md`.
