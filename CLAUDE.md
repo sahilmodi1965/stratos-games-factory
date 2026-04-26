@@ -423,17 +423,32 @@ Rules: title `[ua]` or `[ua-strategy]`. All copy truthful (real features only). 
 gh label create ua-assets --color e3b341 2>/dev/null || true; gh label create ua-strategy --color e3b341 2>/dev/null || true
 ```
 
-**Marketing-scene fidelity rules (2026-04-25, Sahil v3 review).** Every PR that touches `scripts/store-screenshots/scenes/<game>/*.html`, the marketing template, or composition JSON MUST satisfy all of:
+**Marketing screenshot fidelity rules (2026-04-26, v6 — Sahil + council architectural pivot).**
 
-1. **Canonical renderer per game.** Every board scene file imports the canonical renderer (`arrows.js` for AP, equivalent for BX/HM). No file mixes the legacy `<polyline ... marker-end="url(#head-...)"/>` fallback. Pre-merge: `grep -lE 'marker-end=|<polyline ' scenes/<game>/*.html` returns no matches. (Memory: `feedback_ap_renderer_all_scenes_must_use_faithful.md`.)
-2. **Token consistency.** Every `var(--*)` referenced in scene files exists in the game's real `themes.css` (or equivalent token file). `var(--ink)` → fail. `var(--arrow-color)` → pass. The renderer reads the same names the game reads.
-3. **Theme coverage.** Every theme defined in the game's `themes.css` has at least one corresponding scene shot. AP `themes.css` defines default/dark/ocean → comp set MUST include all 3. Missing the third theme is a regression even if the two present ones look fine. (Memory: `feedback_ap_renderer_all_scenes_must_use_faithful.md`.)
-4. **Curated showroom boards, not random procgen.** Board shots use hand-picked high-density boards from `scenes/<game>/boards.json` (≥75% cell occupancy for AP, ≥80% for BX). Never call live `generateLevel(N)` for marketing — the runtime generator tunes for play balance, not visual sales. The screenshot's job is to convert browsers to installers; thin boards undersell the game. (Memory: `feedback_marketing_boards_curated_showroom.md`.)
-5. **iPad scenes are iPad-native.** `scenes/<game>/ipad-*.html` is its own file (not a phone scene scaled up): wider board (12-col AP / 10-col BX / 8-slot HM lobby), tablet UX (settings overlay shown wide, not stacked), home-indicator/no-notch chrome, density floor bumped (≥30 AP arrows / ≥80 BX blocks). If a game has no iPad-native UX yet, file `[G2] feat: iPad-native UI` first and ship phone shots only. App Store 2.3.3 rejects misleading shots. (Memory: `feedback_ipad_shots_must_be_ipad_native.md`.)
-6. **Safe-area inset.** Title/wordmark text bounding box stays within the safe-area inset (1100×1750 for play-1080x1920, equivalent insets per other targets). The BX `04-menu-hero` v3 wordmark clip is the canonical failure case.
-7. **Density floor.** Board shots assert minimum shape count (AP ≥15 phone / ≥30 iPad arrows; BX ≥40 phone / ≥80 iPad blocks; HM ≥6 player slots).
+The earlier "scenes-as-HTML" rules (#1-#7 below, marked DEPRECATED) failed Ripon's 2026-04-26 review because they enforced fidelity at the renderer layer while fabrication happened at the content layer. Apple App Store 2.3.3 + Google Play misleading-claims policies require screenshots to "show the app in use" — fabricated UI inside the device frame violates by construction. Memory: `feedback_real_game_capture_over_fabricated_scenes.md`, `project_v6_screenshot_brain_pivot.md`.
 
-The renderer-fidelity smoke (`scripts/store-screenshots/smoke.mjs` — ship as factory-improvement) enforces 1-3, 6, 7 mechanically. 4-5 are PR-review checks until the smoke covers them. (Memory: `feedback_scene_renderer_smoke_gate.md`.)
+**v6 rules — every store-bound screenshot PR MUST satisfy all of:**
+
+1. **Real-capture provenance.** Every shot in `compositions/<game>.json` declares `"provenance": "playwright-capture" | "renderer-export"`. `"hand-authored-scene"` is rejected at PR time. The factory's `npm run validate` for the screenshot pipeline asserts no scene file under `scenes/<game>/` is referenced by the manifest for store-bound output. (Memory: `feedback_real_game_capture_over_fabricated_scenes.md`.)
+2. **Marketing chrome stays OUTSIDE the device frame.** `template/marketing.html` renders caption + gradient + brand wordmark + (optional) device frame around the captured screen. Nothing inside the device-screen iframe is brain-authored — it is either a Playwright capture of the real running game (`capture.mjs`) or an export from the real game's renderer code.
+3. **Device frame strippable for Google Play.** Google's policy forbids device frames "for most apps". `compose.mjs --platform google-play` mode renders without the device frame; App Store mode keeps it.
+4. **Unreachable states → game-repo dev-mode seeds, never brain-side fabrication.** States the live game doesn't naturally emit (e.g. BEST SCORE 5180, mid-combo with x4, Level 53 procgen state) reach the brain via each game's `?screenshot=1` capture mode + state-seed URL params. These are filed as game-repo build-requests so they ship as permanent factory capabilities (regression QA, smoke tests, repro of player reports). The compliance line: a screen rendered by real game code from a dev-mode seed is "the app in use" — the seed only changed values, not UI.
+5. **Forbidden caption denylist.** Captions/subheads in `compositions/<game>.json` run through a regex denylist before render. Match → build fail. Default forbidden patterns: `\bno ads?\b`, `\bad-?free\b`, `\bno timers?\b`, `\bfree every (arrow|move)\b`, `\buninterrupted\b`, `\bpremium experience\b`, `\bad-removal\b`. Per-game extensible. Memory: `feedback_real_game_capture_over_fabricated_scenes.md`.
+6. **Reference-PNG diff gate.** `scripts/store-screenshots/reference/<game>/*.png` is operator-supplied ground truth (Ripon). Brain captures diff against the closest reference via `pixelmatch`. Threshold: **>5% pixel-delta = warn, >10% = build fail**. Operator owns reference PNGs; brain never mutates them.
+7. **Claim substantiation.** Numeric claims in captions (`400+`, `90 stages`, `Streak 7`, `5180`) MUST have a corresponding entry in `scripts/store-screenshots/claims/<game>.json` keyed `claim → evidence-url-or-file`. Missing evidence → build fail. Brain extracts evidence where automated (`levels.json` length → "400+ levels"); operator supplies the rest.
+8. **Phone-only first ship (2026-04-26 Sahil call).** Mark all 3 apps iPhone-only in App Store Connect / phone-only in Play Console. iPad screenshots NOT submitted until each game ships `[G2] feat: iPad-native UI` (F2 cadence per game). Reason: phone-screen-at-iPad-resolution captures fail Apple 2.3.3.
+
+**v4 fabrication-era rules (DEPRECATED 2026-04-26 — kept for audit trail; do not use).**
+
+These rules enforced fidelity at the renderer layer of `scripts/store-screenshots/scenes/<game>/*.html`. They failed because they presumed scenes-as-HTML was the rendering surface; v6 deletes the scenes directory per game as v6 captures land. Crossed out below for the audit trail.
+
+> ~~1. Canonical renderer per game (no `<polyline marker-end>` fallback)~~ — moot, scenes deleted
+> ~~2. Token consistency (`var(--arrow-color)` from real themes.css)~~ — moot, real game owns tokens
+> ~~3. Theme coverage from `themes.css`~~ — moot, real captures cover real themes by construction
+> ~~4. Curated showroom boards.json, ≥75% cell occupancy~~ — REVERSED: never hand-author boards; brain captures real game state via dev-mode seeds
+> ~~5. iPad scenes own HTML with wider boards~~ — superseded by rule 8 (phone-only first ship)
+> ~~6. Safe-area inset for title/wordmark~~ — moot for captured screens; survives in marketing template chrome only
+> ~~7. Density floor (board shape counts)~~ — moot, real game state determines density
 
 **Screenshot refresh on user-visible feature ship (2026-04-25, Sahil v3 review).** When a game `build-request` PR merges and the diff is **user-visible**, the swarm files a paired `[ua-assets] screenshot refresh — <feature>` build-request on the same game in Step 3 close-out. (Memory: `feedback_screenshot_refresh_on_feature_ship.md`.)
 
