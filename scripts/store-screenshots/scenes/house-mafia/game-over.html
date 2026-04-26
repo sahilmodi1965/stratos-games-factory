@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HM — Game over (Guests win)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 25%, rgba(0, 240, 255, 0.18), transparent 60%),
+      radial-gradient(ellipse 80% 60% at 50% 90%, rgba(255, 45, 123, 0.12), transparent 70%),
+      #0a0a0f;
+  }
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 70px 24px 24px;
+  }
+  .winner-banner {
+    margin: 18px 0 14px;
+    padding: 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.18), rgba(0, 240, 255, 0.05));
+    border: 2px solid var(--cyan);
+    border-radius: 22px;
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.35);
+  }
+  .winner-banner .label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  .winner-banner .who {
+    font-weight: 900;
+    font-size: 44px;
+    letter-spacing: -0.02em;
+    color: var(--cyan);
+    text-shadow: 0 0 30px var(--cyan);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .winner-banner .sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .recap-h {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 14px 4px 10px;
+  }
+  .recap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .row.mafia { border-color: var(--pink); background: rgba(255, 45, 123, 0.06); }
+  .row.detective { border-color: var(--cyan); background: rgba(0, 240, 255, 0.06); }
+  .row.eliminated { opacity: 0.55; }
+  .row.eliminated .name { text-decoration: line-through; font-style: italic; }
+  .av {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .av.a { background: linear-gradient(135deg, #ff2d7b, #c2185b); }
+  .av.b { background: linear-gradient(135deg, #00f0ff, #0099cc); }
+  .av.c { background: linear-gradient(135deg, #ffe156, #f9a825); }
+  .av.d { background: linear-gradient(135deg, #69f0ae, #00bfa5); }
+  .av.e { background: linear-gradient(135deg, #b388ff, #7c4dff); }
+  .name {
+    flex: 1 1 auto;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .role-badge {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+  }
+  .role-badge.mafia { background: var(--pink); color: #fff; }
+  .role-badge.detective { background: var(--cyan); color: #001a26; }
+  .role-badge.guest { background: rgba(255,255,255,0.08); color: var(--ink-soft); border: 1px solid var(--border); }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .btn {
+    padding: 14px;
+    border: 0;
+    border-radius: 14px;
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--pink), var(--cyan));
+    color: #fff;
+    box-shadow: 0 0 24px rgba(255, 45, 123, 0.4);
+  }
+  .btn.secondary {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+  <div class="topbar-min"><div class="tiny-mark">House Mafia · Game over</div></div>
+
+  <div class="stage">
+    <div class="winner-banner">
+      <div class="label">Winners</div>
+      <div class="who">Guests win!</div>
+      <div class="sub">The mafia was found in 2 nights</div>
+    </div>
+
+    <div class="recap-h">Roles revealed</div>
+    <div class="recap">
+      <div class="row eliminated mafia">
+        <div class="av c">🦉</div>
+        <div class="name">Anika</div>
+        <span class="role-badge mafia">Mafia</span>
+      </div>
+      <div class="row detective">
+        <div class="av b">🦊</div>
+        <div class="name">Sahil</div>
+        <span class="role-badge detective">Detective</span>
+      </div>
+      <div class="row">
+        <div class="av a">🐺</div>
+        <div class="name">Ripon</div>
+        <span class="role-badge guest">Guest</span>
+      </div>
+      <div class="row">
+        <div class="av d">🐯</div>
+        <div class="name">Jay</div>
+        <span class="role-badge guest">Guest</span>
+      </div>
+      <div class="row eliminated">
+        <div class="av e">🦋</div>
+        <div class="name">Mei</div>
+        <span class="role-badge guest">Guest</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn secondary">Lobby</button>
+      <button class="btn primary">Rematch</button>
+    </div>
+  </div>
+</body>
+</html>

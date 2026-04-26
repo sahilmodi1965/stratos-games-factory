@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BX — Menu hero</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 30%, rgba(0,229,255,0.15), transparent 65%),
+      linear-gradient(180deg, #1a2050 0%, #3E50A4 60%, #2a3380 100%);
+  }
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 24px;
+  }
+  /* Wordmark stacked across two lines so the full BLOXPLODE always fits
+     the safe-area at every target size (#95). Letter-spacing trimmed to
+     preserve the "explosion-glow" feel without overflowing. */
+  .big-mark {
+    font-weight: 900;
+    font-size: clamp(48px, 16vw, 78px);
+    letter-spacing: 0.02em;
+    line-height: 0.92;
+    text-align: center;
+    color: var(--ink);
+    text-shadow:
+      0 0 30px var(--cyan),
+      0 0 60px rgba(213, 0, 249, 0.4),
+      0 6px 0 rgba(0,0,0,0.3);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    width: 100%;
+    overflow: visible;
+  }
+  .big-mark .row { display: block; }
+  .big-mark .e { color: var(--cyan); }
+  .tagline {
+    font-size: 14px;
+    color: var(--ink-soft);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 80px;
+  }
+  .btn-pill {
+    width: 280px;
+    padding: 22px 24px;
+    border-radius: 999px;
+    border: 0;
+    margin-bottom: 18px;
+    text-align: center;
+    position: relative;
+    box-shadow:
+      0 12px 28px rgba(0,0,0,0.35),
+      inset 0 -5px 0 rgba(0,0,0,0.2),
+      inset 0 2px 0 rgba(255,255,255,0.25);
+  }
+  .btn-classic {
+    background: linear-gradient(180deg, #4FC3F7, #0288D1);
+    color: #fff;
+  }
+  .btn-adventure {
+    background: linear-gradient(180deg, #FFCA28, #F57C00);
+    color: #2a1500;
+  }
+  .btn-pill .icon {
+    font-size: 24px;
+    margin-right: 12px;
+    vertical-align: middle;
+  }
+  .btn-pill .label {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+  .btn-pill .sub {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-top: 2px;
+  }
+
+  .float-blocks {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .float-blocks .b {
+    position: absolute;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25), inset 0 2px 0 rgba(255,255,255,0.18);
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+  <div class="float-blocks" aria-hidden="true">
+    <div class="b" style="background: linear-gradient(180deg, #4ee5ff, #00b8d4); top:120px; left:30px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #ff5dba, #c2185b); top:150px; right:50px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #ffb74d, #f57c00); top:760px; left:60px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #b388ff, #7c4dff); top:790px; right:40px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #69f0ae, #1de9b6); top:80px; right:30px; width:24px; height:24px"></div>
+    <div class="b" style="background: linear-gradient(180deg, #ffd54f, #f9a825); top:820px; left:40%; width:28px; height:28px"></div>
+  </div>
+
+  <div class="stage">
+    <div class="big-mark"><span class="row">BLOX</span><span class="row e">PLODE</span></div>
+    <div class="tagline">Chain · Combo · Conquer</div>
+    <button class="btn-pill btn-classic">
+      <span class="label">∞ Classic</span>
+      <span class="sub">Endless arcade</span>
+    </button>
+    <button class="btn-pill btn-adventure">
+      <span class="label">⚡ Adventure</span>
+      <span class="sub">90 stages</span>
+    </button>
+  </div>
+</body>
+</html>

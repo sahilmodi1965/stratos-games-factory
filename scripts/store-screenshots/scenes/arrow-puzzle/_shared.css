@@ -1,0 +1,141 @@
+/* Arrow Puzzle shared scene styles. Theme palettes match the real AP themes
+ * exactly per `games/arrow-puzzle/src/styles/themes.css` so the marketing
+ * screenshots are faithful to what players see in-game. */
+
+:root {
+  --vw: 414px;
+  --vh: 896px;
+  /* default theme — warm beige/brown */
+  --bg: #F5F0E8;
+  --bg-card: #FFFFFF;
+  --ink: #2D2A26;            /* text-primary */
+  --ink-soft: rgba(45, 42, 38, 0.55);
+  --ink-faint: rgba(45, 42, 38, 0.18);
+  --accent: #E8734A;
+  --arrow-color: #3D3831;    /* real AP --arrow-color */
+  --heart: #ee5a72;
+  --grid-dot: rgba(61, 56, 49, 0.18);
+  --button-bg: rgba(45, 42, 38, 0.06);
+}
+
+html[data-theme="dark"] {
+  --bg: #14161A;
+  --bg-card: #1E2128;
+  --ink: #F3F4F7;
+  --ink-soft: rgba(243, 244, 247, 0.65);
+  --ink-faint: rgba(243, 244, 247, 0.18);
+  --accent: #FFB347;
+  --arrow-color: #F3F4F7;
+  --grid-dot: rgba(243, 244, 247, 0.16);
+  --button-bg: rgba(243, 244, 247, 0.08);
+}
+
+html[data-theme="ocean"] {
+  --bg: #E6F4F3;
+  --bg-card: #FFFFFF;
+  --ink: #0E3B3A;
+  --ink-soft: rgba(14, 59, 58, 0.6);
+  --ink-faint: rgba(14, 59, 58, 0.18);
+  --accent: #0FA3A0;
+  --arrow-color: #FFFFFF;
+  --heart: #ee5a72;
+  --grid-dot: rgba(14, 59, 58, 0.18);
+  --button-bg: rgba(14, 59, 58, 0.06);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: var(--vw);
+  height: var(--vh);
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  position: relative;
+}
+
+.topbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 84px;
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  align-items: center;
+  padding: 0 12px;
+  z-index: 4;
+}
+.topbar .icon-btn {
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: transparent;
+  color: var(--ink);
+}
+.topbar .title {
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+
+.hud {
+  position: absolute;
+  top: 88px; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 22px 0;
+  z-index: 4;
+}
+.hud .count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.hud .lives {
+  display: inline-flex;
+  gap: 8px;
+}
+.heart-icon {
+  width: 24px; height: 24px;
+  color: var(--heart, #ee5a72);
+}
+
+.bottombar {
+  position: absolute;
+  bottom: 22px; left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 78px;
+  z-index: 4;
+}
+.bottombar .btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  border: 0;
+  background: transparent;
+}
+.bottombar .btn svg { color: var(--ink-soft); }
+
+.board-container {
+  position: absolute;
+  inset: 152px 0 96px 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.board-svg {
+  width: 100%; height: 100%;
+}

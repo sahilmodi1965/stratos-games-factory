@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HM — Lobby with room code</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 70px 24px 24px;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .header .label {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .header .title {
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  .code-card {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255, 225, 86, 0.18), transparent 70%),
+      var(--surface);
+    border: 2px solid var(--yellow);
+    border-radius: 24px;
+    padding: 28px 24px;
+    text-align: center;
+    margin-bottom: 24px;
+    box-shadow: 0 0 40px rgba(255, 225, 86, 0.18);
+  }
+  .code-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .code-value {
+    font-weight: 900;
+    font-size: 76px;
+    letter-spacing: 0.18em;
+    line-height: 1;
+    color: var(--yellow);
+    text-shadow: 0 0 30px var(--yellow);
+    font-feature-settings: 'tnum';
+  }
+  .code-hint {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+
+  .player-list {
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+  .player-list-h {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    padding-left: 4px;
+  }
+  .player-list-h .count { color: var(--cyan); }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 8px;
+  }
+  .row.host { border-color: var(--cyan); }
+  .row.you { border-color: var(--pink); background: rgba(255, 45, 123, 0.08); }
+  .av {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    background: linear-gradient(135deg, #2a2a45, #1a1a2e);
+  }
+  .av.a { background: linear-gradient(135deg, #ff2d7b, #c2185b); }
+  .av.b { background: linear-gradient(135deg, #00f0ff, #0099cc); }
+  .av.c { background: linear-gradient(135deg, #ffe156, #f9a825); }
+  .av.d { background: linear-gradient(135deg, #69f0ae, #00bfa5); }
+  .av.e { background: linear-gradient(135deg, #b388ff, #7c4dff); }
+  .av.f { background: linear-gradient(135deg, #ffab40, #ef6c00); }
+  .name {
+    flex: 1 1 auto;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .badge {
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 999px;
+  }
+  .badge.host { background: var(--cyan); color: #001a26; }
+  .badge.you { background: var(--pink); color: #fff; }
+  .badge.ready { background: rgba(105, 240, 174, 0.2); color: #69f0ae; border: 1px solid #69f0ae; }
+  .badge.waiting { color: var(--ink-faint); border: 1px solid var(--border); }
+
+  .start-btn {
+    margin-top: 16px;
+    background: linear-gradient(135deg, var(--pink), var(--cyan));
+    border: 0;
+    border-radius: 16px;
+    padding: 18px 24px;
+    text-align: center;
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #fff;
+    box-shadow: 0 0 30px rgba(255, 45, 123, 0.5), 0 8px 20px rgba(0,0,0,0.4);
+  }
+  .start-btn .sub {
+    display: block;
+    font-size: 11px;
+    opacity: 0.85;
+    letter-spacing: 0.2em;
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+  <div class="topbar-min"><div class="tiny-mark">House Mafia · Lobby</div></div>
+
+  <div class="stage">
+    <div class="header">
+      <div class="label">Share with friends</div>
+      <div class="title">Tell them to enter the code</div>
+    </div>
+
+    <div class="code-card">
+      <div class="code-label">Room code</div>
+      <div class="code-value">XKCD</div>
+      <div class="code-hint">housemafia.app · code XKCD</div>
+    </div>
+
+    <div class="player-list">
+      <div class="player-list-h">Players · <span class="count">5 / 8</span></div>
+      <div class="row host">
+        <div class="av b">🦊</div>
+        <div class="name">Sahil</div>
+        <span class="badge host">Host</span>
+      </div>
+      <div class="row you">
+        <div class="av a">🐺</div>
+        <div class="name">Ripon</div>
+        <span class="badge you">You</span>
+      </div>
+      <div class="row">
+        <div class="av c">🦉</div>
+        <div class="name">Anika</div>
+        <span class="badge ready">Ready</span>
+      </div>
+      <div class="row">
+        <div class="av d">🐯</div>
+        <div class="name">Jay</div>
+        <span class="badge ready">Ready</span>
+      </div>
+      <div class="row">
+        <div class="av e">🦋</div>
+        <div class="name">Mei</div>
+        <span class="badge waiting">…</span>
+      </div>
+    </div>
+
+    <button class="start-btn">
+      Start game
+      <span class="sub">5 players · 1 mafia · 1 detective</span>
+    </button>
+  </div>
+</body>
+</html>

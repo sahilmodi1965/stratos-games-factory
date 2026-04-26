@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BX — Run results</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 35%, rgba(255, 202, 40, 0.18), transparent 60%),
+      linear-gradient(180deg, #1a2050 0%, #3E50A4 60%, #2a3380 100%);
+  }
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 100px 32px 40px;
+  }
+  .crown { font-size: 48px; margin-bottom: 8px; filter: drop-shadow(0 0 24px var(--yellow)); }
+  .heading {
+    font-weight: 900;
+    font-size: 32px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--yellow);
+    text-shadow: 0 0 30px var(--yellow);
+    margin-bottom: 4px;
+  }
+  .sub {
+    font-size: 14px;
+    color: var(--ink-soft);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 28px;
+  }
+  .score-card {
+    width: 100%;
+    background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.55));
+    border: 2px solid var(--yellow);
+    border-radius: 24px;
+    padding: 24px;
+    text-align: center;
+    box-shadow:
+      0 0 40px rgba(255, 202, 40, 0.4),
+      inset 0 0 30px rgba(0,0,0,0.4);
+  }
+  .score-num {
+    font-weight: 900;
+    font-size: 72px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #ffe082, #f57c00);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 4px;
+  }
+  .score-label {
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 18px;
+  }
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-mini {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 12px 8px;
+  }
+  .stat-mini .v {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--cyan);
+    line-height: 1;
+  }
+  .stat-mini .l {
+    font-size: 10px;
+    color: var(--ink-soft);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .new-best {
+    display: inline-block;
+    background: var(--magenta);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px rgba(213, 0, 249, 0.5);
+  }
+  .actions {
+    width: 100%;
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .action-btn {
+    padding: 16px;
+    border-radius: 14px;
+    border: 0;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.3), inset 0 -4px 0 rgba(0,0,0,0.2);
+  }
+  .action-btn.primary {
+    background: linear-gradient(180deg, #4FC3F7, #0288D1);
+    color: #fff;
+  }
+  .action-btn.secondary {
+    background: rgba(255,255,255,0.1);
+    color: var(--ink);
+    border: 2px solid rgba(255,255,255,0.18);
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="wordmark">BLOX<span class="accent">PLODE</span></div>
+  </div>
+
+  <div class="stage">
+    <div class="crown">👑</div>
+    <div class="heading">Run Cleared</div>
+    <div class="sub">Classic · Endless · Wave 18</div>
+
+    <div class="score-card">
+      <div class="score-num">94,720</div>
+      <div class="score-label">Total score</div>
+      <div class="stats-row">
+        <div class="stat-mini">
+          <div class="v">×7</div>
+          <div class="l">Best chain</div>
+        </div>
+        <div class="stat-mini">
+          <div class="v">312</div>
+          <div class="l">Cleared</div>
+        </div>
+        <div class="stat-mini">
+          <div class="v">3:42</div>
+          <div class="l">Time</div>
+        </div>
+      </div>
+      <div class="new-best">New personal best · +6,300</div>
+    </div>
+
+    <div class="actions">
+      <button class="action-btn secondary">Menu</button>
+      <button class="action-btn primary">Play again</button>
+    </div>
+  </div>
+</body>
+</html>

@@ -423,6 +423,75 @@ Rules: title `[ua]` or `[ua-strategy]`. All copy truthful (real features only). 
 gh label create ua-assets --color e3b341 2>/dev/null || true; gh label create ua-strategy --color e3b341 2>/dev/null || true
 ```
 
+**ASO brain canonical location (2026-04-26 — read this first).** All ASO (App Store / Play Store screenshot carousel) work is governed by [`brain/aso/README.md`](brain/aso/README.md) — single-purpose charter, operating principles, pipeline, success metrics. The four ASO subagents (`game-introspector`, `state-reacher`, `hook-designer`, `carousel-composer`) are specced under [`agents/aso/`](agents/aso/README.md). The v7 → v8 upgrade plan (introspection-driven brain) is documented at [`brain/aso/V8-INTROSPECTION-PROPOSAL.md`](brain/aso/V8-INTROSPECTION-PROPOSAL.md).
+
+**The rules below (v3 → v7) are kept in CLAUDE.md as historical reference + operational fallback while v8 ships.** New ASO work goes to `brain/aso/` first.
+
+**Marketing screenshot fidelity rules (2026-04-26, v6 — Sahil + council architectural pivot).**
+
+The earlier "scenes-as-HTML" rules (#1-#7 below, marked DEPRECATED) failed Ripon's 2026-04-26 review because they enforced fidelity at the renderer layer while fabrication happened at the content layer. Apple App Store 2.3.3 + Google Play misleading-claims policies require screenshots to "show the app in use" — fabricated UI inside the device frame violates by construction. Memory: `feedback_real_game_capture_over_fabricated_scenes.md`, `project_v6_screenshot_brain_pivot.md`.
+
+**v6 rules — every store-bound screenshot PR MUST satisfy all of:**
+
+1. **Real-capture provenance.** Every shot in `compositions/<game>.json` declares `"provenance": "playwright-capture" | "renderer-export"`. `"hand-authored-scene"` is rejected at PR time. The factory's `npm run validate` for the screenshot pipeline asserts no scene file under `scenes/<game>/` is referenced by the manifest for store-bound output. (Memory: `feedback_real_game_capture_over_fabricated_scenes.md`.)
+2. **Marketing chrome stays OUTSIDE the device frame.** `template/marketing.html` renders caption + gradient + brand wordmark + (optional) device frame around the captured screen. Nothing inside the device-screen iframe is brain-authored — it is either a Playwright capture of the real running game (`capture.mjs`) or an export from the real game's renderer code.
+3. **Device frame strippable for Google Play.** Google's policy forbids device frames "for most apps". `compose.mjs --platform google-play` mode renders without the device frame; App Store mode keeps it.
+4. **Unreachable states → game-repo dev-mode seeds, never brain-side fabrication.** States the live game doesn't naturally emit (e.g. BEST SCORE 5180, mid-combo with x4, Level 53 procgen state) reach the brain via each game's `?screenshot=1` capture mode + state-seed URL params. These are filed as game-repo build-requests so they ship as permanent factory capabilities (regression QA, smoke tests, repro of player reports). The compliance line: a screen rendered by real game code from a dev-mode seed is "the app in use" — the seed only changed values, not UI.
+5. **Forbidden caption denylist.** Captions/subheads in `compositions/<game>.json` run through a regex denylist before render. Match → build fail. Default forbidden patterns: `\bno ads?\b`, `\bad-?free\b`, `\bno timers?\b`, `\bfree every (arrow|move)\b`, `\buninterrupted\b`, `\bpremium experience\b`, `\bad-removal\b`. Per-game extensible. Memory: `feedback_real_game_capture_over_fabricated_scenes.md`.
+6. **Reference-PNG diff gate.** `scripts/store-screenshots/reference/<game>/*.png` is operator-supplied ground truth (Ripon). Brain captures diff against the closest reference via `pixelmatch`. Threshold: **>5% pixel-delta = warn, >10% = build fail**. Operator owns reference PNGs; brain never mutates them.
+7. **Claim substantiation.** Numeric claims in captions (`400+`, `90 stages`, `Streak 7`, `5180`) MUST have a corresponding entry in `scripts/store-screenshots/claims/<game>.json` keyed `claim → evidence-url-or-file`. Missing evidence → build fail. Brain extracts evidence where automated (`levels.json` length → "400+ levels"); operator supplies the rest.
+8. **Phone-only first ship (2026-04-26 Sahil call).** Mark all 3 apps iPhone-only in App Store Connect / phone-only in Play Console. iPad screenshots NOT submitted until each game ships `[G2] feat: iPad-native UI` (F2 cadence per game). Reason: phone-screen-at-iPad-resolution captures fail Apple 2.3.3.
+
+**v7 ASO + UA rules (2026-04-26, Sahil call after AP v7 review).** v6 made screenshots compliance-clean; v7 makes them **convert**. The store screenshot carousel is the single page where every UA dollar (paid + organic) lands. If the carousel doesn't sell, all UA spend leaks at the last step. Memory: `feedback_lead_with_hard_levels_user_aspiration.md`, `project_aso_conversion_psychology_framework.md`.
+
+9. **Conversion-psychology hook ordering — explicit per-game.** Carousel order = funnel order. Lead with the strongest stopping-power hook for that game's genre, not the menu. Maintained in `scripts/store-screenshots/compositions/<game>-v6.json` under `"hook_order"` (array of hook names with one-line rationale). Per-game canonical orderings:
+   - **AP (logic puzzle, minimalist genre — Two Dots / Threes / Flow Free).** 1) "I want to solve THAT" — high-density mid-expert puzzle (Level 53+, packed board). 2) "I'll streak this" — daily challenge with multi-day streak. 3) "this won't run out" — levels grid scrolled to mid-game with star completion. 4) "I can make it mine" — theme variants. 5) "this is who I'm playing" — clean menu hero.
+   - **BX (block-explosion arcade — Block Blast / Royal Match / Toon Blast).** 1) "WOAH that combo" — mid-explosion ×4 combo with score popup. 2) "I can chain bigger" — ×8 MEGA combo with multiplier overlay. 3) "I beat my best" — best-score celebration with crown. 4) "90 stages waiting" — adventure map with progress + golden completions. 5) "this is who I'm playing" — menu with mode selection.
+   - **HM (realtime social — Among Us / Mafia/Werewolf genre).** 1) "play with friends right now" — 6-person lobby with named players + room code. 2) "secret roles" — role reveal screen. 3) "the game IS happening" — night action mid-frame. 4) "you can win or lose" — game-over with mafia victory. 5) "this is who I'm playing" — title with Create Room CTA.
+
+10. **Hero-shot rule.** Shot #1 (the App Store thumbnail) MUST be the densest, highest-action shot — never the menu. Per Sahil 2026-04-26: *"people like to see hard levels and challenge themselves to reach there and solve it"*. Users buy aspiration, not introduction. Validators reject any composition where shot #1's `id` matches `/menu|title|splash|tutorial/i` unless the spec explicitly tags `"shot_1_menu_justification"` with operator-approved reason.
+
+11. **`?showroom=<name>` URL convention — portfolio-wide G2 capability.** Every game in G2+ MUST implement a `?showroom=<state-name>` URL param that:
+   - Boots into a deterministic, hand-curated, screenshot-grade state (not random procgen)
+   - Is real game code rendering real game state (compliance-clean for App Store 2.3.3)
+   - Doubles as regression QA, smoke test fixture, and player-bug-report repro tool
+   - Is documented in the game repo at `docs/showroom-states.md` with each state's name + post-conditions
+   - Has a smoke test asserting the named state renders with required density / elements
+   The brain consumes these via `comp.url` in `<game>-v6.json` (e.g. `https://.../arrow-puzzle-testing/?showroom=mid-expert-packed`). Random `localStorage` seeding is the **fallback** when showroom routing hasn't shipped yet, never the preferred path. Procgen variance is the failure mode this convention prevents (some Level 53 seeds land sparse — the carousel can't gamble on conversion).
+
+12. **G2-entry priority gate — ASO blocks non-ship-blocker game work.** When a game enters G2 (paid distribution prep), the `?showroom=` build-request and the resulting screenshot carousel **block all non-ship-blocker game-repo work** in Step 2 prioritization. Rationale: ASO conversion = entire UA spend efficiency; one shipped feature without a converting carousel is worse than zero shipped features with one. Step 2 ranks `?showroom=` above content/polish/refactor for any G2 game until the v7 carousel is operator-approved.
+
+13. **Density floor (mandatory in `npm run validate`).** For puzzle/board shots, `capture.mjs` must compute non-background pixel coverage of the device-screen area and assert ≥ floor (default 35% for AP-class puzzles, 40% for BX-class boards, configurable per shot via `comp.density_floor`). Below floor → fail with `DENSITY_BELOW_FLOOR: shot=<id> coverage=<pct>% floor=<pct>%`. Reverses v4 rule 7 deprecation — density was the right invariant; the wrong layer (scene HTML) was being measured.
+
+14. **Three silent-failure guards (shipped 2026-04-26).** `capture.mjs` enforces:
+   - Caption denylist regex (rule 5) — pre-render check.
+   - Seed read-back (post-load `localStorage.getItem` of every seeded key, fail on mismatch).
+   - Duplicate-PNG check (sha256-pair captures whose specs differ; identical hash = `SILENT_SEED_FAILURE`).
+   Adding more guards: file factory-improvement, do not patch ad-hoc.
+
+15. **Target the platform MAXIMUM, never the minimum (Sahil 2026-04-26 — non-negotiable).** App Store iPhone allows up to **10 screenshots**; Google Play phone allows up to **8**. The brain MUST produce **at least 8 shots per game** (Play cap is the universal floor; submit all 8 to Play, all 10 to App Store with 2 iOS-specific extras if available). **3 shots is not "compliant", it is shipping a half-empty carousel that wastes every UA dollar that lands on the page.** Compliance minimums (1 for App Store, 2 for Play) are for emergencies, not for our games. If a game cannot naturally reach 8 reachable states, the gap blocks G2 close — file ONE consolidated `[G2] feat: ?showroom=` build-request, not multiple per-state issues. The brain's `<game>-v6.json` declares `target_shot_count: 10` (App Store cap) and `min_shot_count: 8` (Play cap); `capture.mjs` fails if successful capture count < `min_shot_count`.
+
+16. **Cleanup-after-yourself (Sahil 2026-04-26 — non-negotiable).** `capture.mjs` MUST clear `output/capture/<game>/` and `output/final/<game>/<size>/` at the start of every run for the targeted game/sizes. No orphan PNGs from prior compositions. No stale renames. The folder Sahil opens in Finder is ALWAYS the latest run, with exactly the shots in the current spec — no more, no less. The previous behavior (PNGs from earlier specs lingering through renames) caused two real review-cycle confusions in 2026-04-26 (v6 stale captures + AP v7.1 orphan menu-default after hero swap). Brain mess in the output folder is brain mess in Sahil's review process. Memory: `feedback_brain_mess_in_creative_folder_blocks_review.md`.
+
+**v4 fabrication-era rules (DEPRECATED 2026-04-26 — kept for audit trail; do not use).**
+
+These rules enforced fidelity at the renderer layer of `scripts/store-screenshots/scenes/<game>/*.html`. They failed because they presumed scenes-as-HTML was the rendering surface; v6 deletes the scenes directory per game as v6 captures land. Crossed out below for the audit trail.
+
+> ~~1. Canonical renderer per game (no `<polyline marker-end>` fallback)~~ — moot, scenes deleted
+> ~~2. Token consistency (`var(--arrow-color)` from real themes.css)~~ — moot, real game owns tokens
+> ~~3. Theme coverage from `themes.css`~~ — moot, real captures cover real themes by construction
+> ~~4. Curated showroom boards.json, ≥75% cell occupancy~~ — REVERSED: never hand-author boards; brain captures real game state via dev-mode seeds
+> ~~5. iPad scenes own HTML with wider boards~~ — superseded by rule 8 (phone-only first ship)
+> ~~6. Safe-area inset for title/wordmark~~ — moot for captured screens; survives in marketing template chrome only
+> ~~7. Density floor (board shape counts)~~ — moot, real game state determines density
+
+**Screenshot refresh on user-visible feature ship (2026-04-25, Sahil v3 review).** When a game `build-request` PR merges and the diff is **user-visible**, the swarm files a paired `[ua-assets] screenshot refresh — <feature>` build-request on the same game in Step 3 close-out. (Memory: `feedback_screenshot_refresh_on_feature_ship.md`.)
+
+- **User-visible diff classifier:** touches any of `src/ui/`, `src/rendering/`, `src/styles/`, `src/screens/`, `src/components/`, theme files, level/difficulty config, copy strings, icon SVGs, win/lose flows. Not user-visible: tests, build config, internal refactors with no rendered diff, deps, CI, README, comments.
+- **Debounce:** skip if a `[ua-assets] screenshot refresh` for the same scene set is already open within 7d on the game.
+- **Body template:** `templates/screenshot-refresh-issue.md` (file as factory-improvement to create); fields = merged-PR-#, what-changed-visually (one sentence), scene files needing update, compositions needing re-render, acceptance = re-run `bash scripts/store-screenshots/run.sh <game>` and attach before/after diff to the issue.
+- **Filed by main thread, not subagent** — subagents shouldn't file meta-issues about their own work.
+
 ### Step 9 — Council review
 
 Run inline (no subagent). Review the factory's own performance.

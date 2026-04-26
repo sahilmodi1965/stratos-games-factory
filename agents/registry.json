@@ -76,6 +76,46 @@
       "repos": ["mody-sahariar1/arrow-puzzle-testing", "mody-sahariar1/Bloxplode-Beta"],
       "status": "active",
       "description": "Generates App Store/Play Store description variants, ASO keyword sets, and screenshot composition suggestions. Files ua-assets issues."
+    },
+    {
+      "name": "aso",
+      "dispatch": "swarm-coordinator",
+      "schedule": "on-demand",
+      "repos": ["mody-sahariar1/arrow-puzzle-testing", "mody-sahariar1/Bloxplode-Beta", "mody-sahariar1/house-mafia"],
+      "status": "active",
+      "description": "Single-purpose ASO brain. Coordinates 4 sub-specialists (game-introspector, state-reacher, hook-designer, carousel-composer) to produce store-submission-ready screenshot carousels at platform maximum (10 App Store / 8 Play). Charter: brain/aso/README.md. v8 introspection-driven: brain/aso/V8-INTROSPECTION-PROPOSAL.md."
+    },
+    {
+      "name": "aso-game-introspector",
+      "dispatch": "swarm-subagent",
+      "schedule": "on-demand",
+      "repos": ["mody-sahariar1/arrow-puzzle-testing", "mody-sahariar1/Bloxplode-Beta", "mody-sahariar1/house-mafia"],
+      "status": "documented",
+      "description": "Reads game source on first encounter or after merges; produces brain/aso/inventories/<game>.md cataloging exciting state primitives, exposed dev hooks, renderer entry points, theme tokens, and addiction hypothesis. Charter: agents/aso/game-introspector/README.md."
+    },
+    {
+      "name": "aso-state-reacher",
+      "dispatch": "swarm-subagent",
+      "schedule": "per-shot",
+      "repos": ["all"],
+      "status": "documented",
+      "description": "Given a target marketing state, produces a Playwright sequence using existing primitives, OR a minimal-PR proposal, OR a three-paths-failed report. Bias: never declare blocked without exhausting three crafty paths. Charter: agents/aso/state-reacher/README.md."
+    },
+    {
+      "name": "aso-hook-designer",
+      "dispatch": "swarm-subagent",
+      "schedule": "per-game",
+      "repos": ["all"],
+      "status": "documented",
+      "description": "Refines state-reacher's Path 2 proposals into a single consolidated PR description per game. Bias: ONE consolidated window.__game_dev hook over N URL parser branches. Charter: agents/aso/hook-designer/README.md."
+    },
+    {
+      "name": "aso-carousel-composer",
+      "dispatch": "swarm-subagent",
+      "schedule": "per-game",
+      "repos": [],
+      "status": "documented",
+      "description": "Composes generated <game>-v6.json from inventory + reach-results + per-genre hook-ordering canon. Validates denylist + hero-shot rule + density floor before write. Charter: agents/aso/carousel-composer/README.md."
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "name": "stratos-store-screenshots",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Two-phase store-listing screenshot generator (Phase A capture + Phase B compose). See README.md.",
+  "scripts": {
+    "capture": "node capture.mjs",
+    "compose": "node compose.mjs",
+    "all": "node capture.mjs && node compose.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}

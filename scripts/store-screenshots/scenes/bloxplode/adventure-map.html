@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BX — Adventure map (Level 45)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 90%, rgba(0,229,255,0.12), transparent 60%),
+      linear-gradient(180deg, #2a3380 0%, #3E50A4 60%, #1a2050 100%);
+  }
+  .header {
+    position: absolute;
+    top: 80px; left: 0; right: 0;
+    text-align: center;
+    z-index: 4;
+  }
+  .header .title {
+    font-weight: 900;
+    font-size: 32px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px var(--cyan);
+  }
+  .header .progress {
+    font-size: 14px;
+    color: var(--ink-soft);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+  .header .progress strong { color: var(--yellow); }
+
+  .map {
+    position: absolute;
+    top: 180px;
+    left: 0; right: 0;
+    bottom: 60px;
+    overflow: hidden;
+  }
+  .row {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .node {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 16px;
+    position: relative;
+  }
+  .node.completed {
+    background: linear-gradient(135deg, #4ee5ff, #00b8d4);
+    color: #001a26;
+    box-shadow: 0 4px 12px rgba(0,229,255,0.3), inset 0 -3px 0 rgba(0,0,0,0.2);
+  }
+  .node.current {
+    background: linear-gradient(135deg, #ffd54f, #f57c00);
+    color: #2a1500;
+    box-shadow:
+      0 0 0 4px rgba(255, 215, 64, 0.25),
+      0 0 30px rgba(255, 215, 64, 0.6),
+      0 6px 20px rgba(0,0,0,0.4),
+      inset 0 -3px 0 rgba(0,0,0,0.2);
+    transform: scale(1.15);
+    z-index: 2;
+  }
+  .node.locked {
+    background: rgba(0,0,0,0.4);
+    color: rgba(255,255,255,0.25);
+    border: 2px solid rgba(255,255,255,0.08);
+  }
+  .node.locked::after {
+    content: '🔒';
+    position: absolute;
+    font-size: 14px;
+    opacity: 0.5;
+  }
+  .node.locked .num { display: none; }
+  .stars {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1px;
+  }
+  .stars svg { width: 10px; height: 10px; color: #FFD54F; }
+
+  .play-cta {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    right: 24px;
+    background: linear-gradient(180deg, #FFCA28, #F57C00);
+    border-radius: 18px;
+    padding: 18px 24px;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(245, 124, 0, 0.45), inset 0 -4px 0 rgba(0,0,0,0.2);
+    z-index: 5;
+  }
+  .play-cta .label {
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #2a1500;
+  }
+  .play-cta .level {
+    font-weight: 700;
+    font-size: 13px;
+    color: rgba(42,21,0,0.7);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="wordmark">BLOX<span class="accent">PLODE</span></div>
+  </div>
+
+  <div class="header">
+    <div class="title">Adventure</div>
+    <div class="progress"><strong>44</strong> / 90 stages cleared</div>
+  </div>
+
+  <div class="map">
+    <!-- pyramid rows: narrowest at top, widening toward bottom -->
+    <div class="row">
+      <div class="node locked"><span class="num">52</span></div>
+      <div class="node locked"><span class="num">53</span></div>
+      <div class="node locked"><span class="num">54</span></div>
+    </div>
+    <div class="row">
+      <div class="node locked"><span class="num">49</span></div>
+      <div class="node locked"><span class="num">50</span></div>
+      <div class="node locked"><span class="num">51</span></div>
+      <div class="node locked"><span class="num">55</span></div>
+    </div>
+    <div class="row">
+      <div class="node locked"><span class="num">46</span></div>
+      <div class="node locked"><span class="num">47</span></div>
+      <div class="node locked"><span class="num">48</span></div>
+      <div class="node locked"><span class="num">56</span></div>
+      <div class="node locked"><span class="num">57</span></div>
+    </div>
+    <div class="row">
+      <div class="node completed">42<div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="node completed">43<div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="node completed">44<div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="node current">45</div>
+      <div class="node locked"><span class="num">58</span></div>
+    </div>
+    <div class="row">
+      <div class="node completed">36<div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="node completed">37<div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="node completed">38<div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="node completed">39<div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="node completed">40<div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+      <div class="node completed">41<div class="stars"><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg><svg viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor"/></svg></div></div>
+    </div>
+  </div>
+
+  <div class="play-cta">
+    <div class="level">Stage 45 · Tap to play</div>
+    <div class="label">▶ Continue Adventure</div>
+  </div>
+</body>
+</html>

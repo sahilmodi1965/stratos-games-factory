@@ -1,7 +1,9 @@
-# Local game repo clones — operated on by the swarm, never tracked here
-arrow-puzzle-testing/
-Bloxplode-Beta/
-house-mafia/
+# Local game repo clones — operated on by the swarm, never tracked here.
+# These match top-level dirs only; nested paths (e.g. scripts/store-screenshots/
+# scenes/house-mafia/) are not affected by the leading slash.
+/arrow-puzzle-testing/
+/Bloxplode-Beta/
+/house-mafia/
 
 # Daemon runtime state
 build.log

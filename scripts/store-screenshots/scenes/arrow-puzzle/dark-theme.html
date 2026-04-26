@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>AP — Dark Theme (Level 53)</title>
+<link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+  <header class="topbar">
+    <button class="icon-btn" aria-label="Back">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="title">Level 53</div>
+    <button class="icon-btn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <div class="hud">
+    <div class="count">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13 2 4 14h7l-2 8 9-12h-7l2-8z"/></svg>
+      <span>42</span>
+    </div>
+    <div class="lives">
+      <svg class="heart-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.35-9.5-8.5C.5 9 2 5 6 5c2 0 3.5 1 4.5 2.5C11.5 6 13 5 15 5c4 0 5.5 4 3.5 7.5C19 16.65 12 21 12 21z"/></svg>
+      <svg class="heart-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.35-9.5-8.5C.5 9 2 5 6 5c2 0 3.5 1 4.5 2.5C11.5 6 13 5 15 5c4 0 5.5 4 3.5 7.5C19 16.65 12 21 12 21z"/></svg>
+      <svg class="heart-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.35-9.5-8.5C.5 9 2 5 6 5c2 0 3.5 1 4.5 2.5C11.5 6 13 5 15 5c4 0 5.5 4 3.5 7.5C19 16.65 12 21 12 21z"/></svg>
+    </div>
+  </div>
+
+  <!-- Same curated showroom board as mid-expert; theme-default vs theme-dark
+       changes only the color tokens (--arrow-color, --bg, --grid-dot). -->
+  <div class="board-container">
+    <svg id="ap-board" class="board-svg" viewBox="0 0 380 620" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <pattern id="dots-d" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="11" cy="11" r="1.4" fill="var(--grid-dot)"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#dots-d)"/>
+    </svg>
+  </div>
+
+  <nav class="bottombar">
+    <button class="btn" aria-label="Hint">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2v.3h6v-.3c0-.7.4-1.5 1-2A7 7 0 0 0 12 2z"/></svg>
+      <span>Hint</span>
+    </button>
+    <button class="btn" aria-label="Paths">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+      <span>Paths</span>
+    </button>
+  </nav>
+
+  <script src="arrows.js"></script>
+  <script src="_boards.js"></script>
+  <script>
+    renderArrowPuzzleArrows({
+      svgId: 'ap-board',
+      cellPx: 22,
+      offsetX: 14, offsetY: 14,
+      arrows: window.AP_BOARDS.packed_mid_game,
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+/* House Mafia shared scene styles. Dark nightclub neon aesthetic. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+:root {
+  --vw: 414px;
+  --vh: 896px;
+  --bg-1: #0a0a0f;
+  --bg-2: #1a1a2e;
+  --ink: #ffffff;
+  --ink-soft: rgba(255,255,255,0.7);
+  --ink-faint: rgba(255,255,255,0.3);
+  --pink: #ff2d7b;
+  --cyan: #00f0ff;
+  --yellow: #ffe156;
+  --red: #ff3b30;
+  --surface: #1a1a2e;
+  --border: rgba(255,255,255,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: var(--vw);
+  height: var(--vh);
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+body {
+  background:
+    radial-gradient(ellipse 90% 50% at 50% 0%, rgba(255, 45, 123, 0.18), transparent 60%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(0, 240, 255, 0.12), transparent 60%),
+    var(--bg-1);
+  color: var(--ink);
+  position: relative;
+}
+
+.gradient-title {
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--pink) 0%, #ff5cb8 30%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.025em;
+  filter: drop-shadow(0 0 24px rgba(255, 45, 123, 0.4));
+}
+
+.topbar-min {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  z-index: 5;
+}
+.tiny-mark {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}

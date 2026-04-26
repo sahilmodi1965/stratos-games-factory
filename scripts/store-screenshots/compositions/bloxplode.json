@@ -1,0 +1,58 @@
+{
+  "game": "bloxplode",
+  "scene_aspect": [414, 896],
+  "brand": {
+    "name": "Bloxplode",
+    "tagline": "by Stratos Games",
+    "primary_gradient": ["#0a0a30", "#1a2a80", "#0288D1", "#00E5FF"],
+    "accent_glow": "#00E5FF",
+    "font_family": "'Kanit', 'Inter', sans-serif"
+  },
+  "compositions": [
+    {
+      "id": "01-classic-explosion",
+      "title": "Classic mid-explosion (×4 combo)",
+      "scene": "bloxplode/classic-explosion.html",
+      "caption": "Chain.\nCombo.\nConquer.",
+      "sub": "Tap to explode chains. Stack combos to score.",
+      "gradient": ["#0a0a30", "#1a2a80", "#0288D1", "#00E5FF"],
+      "accent": "#00E5FF"
+    },
+    {
+      "id": "02-adventure-map",
+      "title": "Adventure map — Stage 45 / 90",
+      "scene": "bloxplode/adventure-map.html",
+      "caption": "90 stages.\nOne run.",
+      "sub": "Procedural arcade ladder. Three stars per stage.",
+      "gradient": ["#0a0a30", "#2a3380", "#3E50A4", "#FFCA28"],
+      "accent": "#FFCA28"
+    },
+    {
+      "id": "03-combo-burst",
+      "title": "×8 MEGA combo",
+      "scene": "bloxplode/combo-burst.html",
+      "caption": "Big chains.\nBigger\nbursts.",
+      "sub": "×8 = MEGA. ×12 = ULTRA. Unlimited ceiling.",
+      "gradient": ["#1a0040", "#5a0aa0", "#D500F9", "#FFCA28"],
+      "accent": "#FFCA28"
+    },
+    {
+      "id": "04-menu-hero",
+      "title": "Menu hero — Classic + Adventure",
+      "scene": "bloxplode/menu-hero.html",
+      "caption": "Two modes.\nZero filler.",
+      "sub": "Endless arcade or 90-stage adventure.",
+      "gradient": ["#0a0a30", "#1a2050", "#3E50A4", "#00E5FF"],
+      "accent": "#00E5FF"
+    },
+    {
+      "id": "05-daily-challenge",
+      "title": "Daily challenge — 12-day streak",
+      "scene": "bloxplode/themes-side.html",
+      "caption": "One run\na day.",
+      "sub": "Same board worldwide. Streak. Leaderboard.",
+      "gradient": ["#1a0040", "#3a0680", "#D500F9", "#FF1744"],
+      "accent": "#D500F9"
+    }
+  ]
+}

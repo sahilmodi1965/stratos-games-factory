@@ -1,0 +1,67 @@
+{
+  "game": "arrow-puzzle",
+  "scene_aspect": [414, 896],
+  "brand": {
+    "name": "Arrow Puzzle",
+    "tagline": "by Stratos Games",
+    "primary_gradient": ["#0d0024", "#3a0a6b", "#8a1ab5", "#e83fb0"],
+    "accent_glow": "#ff66cc",
+    "font_family": "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+  },
+  "compositions": [
+    {
+      "id": "01-mid-expert",
+      "title": "Mid-Expert Puzzle (Level 53)",
+      "scene": "arrow-puzzle/mid-expert.html",
+      "caption": "Tap.\nFlip.\nSolve.",
+      "sub": "400+ procedural levels. No paywalls. No timers.",
+      "gradient": ["#0a0033", "#3a0080", "#cc0099", "#ff3399"],
+      "accent": "#ff66cc"
+    },
+    {
+      "id": "02-daily-streak",
+      "title": "Daily Challenge — Day 10, Streak 7",
+      "scene": "arrow-puzzle/daily-streak.html",
+      "caption": "One puzzle\na day.",
+      "sub": "Same seed for the world. Build your streak.",
+      "gradient": ["#001a33", "#003366", "#0099cc", "#22d3ee"],
+      "accent": "#22d3ee"
+    },
+    {
+      "id": "03-dark-theme",
+      "title": "Dark Theme",
+      "scene": "arrow-puzzle/dark-theme.html",
+      "caption": "Pick\nyour vibe.",
+      "sub": "Three hand-tuned palettes — Default, Dark, Ocean.",
+      "gradient": ["#1a0040", "#5a0aa0", "#aa00ff", "#dd55ff"],
+      "accent": "#dd55ff"
+    },
+    {
+      "id": "04-ocean-theme",
+      "title": "Ocean Theme",
+      "scene": "arrow-puzzle/ocean-theme.html",
+      "caption": "Ocean\nmode.",
+      "sub": "Mint-cream surface, white arrows, teal accents.",
+      "gradient": ["#003344", "#006677", "#00b3a4", "#3fe0c8"],
+      "accent": "#3fe0c8"
+    },
+    {
+      "id": "05-menu-hero",
+      "title": "Menu Hero — Streak + Daily + Levels",
+      "scene": "arrow-puzzle/menu-hero.html",
+      "caption": "A puzzle\nfor every\nminute.",
+      "sub": "30-second snacks. 30-minute deep-end runs.",
+      "gradient": ["#1a0033", "#660066", "#ff0099", "#ff66cc"],
+      "accent": "#ff66cc"
+    },
+    {
+      "id": "06-levels-grid",
+      "title": "Levels Grid — Progressive Difficulty",
+      "scene": "arrow-puzzle/levels-grid.html",
+      "caption": "400+\nlevels.\nFive tiers.",
+      "sub": "Baseline · Easy · Moderate · Hard · Expert.",
+      "gradient": ["#003311", "#006633", "#00cc66", "#33ff99"],
+      "accent": "#33ff99"
+    }
+  ]
+}
