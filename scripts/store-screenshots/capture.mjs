@@ -19,8 +19,22 @@
 import { chromium } from 'playwright';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+// CLAUDE.md Step 8 v6 rule 5 — caption denylist (App Store / Play compliance).
+// Match → fail compose. Per-game extensions go in compositions/<game>-v6.json
+// under "caption_denylist_extra" if needed.
+const CAPTION_DENYLIST = [
+  /\bno ads?\b/i,
+  /\bad-?free\b/i,
+  /\bno timers?\b/i,
+  /\bfree every (arrow|move|level|step)\b/i,
+  /\buninterrupted\b/i,
+  /\bpremium experience\b/i,
+  /\bad-removal\b/i,
+];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -79,6 +93,24 @@ async function captureOne(browser, comp, outFile) {
   // Pass 2: reload without reset so seeded values take effect on a clean boot.
   await page.goto(comp.url, { waitUntil: 'networkidle' });
 
+  // Guard 3: post-load seed read-back (#102). Catches namespace-prefix
+  // mismatches like the v6 `arrow_puzzle:` vs `arrow_puzzle_` bug — every
+  // seeded key MUST persist across the reload.
+  if (comp.localStorage) {
+    const readBack = await page.evaluate((keys) => {
+      const out = {};
+      keys.forEach(k => { out[k] = localStorage.getItem(k); });
+      return out;
+    }, Object.keys(comp.localStorage));
+    for (const [k, expected] of Object.entries(comp.localStorage)) {
+      const actual = readBack[k];
+      const expectedStr = JSON.stringify(expected);
+      if (actual !== expectedStr) {
+        throw new Error(`SEED_NOT_PERSISTED: ${k} seeded=${expectedStr} read=${actual}`);
+      }
+    }
+  }
+
   // Run any UI actions (click navigation, wait for transitions, etc.).
   for (const action of (comp.actions || [])) {
     if (action.kind === 'click') {
@@ -87,13 +119,32 @@ async function captureOne(browser, comp, outFile) {
       // bounding box (AP's #game-canvas is fixed-positioned even on menu).
       // The button's onclick handler fires correctly via .click() on the
       // element — we don't need Playwright's pointer-event simulation here.
-      const clicked = await page.evaluate((selector) => {
-        const el = document.querySelector(selector);
-        if (!el) return false;
-        el.click();
+      // Optional `text` filter: among matching selectors, pick the one whose
+      // text content contains `text` (used for level-tile clicks where the
+      // tile has no data-level attribute, only a numeric child span).
+      const clicked = await page.evaluate(({ selector, text }) => {
+        const els = Array.from(document.querySelectorAll(selector));
+        if (!els.length) return false;
+        let target;
+        if (text == null) {
+          target = els[0];
+        } else {
+          const want = String(text);
+          // Match if any whitespace-separated token equals `want`, OR if the
+          // first numeric run inside textContent equals `want` (covers
+          // tiles where the number is concatenated with other glyphs).
+          target = els.find(e => {
+            const txt = (e.textContent || '').trim();
+            if (txt.split(/\s+/).includes(want)) return true;
+            const numMatch = txt.match(/\d+/);
+            return numMatch && numMatch[0] === want;
+          });
+        }
+        if (!target) return false;
+        target.click();
         return true;
-      }, action.selector);
-      if (!clicked) throw new Error(`click target not found: ${action.selector}`);
+      }, { selector: action.selector, text: action.text ?? null });
+      if (!clicked) throw new Error(`click target not found: ${action.selector}${action.text != null ? ` text=${action.text}` : ''}`);
     } else if (action.kind === 'wait') {
       await page.locator(action.selector).first().waitFor({ state: 'visible', timeout: 8000 });
     } else if (action.kind === 'sleep') {
@@ -106,6 +157,17 @@ async function captureOne(browser, comp, outFile) {
     await page.locator(comp.ready).first().waitFor({ state: 'visible', timeout: 8000 });
   }
   await page.waitForTimeout(comp.settle || 600);
+
+  // Guard 2: assert_screen — confirm we landed on the intended screen, not
+  // an adjacent one (#102). The v6 AP failure captured the tutorial when the
+  // spec asked for the menu; the ready selector existed on both surfaces so
+  // it didn't catch the divergence. assert_screen is the screen-identity check.
+  if (comp.assert_screen) {
+    const present = await page.evaluate((sel) => !!document.querySelector(sel), comp.assert_screen);
+    if (!present) {
+      throw new Error(`WRONG_SCREEN_CAPTURED: assert_screen=${comp.assert_screen} not found at capture time`);
+    }
+  }
 
   await page.screenshot({ path: outFile, fullPage: false, type: 'png' });
   console.log(`  ✓ capture ${comp.id} → ${outFile}`);
@@ -196,20 +258,72 @@ async function main() {
     ? spec.compositions.filter(c => args.comps.has(c.id) || args.comps.has(c.id.split('-')[0]))
     : spec.compositions;
 
+  // Pre-flight: caption denylist (App Store / Play compliance). Fail fast
+  // before launching a browser if any caption/sub matches a forbidden pattern.
+  const denylistViolations = [];
+  for (const comp of filtered) {
+    const text = [comp.caption || '', comp.sub || ''].join(' ');
+    for (const pattern of CAPTION_DENYLIST) {
+      if (pattern.test(text)) {
+        denylistViolations.push({ id: comp.id, pattern: pattern.toString(), text });
+      }
+    }
+  }
+  if (denylistViolations.length) {
+    console.error('CAPTION_DENYLIST_VIOLATION — App Store / Play compliance:');
+    for (const v of denylistViolations) {
+      console.error(`  ${v.id}  matches ${v.pattern}  in: ${v.text.replace(/\n/g, ' / ')}`);
+    }
+    process.exit(1);
+  }
+
   const captureDir = resolve(__dirname, 'output', 'capture', args.game);
   await mkdir(captureDir, { recursive: true });
 
   console.log(`[capture] ${args.game} — ${filtered.length} comp(s)`);
   const browser = await chromium.launch();
+  const captureResults = []; // for Guard 1
   try {
     // Phase 1: capture each composition's real-game state once (size-independent).
     for (const comp of filtered) {
       const captureFile = join(captureDir, `${comp.id}.png`);
       try {
         await captureOne(browser, { ...comp, viewport: comp.viewport || { width: 414, height: 896 } }, captureFile);
+        captureResults.push({ id: comp.id, file: captureFile, comp, ok: true });
       } catch (err) {
         console.error(`    ✗ capture ${comp.id} — ${err.message}`);
+        captureResults.push({ id: comp.id, file: captureFile, comp, ok: false, error: err.message });
       }
+    }
+
+    // Guard 1: duplicate-PNG check (#102). Compare every pair of successful
+    // captures whose specs differ in localStorage / actions / url. Identical
+    // sha256 → SILENT_SEED_FAILURE. Catches the v6 AP failure where 3 menu
+    // shots all rendered the same tutorial screen despite differing seeds.
+    const successful = captureResults.filter(r => r.ok);
+    const hashes = {};
+    for (const r of successful) {
+      const buf = await readFile(r.file);
+      hashes[r.id] = createHash('sha256').update(buf).digest('hex');
+    }
+    const dupViolations = [];
+    for (let i = 0; i < successful.length; i++) {
+      for (let j = i + 1; j < successful.length; j++) {
+        const a = successful[i], b = successful[j];
+        const aSeed = JSON.stringify({ ls: a.comp.localStorage, ac: a.comp.actions, url: a.comp.url });
+        const bSeed = JSON.stringify({ ls: b.comp.localStorage, ac: b.comp.actions, url: b.comp.url });
+        if (aSeed !== bSeed && hashes[a.id] === hashes[b.id]) {
+          dupViolations.push({ a: a.id, b: b.id, hash: hashes[a.id].slice(0, 12) });
+        }
+      }
+    }
+    if (dupViolations.length) {
+      console.error('SILENT_SEED_FAILURE — captures with differing seeds rendered identical PNGs:');
+      for (const v of dupViolations) {
+        console.error(`  ${v.a} ≡ ${v.b}  (sha256=${v.hash}…)`);
+      }
+      console.error('  → seed is not reaching the game; check localStorage key namespace + theme value names');
+      process.exit(2);
     }
 
     // Phase 2: compose each capture into the marketing template at every target size.

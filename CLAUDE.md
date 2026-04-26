@@ -438,6 +438,33 @@ The earlier "scenes-as-HTML" rules (#1-#7 below, marked DEPRECATED) failed Ripon
 7. **Claim substantiation.** Numeric claims in captions (`400+`, `90 stages`, `Streak 7`, `5180`) MUST have a corresponding entry in `scripts/store-screenshots/claims/<game>.json` keyed `claim → evidence-url-or-file`. Missing evidence → build fail. Brain extracts evidence where automated (`levels.json` length → "400+ levels"); operator supplies the rest.
 8. **Phone-only first ship (2026-04-26 Sahil call).** Mark all 3 apps iPhone-only in App Store Connect / phone-only in Play Console. iPad screenshots NOT submitted until each game ships `[G2] feat: iPad-native UI` (F2 cadence per game). Reason: phone-screen-at-iPad-resolution captures fail Apple 2.3.3.
 
+**v7 ASO + UA rules (2026-04-26, Sahil call after AP v7 review).** v6 made screenshots compliance-clean; v7 makes them **convert**. The store screenshot carousel is the single page where every UA dollar (paid + organic) lands. If the carousel doesn't sell, all UA spend leaks at the last step. Memory: `feedback_lead_with_hard_levels_user_aspiration.md`, `project_aso_conversion_psychology_framework.md`.
+
+9. **Conversion-psychology hook ordering — explicit per-game.** Carousel order = funnel order. Lead with the strongest stopping-power hook for that game's genre, not the menu. Maintained in `scripts/store-screenshots/compositions/<game>-v6.json` under `"hook_order"` (array of hook names with one-line rationale). Per-game canonical orderings:
+   - **AP (logic puzzle, minimalist genre — Two Dots / Threes / Flow Free).** 1) "I want to solve THAT" — high-density mid-expert puzzle (Level 53+, packed board). 2) "I'll streak this" — daily challenge with multi-day streak. 3) "this won't run out" — levels grid scrolled to mid-game with star completion. 4) "I can make it mine" — theme variants. 5) "this is who I'm playing" — clean menu hero.
+   - **BX (block-explosion arcade — Block Blast / Royal Match / Toon Blast).** 1) "WOAH that combo" — mid-explosion ×4 combo with score popup. 2) "I can chain bigger" — ×8 MEGA combo with multiplier overlay. 3) "I beat my best" — best-score celebration with crown. 4) "90 stages waiting" — adventure map with progress + golden completions. 5) "this is who I'm playing" — menu with mode selection.
+   - **HM (realtime social — Among Us / Mafia/Werewolf genre).** 1) "play with friends right now" — 6-person lobby with named players + room code. 2) "secret roles" — role reveal screen. 3) "the game IS happening" — night action mid-frame. 4) "you can win or lose" — game-over with mafia victory. 5) "this is who I'm playing" — title with Create Room CTA.
+
+10. **Hero-shot rule.** Shot #1 (the App Store thumbnail) MUST be the densest, highest-action shot — never the menu. Per Sahil 2026-04-26: *"people like to see hard levels and challenge themselves to reach there and solve it"*. Users buy aspiration, not introduction. Validators reject any composition where shot #1's `id` matches `/menu|title|splash|tutorial/i` unless the spec explicitly tags `"shot_1_menu_justification"` with operator-approved reason.
+
+11. **`?showroom=<name>` URL convention — portfolio-wide G2 capability.** Every game in G2+ MUST implement a `?showroom=<state-name>` URL param that:
+   - Boots into a deterministic, hand-curated, screenshot-grade state (not random procgen)
+   - Is real game code rendering real game state (compliance-clean for App Store 2.3.3)
+   - Doubles as regression QA, smoke test fixture, and player-bug-report repro tool
+   - Is documented in the game repo at `docs/showroom-states.md` with each state's name + post-conditions
+   - Has a smoke test asserting the named state renders with required density / elements
+   The brain consumes these via `comp.url` in `<game>-v6.json` (e.g. `https://.../arrow-puzzle-testing/?showroom=mid-expert-packed`). Random `localStorage` seeding is the **fallback** when showroom routing hasn't shipped yet, never the preferred path. Procgen variance is the failure mode this convention prevents (some Level 53 seeds land sparse — the carousel can't gamble on conversion).
+
+12. **G2-entry priority gate — ASO blocks non-ship-blocker game work.** When a game enters G2 (paid distribution prep), the `?showroom=` build-request and the resulting screenshot carousel **block all non-ship-blocker game-repo work** in Step 2 prioritization. Rationale: ASO conversion = entire UA spend efficiency; one shipped feature without a converting carousel is worse than zero shipped features with one. Step 2 ranks `?showroom=` above content/polish/refactor for any G2 game until the v7 carousel is operator-approved.
+
+13. **Density floor (mandatory in `npm run validate`).** For puzzle/board shots, `capture.mjs` must compute non-background pixel coverage of the device-screen area and assert ≥ floor (default 35% for AP-class puzzles, 40% for BX-class boards, configurable per shot via `comp.density_floor`). Below floor → fail with `DENSITY_BELOW_FLOOR: shot=<id> coverage=<pct>% floor=<pct>%`. Reverses v4 rule 7 deprecation — density was the right invariant; the wrong layer (scene HTML) was being measured.
+
+14. **Three silent-failure guards (shipped 2026-04-26).** `capture.mjs` enforces:
+   - Caption denylist regex (rule 5) — pre-render check.
+   - Seed read-back (post-load `localStorage.getItem` of every seeded key, fail on mismatch).
+   - Duplicate-PNG check (sha256-pair captures whose specs differ; identical hash = `SILENT_SEED_FAILURE`).
+   Adding more guards: file factory-improvement, do not patch ad-hoc.
+
 **v4 fabrication-era rules (DEPRECATED 2026-04-26 — kept for audit trail; do not use).**
 
 These rules enforced fidelity at the renderer layer of `scripts/store-screenshots/scenes/<game>/*.html`. They failed because they presumed scenes-as-HTML was the rendering surface; v6 deletes the scenes directory per game as v6 captures land. Crossed out below for the audit trail.

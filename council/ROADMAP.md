@@ -113,8 +113,8 @@ Generic template every game inherits. Each game has its own G-pointer. Tracked a
 **Verifiable:** *"One full round on desktop with no console errors, and a feature PR can land without rewriting any subsystem."*
 
 ### G2 — Distributable beta
-**Outcome:** Packaged for web + iOS + Android. Signed builds. Store listings drafted. Ads stubbed in test mode. **Not yet submitted.**
-**Verifiable:** *"There is a signed iOS build, a signed Android build, a store-listing draft, and ads serve in test mode — but no real users yet."*
+**Outcome:** Packaged for web + iOS + Android. Signed builds. Store listings drafted (including the **converting screenshot carousel** built via the portfolio-wide `?showroom=<name>` URL convention — see CLAUDE.md Step 8 v7 rule 11). Ads stubbed in test mode. **Not yet submitted.**
+**Verifiable:** *"There is a signed iOS build, a signed Android build, a store-listing draft including 5+ store-submission-ready screenshots driven by `?showroom=<name>` URLs hitting the per-game density floor, and ads serve in test mode — but no real users yet."*
 
 ### G3 — Launched beta with real data
 **Outcome:** Live in at least one real channel (TestFlight / Play Internal / production). At least 10 real installs. Telemetry flowing back into the factory as `analytics-data` issues.

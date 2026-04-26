@@ -1,7 +1,14 @@
 {
-  "_comment": "v6 schema (2026-04-26) — captures the REAL game via Playwright. comp.url + comp.localStorage + comp.actions drive the live AP web app to the marketing state; capture.mjs screenshots the viewport. Marketing-template chrome wraps AROUND the capture in template/marketing.html (unchanged from v4). Once AP ?screenshot=1 dev hooks land (mody-sahariar1/arrow-puzzle-testing #224 #225 #226 #227), gameplay shots can target Level 53 with seeded themes/state. Until then this set captures naturally-reachable states only.",
+  "_comment": "v7.1 schema (2026-04-26 — Sahil v7 review). Conversion-psychology hook ordering applied (CLAUDE.md Step 8 v7 rule 9): hard-puzzle (hero) → streak → depth → themes → brand. v7.1 hero shot navigates menu → levels grid → Level 53 tile (click via DOM); seeds arrow_puzzle_max_level=60 to unlock Level 53. Procgen Level 53 has variance — once mody-sahariar1/arrow-puzzle-testing ?showroom= routing lands, this shot switches to ?showroom=mid-expert-packed for deterministic density. KEY FIX vs v6: SaveManager separator is `_` not `:` (packages/core/src/constants.js:51).",
   "game": "arrow-puzzle",
   "scene_aspect": [414, 896],
+  "hook_order": [
+    "hard-puzzle (I want to solve THAT — high-density Level 53)",
+    "streak (I'll come back daily — Day 11 + Streak 7 🔥)",
+    "depth (this won't run out — 400+ levels grid)",
+    "personalization (I can make it mine — themes)",
+    "brand (this is who I'm playing — clean menu)"
+  ],
   "brand": {
     "name": "Arrow Puzzle",
     "tagline": "by Stratos Games",
@@ -9,91 +16,49 @@
   },
   "compositions": [
     {
-      "id": "01-menu-default",
+      "id": "01-hero-mid-expert",
       "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
       "viewport": { "width": 414, "height": 896 },
       "urlReset": true,
       "localStorage": {
-        "arrow_puzzle:tutorial_complete": true,
-        "arrow_puzzle:theme": "default"
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "default",
+        "arrow_puzzle_max_level": 60
       },
-      "ready": ".btn-primary",
-      "settle": 700,
-      "caption": "Tap.\nFlip.\nSolve.",
-      "sub": "400+ procedural levels. Free to play.",
+      "actions": [
+        { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
+        { "kind": "click", "selector": "#btn-levels" },
+        { "kind": "wait", "selector": "#screen-levels.active #levels-grid .path-node" },
+        { "kind": "sleep", "ms": 400 },
+        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 53 }
+      ],
+      "ready": "#screen-game.active canvas",
+      "assert_screen": "#screen-game.active",
+      "settle": 1500,
+      "caption": "Real\nchallenge.",
+      "sub": "Mid-expert puzzles get dense fast. Plan every flip.",
       "gradient": ["#0a0033", "#3a0080", "#cc0099", "#ff3399"],
       "accent": "#ff66cc",
       "provenance": "playwright-capture"
     },
     {
-      "id": "02-menu-sunset",
+      "id": "02-daily-streak",
       "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
       "viewport": { "width": 414, "height": 896 },
       "urlReset": true,
       "localStorage": {
-        "arrow_puzzle:tutorial_complete": true,
-        "arrow_puzzle:theme": "dark"
-      },
-      "ready": ".btn-primary",
-      "settle": 700,
-      "caption": "Pick\nyour vibe.",
-      "sub": "Three hand-tuned themes — Default, Sunset, Ocean.",
-      "gradient": ["#1a0040", "#5a0aa0", "#aa00ff", "#dd55ff"],
-      "accent": "#dd55ff",
-      "provenance": "playwright-capture"
-    },
-    {
-      "id": "03-menu-ocean",
-      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
-      "viewport": { "width": 414, "height": 896 },
-      "urlReset": true,
-      "localStorage": {
-        "arrow_puzzle:tutorial_complete": true,
-        "arrow_puzzle:theme": "ocean"
-      },
-      "ready": ".btn-primary",
-      "settle": 700,
-      "caption": "Ocean\nmode.",
-      "sub": "Mint-cream surface. White arrows. Teal accents.",
-      "gradient": ["#003344", "#006677", "#00b3a4", "#3fe0c8"],
-      "accent": "#3fe0c8",
-      "provenance": "playwright-capture"
-    },
-    {
-      "id": "04-levels-grid",
-      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
-      "viewport": { "width": 414, "height": 896 },
-      "urlReset": true,
-      "localStorage": {
-        "arrow_puzzle:tutorial_complete": true,
-        "arrow_puzzle:theme": "default"
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "default",
+        "arrow_puzzle_daily_streak": 7,
+        "arrow_puzzle_daily_lastPlayedDay": 9,
+        "arrow_puzzle_daily_lastResult": ""
       },
       "actions": [
-        { "kind": "wait", "selector": ".btn-levels" },
-        { "kind": "click", "selector": ".btn-levels" }
+        { "kind": "wait", "selector": "#screen-menu.active #btn-daily" },
+        { "kind": "click", "selector": "#btn-daily" }
       ],
-      "ready": ".level-tile, [class*=\"level\"]",
-      "settle": 700,
-      "caption": "400+\nlevels.\nFive tiers.",
-      "sub": "Baseline · Easy · Moderate · Hard · Expert.",
-      "gradient": ["#003311", "#006633", "#00cc66", "#33ff99"],
-      "accent": "#33ff99",
-      "provenance": "playwright-capture"
-    },
-    {
-      "id": "05-daily",
-      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
-      "viewport": { "width": 414, "height": 896 },
-      "urlReset": true,
-      "localStorage": {
-        "arrow_puzzle:tutorial_complete": true,
-        "arrow_puzzle:theme": "default"
-      },
-      "actions": [
-        { "kind": "wait", "selector": ".btn-daily" },
-        { "kind": "click", "selector": ".btn-daily" }
-      ],
-      "ready": ".daily-day-heading, .daily-content",
+      "ready": "#screen-daily.active .daily-day-heading",
+      "assert_screen": "#screen-daily.active",
       "settle": 700,
       "caption": "One puzzle\na day.",
       "sub": "Same seed for the world. Build your streak.",
@@ -102,29 +67,85 @@
       "provenance": "playwright-capture"
     },
     {
-      "id": "06-play-default",
+      "id": "03-levels-grid",
       "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
       "viewport": { "width": 414, "height": 896 },
       "urlReset": true,
       "localStorage": {
-        "arrow_puzzle:tutorial_complete": true,
-        "arrow_puzzle:theme": "default"
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "default",
+        "arrow_puzzle_max_level": 60
       },
       "actions": [
-        { "kind": "wait", "selector": ".btn-primary" },
-        { "kind": "click", "selector": ".btn-primary" }
+        { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
+        { "kind": "click", "selector": "#btn-levels" }
       ],
-      "ready": "canvas, .game-canvas, [class*=\"board\"]",
-      "settle": 1200,
-      "caption": "Free every\narrow.",
-      "sub": "Tap to flip. Plan to solve.",
+      "ready": "#screen-levels.active #levels-grid .path-node",
+      "assert_screen": "#screen-levels.active",
+      "settle": 900,
+      "caption": "400+\nlevels.\nFive tiers.",
+      "sub": "Baseline · Easy · Moderate · Hard · Expert.",
+      "gradient": ["#003311", "#006633", "#00cc66", "#33ff99"],
+      "accent": "#33ff99",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "04-menu-dark",
+      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
+      "viewport": { "width": 414, "height": 896 },
+      "urlReset": true,
+      "localStorage": {
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "dark"
+      },
+      "ready": "#screen-menu.active #btn-play",
+      "assert_screen": "#screen-menu.active",
+      "settle": 700,
+      "caption": "Pick\nyour vibe.",
+      "sub": "Three hand-tuned themes — Default, Dark, Ocean.",
+      "gradient": ["#1a0040", "#5a0aa0", "#aa00ff", "#dd55ff"],
+      "accent": "#dd55ff",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "05-menu-ocean",
+      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
+      "viewport": { "width": 414, "height": 896 },
+      "urlReset": true,
+      "localStorage": {
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "ocean"
+      },
+      "ready": "#screen-menu.active #btn-play",
+      "assert_screen": "#screen-menu.active",
+      "settle": 700,
+      "caption": "Ocean\nmode.",
+      "sub": "Mint-cream surface. White arrows. Teal accents.",
+      "gradient": ["#003344", "#006677", "#00b3a4", "#3fe0c8"],
+      "accent": "#3fe0c8",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "06-menu-default",
+      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
+      "viewport": { "width": 414, "height": 896 },
+      "urlReset": true,
+      "localStorage": {
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "default"
+      },
+      "ready": "#screen-menu.active #btn-play",
+      "assert_screen": "#screen-menu.active",
+      "settle": 700,
+      "caption": "Tap.\nFlip.\nSolve.",
+      "sub": "400+ procedural levels. Free to play.",
       "gradient": ["#1a0033", "#660066", "#ff0099", "#ff66cc"],
       "accent": "#ff66cc",
       "provenance": "playwright-capture"
     }
   ],
   "deferred_until_dev_hooks": {
-    "comment": "Once mody-sahariar1/arrow-puzzle-testing #224 (capture mode) lands, add: 07-play-sunset (Level 53 + sunset theme), 08-play-ocean (Level 53 + ocean theme), 09-play-mid-expert (Level 80+ packed-mid-game state). Also #225 (daily seeding) → enrich 05-daily with Day 10 + Streak 7 + Completed state. Also #226 (theme-sunset rename) → switch theme=dark to theme=sunset across captions.",
-    "blocked_shots": ["07-play-sunset", "08-play-ocean", "09-play-mid-expert", "10-daily-completed-streak"]
+    "comment": "Once mody-sahariar1/arrow-puzzle-testing ?showroom= routing lands (the [G2] feat: ?showroom= build-request filed today), the v7.1 hero shot (currently navigating via levels-grid + max_level seed + tile click) switches to a deterministic ?showroom=mid-expert-packed URL. The named state will be hand-curated to hit the density floor (35% min for AP-class puzzles) every time, eliminating procgen variance.",
+    "blocked_shots_when_showroom_lands": ["01-hero-mid-expert (switches to ?showroom=mid-expert-packed)", "02-daily-streak (switches to ?showroom=daily-streak-day-10)", "additional: 07-completion (?showroom=puzzle-just-solved)"]
   }
 }
