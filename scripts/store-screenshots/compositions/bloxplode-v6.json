@@ -1,16 +1,15 @@
 {
-  "_comment": "v7 BX schema (2026-04-26). HONEST GAP: BX naturally reaches only 3 shots without dev-hooks (menu/adventure-map/classic-empty). target_shot_count: 10, min_shot_count: 8 — capture.mjs WILL fail with MIN_SHOT_COUNT_NOT_MET until #72-#76 land combo / best-score / revive / adventure-themed seeds. Pass --comps 01,02,03 to capture only what's reachable for interim review; do NOT submit to App Store with 3 shots — that's a half-empty carousel. The blocker is real game-side work; not a brain workaround target. Per CLAUDE.md Step 8 v7 rule 15.",
+  "_comment": "v7.1 BX schema (2026-04-26 — Sahil push for 8+ shots, no more 3-shot half-empty carousel). Major discovery: BX has separate URLs for each adventure level (/bloxplode%20adventure%20level%20N/) and classic mode at /classic/. That gives us 8 reachable shots without dev-hooks: menu + adventure-map + classic + 5 different adventure levels (1, 3, 5, 7, 10 — spread across difficulty curve, each with its own theme palette). Combo / best-score / revive HERO shots still gated on Bloxplode-Beta #72-#76 — those 5 are the dopamine peaks but the carousel is no longer half-empty.",
   "game": "bloxplode",
   "scene_aspect": [414, 896],
   "target_shot_count": 10,
   "min_shot_count": 8,
   "hook_order": [
-    "combo-dopamine (WOAH that combo — mid-explosion x4) — BLOCKED on #72/#73",
-    "mastery (x8 MEGA combo with multiplier overlay) — BLOCKED on #72/#73",
-    "status (best-score celebration with crown + 5180) — BLOCKED on #72/#75",
-    "progression (adventure map with 45/90 + golden stars + theme) — BLOCKED on #72/#74",
-    "tension (revive countdown 3 + Revive/Skip pills) — BLOCKED on #72/#76",
-    "brand (menu hero) — REACHABLE NOW"
+    "brand (menu hero — entry point)",
+    "progression (adventure map — 90 stages visible)",
+    "variety (5 different adventure levels, each themed)",
+    "classic-mode (alternate game mode)",
+    "combo-dopamine (BLOCKED on #72-#76 — combo hero shot would lead carousel when unlocked)"
   ],
   "brand": {
     "name": "Bloxplode",
@@ -19,7 +18,107 @@
   },
   "compositions": [
     {
-      "id": "01-menu",
+      "id": "01-adventure-level-1",
+      "url": "http://localhost:8765/bloxplode%20adventure%20level%201/",
+      "viewport": { "width": 414, "height": 896 },
+      "actions": [
+        { "kind": "sleep", "ms": 3500 }
+      ],
+      "settle": 800,
+      "caption": "Stage 1.\nLearn the\nmoves.",
+      "sub": "90 hand-crafted Adventure stages. Free to play.",
+      "gradient": ["#0a1530", "#1a2050", "#3E50A4", "#00E5FF"],
+      "accent": "#00E5FF",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "02-adventure-level-3",
+      "url": "http://localhost:8765/bloxplode%20adventure%20level%203/",
+      "viewport": { "width": 414, "height": 896 },
+      "actions": [
+        { "kind": "sleep", "ms": 3500 }
+      ],
+      "settle": 800,
+      "caption": "Patterns\nget tighter.",
+      "sub": "Stage 3 — clear the grid before time runs out.",
+      "gradient": ["#1a0040", "#5a0aa0", "#aa00ff", "#dd55ff"],
+      "accent": "#dd55ff",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "03-adventure-level-5",
+      "url": "http://localhost:8765/bloxplode%20adventure%20level%205/",
+      "viewport": { "width": 414, "height": 896 },
+      "actions": [
+        { "kind": "sleep", "ms": 3500 }
+      ],
+      "settle": 800,
+      "caption": "Mid-stage\ngrind.",
+      "sub": "Stage 5 — multipliers, gem goals, themed grids.",
+      "gradient": ["#003344", "#006677", "#00b3a4", "#3fe0c8"],
+      "accent": "#3fe0c8",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "04-adventure-level-7",
+      "url": "http://localhost:8765/bloxplode%20adventure%20level%207/",
+      "viewport": { "width": 414, "height": 896 },
+      "actions": [
+        { "kind": "sleep", "ms": 3500 }
+      ],
+      "settle": 800,
+      "caption": "Stage 7.\nGet sharp.",
+      "sub": "Late-game stages punish loose plays.",
+      "gradient": ["#001a33", "#003366", "#0099cc", "#22d3ee"],
+      "accent": "#22d3ee",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "05-adventure-level-10",
+      "url": "http://localhost:8765/bloxplode%20adventure%20level%2010/",
+      "viewport": { "width": 414, "height": 896 },
+      "actions": [
+        { "kind": "sleep", "ms": 3500 }
+      ],
+      "settle": 800,
+      "caption": "Stage 10.\nThe wall.",
+      "sub": "Hand-crafted boss stage rewards perfect lines.",
+      "gradient": ["#1a0024", "#3a0a48", "#7a1ab5", "#ff66cc"],
+      "accent": "#ff66cc",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "06-adventure-map",
+      "url": "http://localhost:8765/",
+      "viewport": { "width": 414, "height": 896 },
+      "actions": [
+        { "kind": "sleep", "ms": 4500 },
+        { "kind": "click", "selector": ".pill-btn.orange-pill" },
+        { "kind": "sleep", "ms": 1500 }
+      ],
+      "settle": 800,
+      "caption": "90 stages.\nOne run.",
+      "sub": "Climb the trophy tree. Gold-star every stage.",
+      "gradient": ["#0a1530", "#1a2050", "#3E50A4", "#FFCA28"],
+      "accent": "#FFCA28",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "07-classic-mode",
+      "url": "http://localhost:8765/classic/index.html",
+      "viewport": { "width": 414, "height": 896 },
+      "actions": [
+        { "kind": "sleep", "ms": 3500 }
+      ],
+      "settle": 800,
+      "caption": "Classic.\nEndless.\nCombos.",
+      "sub": "Free-flow arcade. Drag, place, chain.",
+      "gradient": ["#0a0a30", "#1a2a80", "#0288D1", "#00E5FF"],
+      "accent": "#00E5FF",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "08-menu-hero",
       "url": "http://localhost:8765/",
       "viewport": { "width": 414, "height": 896 },
       "actions": [
@@ -31,46 +130,14 @@
       "gradient": ["#0a1530", "#1a2050", "#3E50A4", "#5468d8"],
       "accent": "#00e5ff",
       "provenance": "playwright-capture"
-    },
-    {
-      "id": "02-adventure-map",
-      "url": "http://localhost:8765/",
-      "viewport": { "width": 414, "height": 896 },
-      "actions": [
-        { "kind": "sleep", "ms": 4500 },
-        { "kind": "click", "selector": ".pill-btn.orange-pill" },
-        { "kind": "sleep", "ms": 1500 }
-      ],
-      "settle": 800,
-      "caption": "90 levels.\nWin the trophy.",
-      "sub": "Climb 90 hand-crafted Adventure levels.",
-      "gradient": ["#001a33", "#003366", "#0099cc", "#22d3ee"],
-      "accent": "#22d3ee",
-      "provenance": "playwright-capture"
-    },
-    {
-      "id": "03-classic",
-      "url": "http://localhost:8765/classic/index.html",
-      "viewport": { "width": 414, "height": 896 },
-      "actions": [
-        { "kind": "sleep", "ms": 3500 }
-      ],
-      "settle": 800,
-      "caption": "Stack.\nClear.\nCombo.",
-      "sub": "Drag blocks. Clear lines. Stack combos.",
-      "gradient": ["#1a0040", "#5a0aa0", "#aa00ff", "#dd55ff"],
-      "accent": "#dd55ff",
-      "provenance": "playwright-capture"
     }
   ],
   "deferred_until_dev_hooks": {
-    "comment": "5+ HERO shots blocked on mody-sahariar1/Bloxplode-Beta #72-#76 (capture-mode + state seeding). Without these, BX has 3 reachable shots — App Store / Play minimum but a HALF-EMPTY CAROUSEL per Sahil 2026-04-26. capture.mjs's MIN_SHOT_COUNT_NOT_MET enforcement will fail full BX runs until at least 5 more shots land via dev-hooks. DO NOT submit BX to stores until #72-#76 ship.",
+    "comment": "2 hero shots blocked on Bloxplode-Beta #72-#76: combo-x4 mid-explosion + best-score-celebration with crown. These would lead the carousel as #1 (combo) and #2 (mastery) per BX hook ordering. Until they ship, the 8-shot carousel above leads with brand + progression instead of dopamine — passable but not optimal. Once dev-hooks land: combo shots move to #1-#2, current shots shift down, total expands to 10.",
     "blocked_shots": [
-      "04-classic-combo-x4 (HERO — gated on #72+#73)",
-      "05-mega-combo-x8 (gated on #72+#73)",
-      "06-best-score-celebration (gated on #72+#75)",
-      "07-adventure-themed-mid (gated on #72+#74)",
-      "08-revive-countdown (gated on #72+#76)"
+      "00-combo-x4-hero (HERO when unlocked — BLOCKED)",
+      "00-mega-combo-x8 (BLOCKED)",
+      "00-best-score-crown (BLOCKED)"
     ]
   }
 }
