@@ -26,7 +26,7 @@
       "localStorage": {
         "arrow_puzzle_tutorial_complete": true,
         "arrow_puzzle_theme": "default",
-        "arrow_puzzle_max_level": 60
+        "arrow_puzzle_max_level": 150
       },
       "actions": [
         { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
@@ -52,7 +52,7 @@
       "localStorage": {
         "arrow_puzzle_tutorial_complete": true,
         "arrow_puzzle_theme": "dark",
-        "arrow_puzzle_max_level": 60
+        "arrow_puzzle_max_level": 150
       },
       "actions": [
         { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
@@ -71,21 +71,21 @@
       "provenance": "playwright-capture"
     },
     {
-      "id": "03-puzzle-hard-l36",
+      "id": "03-puzzle-hard-l60",
       "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
       "viewport": { "width": 414, "height": 896 },
       "urlReset": true,
       "localStorage": {
         "arrow_puzzle_tutorial_complete": true,
         "arrow_puzzle_theme": "default",
-        "arrow_puzzle_max_level": 60
+        "arrow_puzzle_max_level": 150
       },
       "actions": [
         { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
         { "kind": "click", "selector": "#btn-levels" },
         { "kind": "wait", "selector": "#screen-levels.active #levels-grid .path-node" },
         { "kind": "sleep", "ms": 400 },
-        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 36 }
+        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 60 }
       ],
       "ready": "#screen-game.active canvas",
       "assert_screen": "#screen-game.active",
@@ -97,21 +97,21 @@
       "provenance": "playwright-capture"
     },
     {
-      "id": "04-puzzle-moderate-l20",
+      "id": "04-puzzle-hard-l45",
       "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
       "viewport": { "width": 414, "height": 896 },
       "urlReset": true,
       "localStorage": {
         "arrow_puzzle_tutorial_complete": true,
         "arrow_puzzle_theme": "default",
-        "arrow_puzzle_max_level": 60
+        "arrow_puzzle_max_level": 150
       },
       "actions": [
         { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
         { "kind": "click", "selector": "#btn-levels" },
         { "kind": "wait", "selector": "#screen-levels.active #levels-grid .path-node" },
         { "kind": "sleep", "ms": 400 },
-        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 20 }
+        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 45 }
       ],
       "ready": "#screen-game.active canvas",
       "assert_screen": "#screen-game.active",
@@ -123,21 +123,21 @@
       "provenance": "playwright-capture"
     },
     {
-      "id": "05-puzzle-ocean-l25",
+      "id": "05-puzzle-ocean-l40",
       "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
       "viewport": { "width": 414, "height": 896 },
       "urlReset": true,
       "localStorage": {
         "arrow_puzzle_tutorial_complete": true,
         "arrow_puzzle_theme": "ocean",
-        "arrow_puzzle_max_level": 60
+        "arrow_puzzle_max_level": 150
       },
       "actions": [
         { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
         { "kind": "click", "selector": "#btn-levels" },
         { "kind": "wait", "selector": "#screen-levels.active #levels-grid .path-node" },
         { "kind": "sleep", "ms": 400 },
-        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 25 }
+        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 40 }
       ],
       "ready": "#screen-game.active canvas",
       "assert_screen": "#screen-game.active",
@@ -181,7 +181,7 @@
       "localStorage": {
         "arrow_puzzle_tutorial_complete": true,
         "arrow_puzzle_theme": "default",
-        "arrow_puzzle_max_level": 60
+        "arrow_puzzle_max_level": 150
       },
       "actions": [
         { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
