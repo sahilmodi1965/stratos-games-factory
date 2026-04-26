@@ -1,13 +1,16 @@
 {
-  "_comment": "v7.1 schema (2026-04-26 — Sahil v7 review). Conversion-psychology hook ordering applied (CLAUDE.md Step 8 v7 rule 9): hard-puzzle (hero) → streak → depth → themes → brand. v7.1 hero shot navigates menu → levels grid → Level 53 tile (click via DOM); seeds arrow_puzzle_max_level=60 to unlock Level 53. Procgen Level 53 has variance — once mody-sahariar1/arrow-puzzle-testing ?showroom= routing lands, this shot switches to ?showroom=mid-expert-packed for deterministic density. KEY FIX vs v6: SaveManager separator is `_` not `:` (packages/core/src/constants.js:51).",
+  "_comment": "v7.2 schema (2026-04-26 — Sahil push for ASO-grade, not minimum-grade). 10 shots = App Store iPhone cap, 8 = Play cap (universal floor). 4 gameplay shots (variety in difficulty: Expert L53, Hard L36, Moderate L20, Ocean-themed L25) + daily-streak + levels-grid + 3 theme menus = 10 reachable without dev hooks. SaveManager separator is `_` not `:` (packages/core/src/constants.js:51). Once #228 (?showroom= URL routing) lands, gameplay shots switch to deterministic ?showroom=mid-expert-packed etc.",
   "game": "arrow-puzzle",
   "scene_aspect": [414, 896],
+  "target_shot_count": 10,
+  "min_shot_count": 8,
   "hook_order": [
-    "hard-puzzle (I want to solve THAT — high-density Level 53)",
+    "hard-puzzle (I want to solve THAT — packed Level 53 Expert)",
+    "variety (mid-difficulty Hard / Moderate / themed gameplay)",
     "streak (I'll come back daily — Day 11 + Streak 7 🔥)",
     "depth (this won't run out — 400+ levels grid)",
-    "personalization (I can make it mine — themes)",
-    "brand (this is who I'm playing — clean menu)"
+    "personalization (themes show on the actual game, not just menus)",
+    "brand (clean menu — entry hero)"
   ],
   "brand": {
     "name": "Arrow Puzzle",
@@ -16,7 +19,7 @@
   },
   "compositions": [
     {
-      "id": "01-hero-mid-expert",
+      "id": "01-hero-expert-l53",
       "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
       "viewport": { "width": 414, "height": 896 },
       "urlReset": true,
@@ -42,7 +45,111 @@
       "provenance": "playwright-capture"
     },
     {
-      "id": "02-daily-streak",
+      "id": "02-hero-expert-l53-dark",
+      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
+      "viewport": { "width": 414, "height": 896 },
+      "urlReset": true,
+      "localStorage": {
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "dark",
+        "arrow_puzzle_max_level": 60
+      },
+      "actions": [
+        { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
+        { "kind": "click", "selector": "#btn-levels" },
+        { "kind": "wait", "selector": "#screen-levels.active #levels-grid .path-node" },
+        { "kind": "sleep", "ms": 400 },
+        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 53 }
+      ],
+      "ready": "#screen-game.active canvas",
+      "assert_screen": "#screen-game.active",
+      "settle": 1500,
+      "caption": "Dark mode\nfor late nights.",
+      "sub": "Same Level 53. Different vibe. Easier on the eyes.",
+      "gradient": ["#1a0040", "#5a0aa0", "#aa00ff", "#dd55ff"],
+      "accent": "#dd55ff",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "03-puzzle-hard-l36",
+      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
+      "viewport": { "width": 414, "height": 896 },
+      "urlReset": true,
+      "localStorage": {
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "default",
+        "arrow_puzzle_max_level": 60
+      },
+      "actions": [
+        { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
+        { "kind": "click", "selector": "#btn-levels" },
+        { "kind": "wait", "selector": "#screen-levels.active #levels-grid .path-node" },
+        { "kind": "sleep", "ms": 400 },
+        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 36 }
+      ],
+      "ready": "#screen-game.active canvas",
+      "assert_screen": "#screen-game.active",
+      "settle": 1500,
+      "caption": "Five tiers.\nFive flavors\nof hard.",
+      "sub": "Baseline · Easy · Moderate · Hard · Expert.",
+      "gradient": ["#003311", "#006633", "#00cc66", "#33ff99"],
+      "accent": "#33ff99",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "04-puzzle-moderate-l20",
+      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
+      "viewport": { "width": 414, "height": 896 },
+      "urlReset": true,
+      "localStorage": {
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "default",
+        "arrow_puzzle_max_level": 60
+      },
+      "actions": [
+        { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
+        { "kind": "click", "selector": "#btn-levels" },
+        { "kind": "wait", "selector": "#screen-levels.active #levels-grid .path-node" },
+        { "kind": "sleep", "ms": 400 },
+        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 20 }
+      ],
+      "ready": "#screen-game.active canvas",
+      "assert_screen": "#screen-game.active",
+      "settle": 1500,
+      "caption": "Snack-sized\nor deep-end.",
+      "sub": "30-second moderate runs. 30-minute expert grinds.",
+      "gradient": ["#001a33", "#003366", "#0099cc", "#22d3ee"],
+      "accent": "#22d3ee",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "05-puzzle-ocean-l25",
+      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
+      "viewport": { "width": 414, "height": 896 },
+      "urlReset": true,
+      "localStorage": {
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "ocean",
+        "arrow_puzzle_max_level": 60
+      },
+      "actions": [
+        { "kind": "wait", "selector": "#screen-menu.active #btn-levels" },
+        { "kind": "click", "selector": "#btn-levels" },
+        { "kind": "wait", "selector": "#screen-levels.active #levels-grid .path-node" },
+        { "kind": "sleep", "ms": 400 },
+        { "kind": "click", "selector": "#screen-levels.active #levels-grid .path-node", "text": 25 }
+      ],
+      "ready": "#screen-game.active canvas",
+      "assert_screen": "#screen-game.active",
+      "settle": 1500,
+      "caption": "Ocean mode\non the move.",
+      "sub": "Themes show in gameplay, not just menus.",
+      "gradient": ["#003344", "#006677", "#00b3a4", "#3fe0c8"],
+      "accent": "#3fe0c8",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "06-daily-streak",
       "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
       "viewport": { "width": 414, "height": 896 },
       "urlReset": true,
@@ -62,12 +169,12 @@
       "settle": 700,
       "caption": "One puzzle\na day.",
       "sub": "Same seed for the world. Build your streak.",
-      "gradient": ["#001a33", "#003366", "#0099cc", "#22d3ee"],
-      "accent": "#22d3ee",
+      "gradient": ["#1a0033", "#3a0066", "#6600aa", "#aa44dd"],
+      "accent": "#aa44dd",
       "provenance": "playwright-capture"
     },
     {
-      "id": "03-levels-grid",
+      "id": "07-levels-grid",
       "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
       "viewport": { "width": 414, "height": 896 },
       "urlReset": true,
@@ -84,49 +191,13 @@
       "assert_screen": "#screen-levels.active",
       "settle": 900,
       "caption": "400+\nlevels.\nFive tiers.",
-      "sub": "Baseline · Easy · Moderate · Hard · Expert.",
+      "sub": "Every tier earns three stars. Replay any level.",
       "gradient": ["#003311", "#006633", "#00cc66", "#33ff99"],
       "accent": "#33ff99",
       "provenance": "playwright-capture"
     },
     {
-      "id": "04-menu-dark",
-      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
-      "viewport": { "width": 414, "height": 896 },
-      "urlReset": true,
-      "localStorage": {
-        "arrow_puzzle_tutorial_complete": true,
-        "arrow_puzzle_theme": "dark"
-      },
-      "ready": "#screen-menu.active #btn-play",
-      "assert_screen": "#screen-menu.active",
-      "settle": 700,
-      "caption": "Pick\nyour vibe.",
-      "sub": "Three hand-tuned themes — Default, Dark, Ocean.",
-      "gradient": ["#1a0040", "#5a0aa0", "#aa00ff", "#dd55ff"],
-      "accent": "#dd55ff",
-      "provenance": "playwright-capture"
-    },
-    {
-      "id": "05-menu-ocean",
-      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
-      "viewport": { "width": 414, "height": 896 },
-      "urlReset": true,
-      "localStorage": {
-        "arrow_puzzle_tutorial_complete": true,
-        "arrow_puzzle_theme": "ocean"
-      },
-      "ready": "#screen-menu.active #btn-play",
-      "assert_screen": "#screen-menu.active",
-      "settle": 700,
-      "caption": "Ocean\nmode.",
-      "sub": "Mint-cream surface. White arrows. Teal accents.",
-      "gradient": ["#003344", "#006677", "#00b3a4", "#3fe0c8"],
-      "accent": "#3fe0c8",
-      "provenance": "playwright-capture"
-    },
-    {
-      "id": "06-menu-default",
+      "id": "08-menu-default",
       "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
       "viewport": { "width": 414, "height": 896 },
       "urlReset": true,
@@ -142,10 +213,46 @@
       "gradient": ["#1a0033", "#660066", "#ff0099", "#ff66cc"],
       "accent": "#ff66cc",
       "provenance": "playwright-capture"
+    },
+    {
+      "id": "09-menu-dark",
+      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
+      "viewport": { "width": 414, "height": 896 },
+      "urlReset": true,
+      "localStorage": {
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "dark"
+      },
+      "ready": "#screen-menu.active #btn-play",
+      "assert_screen": "#screen-menu.active",
+      "settle": 700,
+      "caption": "Pick\nyour vibe.",
+      "sub": "Three hand-tuned themes — Default, Dark, Ocean.",
+      "gradient": ["#0a0a20", "#1a1a40", "#3a3a80", "#5a5aaa"],
+      "accent": "#aaaaff",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "10-menu-ocean",
+      "url": "https://mody-sahariar1.github.io/arrow-puzzle-testing/",
+      "viewport": { "width": 414, "height": 896 },
+      "urlReset": true,
+      "localStorage": {
+        "arrow_puzzle_tutorial_complete": true,
+        "arrow_puzzle_theme": "ocean"
+      },
+      "ready": "#screen-menu.active #btn-play",
+      "assert_screen": "#screen-menu.active",
+      "settle": 700,
+      "caption": "Ocean\nmode.",
+      "sub": "Mint-cream surface. White arrows. Teal accents.",
+      "gradient": ["#003344", "#006677", "#00b3a4", "#3fe0c8"],
+      "accent": "#3fe0c8",
+      "provenance": "playwright-capture"
     }
   ],
   "deferred_until_dev_hooks": {
-    "comment": "Once mody-sahariar1/arrow-puzzle-testing ?showroom= routing lands (the [G2] feat: ?showroom= build-request filed today), the v7.1 hero shot (currently navigating via levels-grid + max_level seed + tile click) switches to a deterministic ?showroom=mid-expert-packed URL. The named state will be hand-curated to hit the density floor (35% min for AP-class puzzles) every time, eliminating procgen variance.",
-    "blocked_shots_when_showroom_lands": ["01-hero-mid-expert (switches to ?showroom=mid-expert-packed)", "02-daily-streak (switches to ?showroom=daily-streak-day-10)", "additional: 07-completion (?showroom=puzzle-just-solved)"]
+    "comment": "Once mody-sahariar1/arrow-puzzle-testing#228 (?showroom= URL routing) lands, all gameplay shots switch from procgen-via-tile-click to deterministic ?showroom=<name> URLs. Adds: ?showroom=puzzle-just-solved (win moment), ?showroom=daily-celebration (post-solve), ?showroom=hint-active (hint button highlighted). Procgen variance becomes irrelevant once routing handles it.",
+    "blocked_shots_when_showroom_lands": ["07-puzzle-just-solved", "11-daily-celebration", "12-hint-active"]
   }
 }

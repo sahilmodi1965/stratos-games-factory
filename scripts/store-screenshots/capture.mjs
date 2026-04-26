@@ -17,7 +17,7 @@
  */
 
 import { chromium } from 'playwright';
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
@@ -278,7 +278,26 @@ async function main() {
   }
 
   const captureDir = resolve(__dirname, 'output', 'capture', args.game);
+
+  // CLAUDE.md Step 8 v7 rule 16 — cleanup-after-yourself. Wipe prior captures
+  // for this game so the folder Sahil opens always reflects ONLY the current
+  // spec. No orphan PNGs from earlier IDs / renames / dropped shots.
+  await rm(captureDir, { recursive: true, force: true });
   await mkdir(captureDir, { recursive: true });
+  for (const sizeKey of args.sizes) {
+    if (!SIZES[sizeKey]) continue;
+    const finalDir = resolve(__dirname, 'output', 'final', args.game, sizeKey);
+    await rm(finalDir, { recursive: true, force: true });
+    await mkdir(finalDir, { recursive: true });
+  }
+  console.log(`[cleanup] cleared output/capture/${args.game} and output/final/${args.game}/{${args.sizes.join(',')}}`);
+
+  // Min-shot enforcement (rule 15). Spec must declare enough shots to hit
+  // Play Store's 8-shot cap; Sahil 2026-04-26 — never settle for minimum.
+  const minShotCount = spec.min_shot_count ?? 8;
+  if (filtered.length < minShotCount && !args.comps) {
+    console.warn(`[warn] spec has ${filtered.length} shot(s) but min_shot_count=${minShotCount} — file [G2] showroom build-request to close the gap`);
+  }
 
   console.log(`[capture] ${args.game} — ${filtered.length} comp(s)`);
   const browser = await chromium.launch();
@@ -324,6 +343,15 @@ async function main() {
       }
       console.error('  → seed is not reaching the game; check localStorage key namespace + theme value names');
       process.exit(2);
+    }
+
+    // Rule 15 enforcement — fail if successful capture count < min_shot_count.
+    // (When --comps is used to capture a subset, this check is skipped.)
+    if (!args.comps && successful.length < minShotCount) {
+      console.error(`MIN_SHOT_COUNT_NOT_MET — ${successful.length} successful capture(s), need ${minShotCount} (Play Store cap, the universal floor)`);
+      console.error('  → file ONE consolidated [G2] feat: ?showroom= build-request on the game repo to close the gap');
+      console.error('  → do NOT ship a half-empty carousel');
+      process.exit(3);
     }
 
     // Phase 2: compose each capture into the marketing template at every target size.

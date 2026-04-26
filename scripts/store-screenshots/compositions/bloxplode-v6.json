@@ -1,7 +1,17 @@
 {
-  "_comment": "v6 BX schema (2026-04-26) — captures the REAL game via Playwright. Local http-server serves www/ at localhost:8765 (Capacitor web layer, no deployed URL). State seeding deferred until BX dev hooks land (mody-sahariar1/Bloxplode-Beta #72-#76). For now, captures naturally-reachable states only. BX boots with splash + menu fade-in (~3-4s) — initial settle is long.",
+  "_comment": "v7 BX schema (2026-04-26). HONEST GAP: BX naturally reaches only 3 shots without dev-hooks (menu/adventure-map/classic-empty). target_shot_count: 10, min_shot_count: 8 — capture.mjs WILL fail with MIN_SHOT_COUNT_NOT_MET until #72-#76 land combo / best-score / revive / adventure-themed seeds. Pass --comps 01,02,03 to capture only what's reachable for interim review; do NOT submit to App Store with 3 shots — that's a half-empty carousel. The blocker is real game-side work; not a brain workaround target. Per CLAUDE.md Step 8 v7 rule 15.",
   "game": "bloxplode",
   "scene_aspect": [414, 896],
+  "target_shot_count": 10,
+  "min_shot_count": 8,
+  "hook_order": [
+    "combo-dopamine (WOAH that combo — mid-explosion x4) — BLOCKED on #72/#73",
+    "mastery (x8 MEGA combo with multiplier overlay) — BLOCKED on #72/#73",
+    "status (best-score celebration with crown + 5180) — BLOCKED on #72/#75",
+    "progression (adventure map with 45/90 + golden stars + theme) — BLOCKED on #72/#74",
+    "tension (revive countdown 3 + Revive/Skip pills) — BLOCKED on #72/#76",
+    "brand (menu hero) — REACHABLE NOW"
+  ],
   "brand": {
     "name": "Bloxplode",
     "tagline": "by Stratos Games",
@@ -54,7 +64,13 @@
     }
   ],
   "deferred_until_dev_hooks": {
-    "comment": "Once mody-sahariar1/Bloxplode-Beta #72 (capture mode) lands, add: 04-classic-combo (seeded x4 combo + score 915 + best 5180), 05-adventure-themed (cyan Level 2 + progress 100/355 + gems), 06-best-score (gold crown + 185), 07-revive (countdown 3 + Revive/Skip pills)",
-    "blocked_shots": ["04-classic-combo", "05-adventure-themed", "06-best-score", "07-revive"]
+    "comment": "5+ HERO shots blocked on mody-sahariar1/Bloxplode-Beta #72-#76 (capture-mode + state seeding). Without these, BX has 3 reachable shots — App Store / Play minimum but a HALF-EMPTY CAROUSEL per Sahil 2026-04-26. capture.mjs's MIN_SHOT_COUNT_NOT_MET enforcement will fail full BX runs until at least 5 more shots land via dev-hooks. DO NOT submit BX to stores until #72-#76 ship.",
+    "blocked_shots": [
+      "04-classic-combo-x4 (HERO — gated on #72+#73)",
+      "05-mega-combo-x8 (gated on #72+#73)",
+      "06-best-score-celebration (gated on #72+#75)",
+      "07-adventure-themed-mid (gated on #72+#74)",
+      "08-revive-countdown (gated on #72+#76)"
+    ]
   }
 }
