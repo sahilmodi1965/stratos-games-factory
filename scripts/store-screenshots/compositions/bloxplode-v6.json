@@ -1,0 +1,60 @@
+{
+  "_comment": "v6 BX schema (2026-04-26) — captures the REAL game via Playwright. Local http-server serves www/ at localhost:8765 (Capacitor web layer, no deployed URL). State seeding deferred until BX dev hooks land (mody-sahariar1/Bloxplode-Beta #72-#76). For now, captures naturally-reachable states only. BX boots with splash + menu fade-in (~3-4s) — initial settle is long.",
+  "game": "bloxplode",
+  "scene_aspect": [414, 896],
+  "brand": {
+    "name": "Bloxplode",
+    "tagline": "by Stratos Games",
+    "accent_glow": "#00e5ff"
+  },
+  "compositions": [
+    {
+      "id": "01-menu",
+      "url": "http://localhost:8765/",
+      "viewport": { "width": 414, "height": 896 },
+      "actions": [
+        { "kind": "sleep", "ms": 4500 }
+      ],
+      "settle": 800,
+      "caption": "Drag.\nPlace.\nClear.",
+      "sub": "Endless Classic. 90-stage Adventure. Free to play.",
+      "gradient": ["#0a1530", "#1a2050", "#3E50A4", "#5468d8"],
+      "accent": "#00e5ff",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "02-adventure-map",
+      "url": "http://localhost:8765/",
+      "viewport": { "width": 414, "height": 896 },
+      "actions": [
+        { "kind": "sleep", "ms": 4500 },
+        { "kind": "click", "selector": ".pill-btn.orange-pill" },
+        { "kind": "sleep", "ms": 1500 }
+      ],
+      "settle": 800,
+      "caption": "90 levels.\nWin the trophy.",
+      "sub": "Climb 90 hand-crafted Adventure levels.",
+      "gradient": ["#001a33", "#003366", "#0099cc", "#22d3ee"],
+      "accent": "#22d3ee",
+      "provenance": "playwright-capture"
+    },
+    {
+      "id": "03-classic",
+      "url": "http://localhost:8765/classic/index.html",
+      "viewport": { "width": 414, "height": 896 },
+      "actions": [
+        { "kind": "sleep", "ms": 3500 }
+      ],
+      "settle": 800,
+      "caption": "Stack.\nClear.\nCombo.",
+      "sub": "Drag blocks. Clear lines. Stack combos.",
+      "gradient": ["#1a0040", "#5a0aa0", "#aa00ff", "#dd55ff"],
+      "accent": "#dd55ff",
+      "provenance": "playwright-capture"
+    }
+  ],
+  "deferred_until_dev_hooks": {
+    "comment": "Once mody-sahariar1/Bloxplode-Beta #72 (capture mode) lands, add: 04-classic-combo (seeded x4 combo + score 915 + best 5180), 05-adventure-themed (cyan Level 2 + progress 100/355 + gems), 06-best-score (gold crown + 185), 07-revive (countdown 3 + Revive/Skip pills)",
+    "blocked_shots": ["04-classic-combo", "05-adventure-themed", "06-best-score", "07-revive"]
+  }
+}
